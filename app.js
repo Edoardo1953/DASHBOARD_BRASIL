@@ -96,6 +96,14 @@ function initAuth() {
         currentUsername = uname;
         if(overlay) overlay.style.display = 'none';
         loadRoleSpecificSettings();
+        // Per gli USER (non ADMIN): forza default a solo l'anno più recente e selezione singola
+        if(currentUserRole === 'USER') {
+            selectedYears = null; // Verrà impostato all'anno più recente da populateYearSelector
+            isMultiSelect = false;
+            const toggleMultiSelectBtn = document.getElementById('toggle-multi-select');
+            if (toggleMultiSelectBtn) toggleMultiSelectBtn.classList.remove('active');
+            saveRoleSpecificSettings();
+        }
         applyRoleRestrictions();
     } else {
         if(overlay) overlay.style.display = 'flex';
@@ -799,8 +807,8 @@ function updateTable() {
 window.updateYearlyHistory = function() {
     let db = getDB();
     
-    // Filtra per anni selezionati/nascosti
-    if(isMultiSelect && selectedYears.size > 0) {
+    // Filtra per anni selezionati/nascosti — usa sempre selectedYears
+    if(selectedYears && selectedYears.size > 0) {
         db = db.filter(item => selectedYears.has(item["ANNO"]));
     } else {
         db = db.filter(item => !hiddenYears.includes(item["ANNO"]));
@@ -1269,20 +1277,18 @@ function drawMonthlyChart(db) {
 function drawYearlyChart(db) {
     const ctx = document.getElementById('yearlyRevenueChart').getContext('2d');
     
-    // Raggruppa per anno
+    // Raggruppa per anno — filtra in base agli anni selezionati
     const yearlyTotals = {};
-    const currentYear = new Date().getFullYear(); // Es. 2026
     
     db.forEach(item => {
         const y = parseInt(item["ANNO"], 10);
-        // Escludi l'anno in corso (parziale)
-        if(y && !isNaN(y) && y < currentYear) {
+        if(y && !isNaN(y) && selectedYears && selectedYears.has(y)) {
             if(!yearlyTotals[y]) yearlyTotals[y] = 0;
             yearlyTotals[y] += parseFloat(item["Total (Net sales)"] || item["Diarias"]) || 0;
         }
     });
 
-    // Prendi solo gli ultimi 5 anni disponibili
+    // Prendi solo gli ultimi 5 anni disponibili tra quelli selezionati
     const labels = Object.keys(yearlyTotals).sort((a,b) => a-b).slice(-5);
     const data = labels.map(y => yearlyTotals[y] === 0 ? null : yearlyTotals[y]);
 
@@ -1835,7 +1841,7 @@ window.updateAnalisiDati = function() {
     document.getElementById('analisi-summary-col2').textContent = mode === 'diarie' ? 'Totale Diarie' : (mode === 'occupazione' ? 'Occupazione %' : 'Diaria Media');
 
     let filteredDb = db;
-    if(isMultiSelect && selectedYears.size > 0) {
+    if(selectedYears && selectedYears.size > 0) {
         filteredDb = db.filter(item => selectedYears.has(item["ANNO"]));
     } else {
         filteredDb = db.filter(item => !hiddenYears.includes(item["ANNO"]));
