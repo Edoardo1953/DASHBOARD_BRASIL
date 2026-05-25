@@ -113,22 +113,17 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Mobile Header -->
-        <div class="mobile-header">
-            <button class="mobile-menu-btn" onclick="toggleSidebar()">
-                <i class="ph ph-list"></i>
-            </button>
-            <div class="mobile-logo">
-                <img src="Loghi/Sombra marca nova sfondo trasparente senza testo.png" alt="Logo" style="height: 48px; width: auto; object-fit: contain;">
-                <h2 style="font-size:1.2rem; margin:0;">ARCO-IRIS</h2>
-            </div>
-        </div>
+        <!-- Mobile Header (solo spaziatore per layout, il menu è nel top-header) -->
 
         <header class="top-header" style="flex-wrap: wrap; gap: 1.5rem;">
             <div class="header-title" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; min-width: 300px;">
+                <button class="mobile-menu-btn mobile-only-hamburger" onclick="toggleSidebar()">
+                    <i class="ph ph-list"></i>
+                </button>
                 <img src="Loghi/Sombra marca nova sfondo trasparente senza testo.png" alt="Sombra Logo" style="height: 80px; width: auto; object-fit: contain;">
                 <div>
-                    <h1 id="page-title" style="margin-top: 0; margin-bottom: 0.25rem; white-space: nowrap;">ARCO-IRIS Dashboard</h1>
+                    <h1 id="page-title" style="margin-top: 0; margin-bottom: 0.25rem;">ARCO-IRIS</h1>
+                    <p class="page-subtitle" style="margin: 0; font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">Dashboard</p>
                     <p style="margin: 0;">Panoramica finanziaria e operativa</p>
                 </div>
             </div>

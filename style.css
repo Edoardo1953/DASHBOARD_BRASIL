@@ -806,6 +806,9 @@ p {
 .mobile-overlay {
     display: none;
 }
+.mobile-only-hamburger {
+    display: none;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -847,27 +850,35 @@ p {
         padding: 1rem;
     }
     
-    .mobile-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(0,0,0,0.05);
-    }
-    
-    .mobile-menu-btn {
+    /* Hamburger nel top-header su mobile */
+    .mobile-only-hamburger {
+        display: block;
         background: none;
         border: none;
         font-size: 1.8rem;
         color: var(--text-primary);
         cursor: pointer;
+        padding: 0;
+        line-height: 1;
     }
     
-    .mobile-logo {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+    /* Ridimensiona logo e titolo su mobile */
+    .header-title img {
+        height: 50px !important;
+    }
+    .header-title {
+        min-width: auto !important;
+        gap: 10px !important;
+        flex-wrap: nowrap !important;
+    }
+    .header-title h1 {
+        font-size: 1.4rem !important;
+    }
+    .header-title .page-subtitle {
+        font-size: 0.95rem !important;
+    }
+    .header-title p:last-child {
+        font-size: 0.8rem !important;
     }
 
     /* Hide PDF Export */
