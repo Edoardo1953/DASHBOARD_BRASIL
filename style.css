@@ -858,20 +858,22 @@ p {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-end;
         background: none;
         border: none;
         color: var(--text-primary);
         cursor: pointer;
-        padding: 0.25rem 0.4rem;
+        padding: 0;
         line-height: 1;
         gap: 2px;
         align-self: flex-end;
+        margin-bottom: 4px;
     }
     .mobile-only-hamburger i {
         font-size: 2rem;
     }
     .mobile-only-hamburger .hamburger-label {
+        display: block !important;
         font-size: 0.55rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -879,14 +881,18 @@ p {
         color: var(--text-secondary);
     }
     
-    /* Ridimensiona logo e titolo su mobile */
-    .header-title img {
-        height: 70px !important;
+    /* Logo e titolo su mobile — tutto a sinistra */
+    .top-header {
+        justify-content: flex-start !important;
     }
     .header-title {
         min-width: auto !important;
         gap: 10px !important;
         flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+    }
+    .header-title img {
+        height: 70px !important;
     }
     .header-title h1 {
         font-size: 1.7rem !important;
