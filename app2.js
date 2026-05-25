@@ -140,6 +140,8 @@ function setupAuthListeners() {
                     console.error("Error in initDB:", err);
                     alert("Errore in initDB: " + err.message);
                 }
+                const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
+                if(dashBtn) dashBtn.click();
             } else {
                 errorEl.style.display = 'block';
             }
@@ -165,14 +167,15 @@ function applyRoleRestrictions() {
     const navTable = document.getElementById('nav-table');
     const navUsers = document.getElementById('nav-users');
     
+    // Nascondiamo per tutti l'inserimento manuale e l'importazione,
+    // dato che ora si gestisce centralmente tramite GitHub
+    if(navInput) navInput.style.display = 'none';
+    if(navSettings) navSettings.style.display = 'none';
+
     if(currentUserRole === 'USER') {
-        if(navInput) navInput.style.display = 'none';
-        if(navSettings) navSettings.style.display = 'none';
         if(navTable) navTable.style.display = 'none';
         if(navUsers) navUsers.style.display = 'none';
     } else {
-        if(navInput) navInput.style.display = 'flex';
-        if(navSettings) navSettings.style.display = 'flex';
         if(navTable) navTable.style.display = 'flex';
         if(navUsers) navUsers.style.display = 'flex';
     }
@@ -236,16 +239,49 @@ window.toggleSidebar = function() {
 
 // --- Database & Local Storage ---
 function initDB() {
+    // Scarica automaticamente il file excel dal server GitHub Pages
+    fetch('DB Arcoiris Dashboard.xlsx?t=' + new Date().getTime())
+        .then(response => {
+            if(!response.ok) throw new Error("Network response was not ok");
+            return response.arrayBuffer();
+        })
+        .then(data => {
+            try {
+                const workbook = XLSX.read(new Uint8Array(data), {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                
+                if(json.length > 0) {
+                    saveDB(json); // Aggiorna il localStorage con i nuovi dati centrali
+                    populateYearSelector(getDB());
+                    updateDashboard();
+                    if(document.getElementById('dataTableBody')) updateTable();
+                    if(document.getElementById('yearlyTableBody')) updateYearlyHistory();
+                    if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+                    if(document.getElementById('analisi-area-tbody')) {
+                        if(typeof updateAnalisiArea === "function") updateAnalisiArea();
+                    }
+                }
+            } catch (e) {
+                console.error("Errore nel parsing del file Excel:", e);
+                fallbackLoadDB();
+            }
+        })
+        .catch(error => {
+            console.error("Errore nel caricamento del file Excel dal server:", error);
+            fallbackLoadDB();
+        });
+}
+
+function fallbackLoadDB() {
     const data = getDB();
     if(data.length > 0) {
-        // Popola la select degli anni
         populateYearSelector(data);
         updateDashboard();
-        updateTable();
+        if(document.getElementById('dataTableBody')) updateTable();
     } else {
-        // Se non ci sono dati, mostra un alert per invitare all'importazione
-        alert("Benvenuto! Non ci sono ancora dati. Vai nella sezione 'Importa / Esporta' e carica il tuo file Excel storico.");
-        document.querySelector('.nav-item[data-view="settings-view"]').click();
+        alert("Benvenuto! Non è stato possibile caricare i dati dal server. Assicurati che il file DB Arcoiris Dashboard.xlsx esista sul repository GitHub.");
     }
 }
 
