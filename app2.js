@@ -6,7 +6,7 @@ let comparatorChartInstance = null;
 let analisiDatiChartInstance = null;
 let analisiAreaChartInstance = null;
 const DB_KEY = 'sombra_spa_db';
-try { Chart.register(ChartDataLabels); } catch (e) { console.warn("Chart.js non caricato:", e); }
+try { /* Chart.register(ChartDataLabels); */ } catch (e) { console.warn("Chart.js non caricato:", e); }
 let selectedYears = new Set();
 let isMultiSelect = false;
 let hiddenYears = [];
