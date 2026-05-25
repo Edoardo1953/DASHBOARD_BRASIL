@@ -809,6 +809,9 @@ p {
 .mobile-only-hamburger {
     display: none;
 }
+.hamburger-label {
+    display: none;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -852,19 +855,33 @@ p {
     
     /* Hamburger nel top-header su mobile */
     .mobile-only-hamburger {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         background: none;
         border: none;
-        font-size: 1.8rem;
         color: var(--text-primary);
         cursor: pointer;
-        padding: 0;
+        padding: 0.25rem 0.4rem;
         line-height: 1;
+        gap: 2px;
+        align-self: flex-end;
+    }
+    .mobile-only-hamburger i {
+        font-size: 2rem;
+    }
+    .mobile-only-hamburger .hamburger-label {
+        font-size: 0.55rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
     }
     
     /* Ridimensiona logo e titolo su mobile */
     .header-title img {
-        height: 50px !important;
+        height: 70px !important;
     }
     .header-title {
         min-width: auto !important;
@@ -872,10 +889,10 @@ p {
         flex-wrap: nowrap !important;
     }
     .header-title h1 {
-        font-size: 1.4rem !important;
+        font-size: 1.7rem !important;
     }
     .header-title .page-subtitle {
-        font-size: 0.95rem !important;
+        font-size: 1.15rem !important;
     }
     .header-title p:last-child {
         font-size: 0.8rem !important;
