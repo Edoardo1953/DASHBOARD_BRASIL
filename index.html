@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sombra Spa - Dashboard</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons (Phosphor Icons - clean and modern) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <!-- PDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css?v=25">
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card">
+            <div class="login-header" style="text-align: center;">
+                <i class="ph ph-lock-key" style="font-size: 3rem; color: var(--accent-blue); margin-bottom: 1rem; display: inline-block;"></i>
+                <h2>Accesso Riservato</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Inserisci le tue credenziali per continuare</p>
+            </div>
+            <form id="loginForm" class="premium-form">
+                <div class="form-group">
+                    <label style="font-weight: 600; color: var(--text-primary);">Username (ID)</label>
+                    <input type="text" id="login-username" required style="padding: 1rem; font-size: 1.1rem; border: 2px solid var(--border-color); border-radius: 8px; background-color: #f8fafc; transition: all 0.2s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+                </div>
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label style="font-weight: 600; color: var(--text-primary);">Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="login-password" required style="padding: 1rem; width: 100%; font-size: 1.1rem; border: 2px solid var(--border-color); border-radius: 8px; background-color: #f8fafc; transition: all 0.2s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+                        <i class="ph ph-eye" id="toggle-password-visibility" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 1.5rem; color: #94a3b8; cursor: pointer;" onclick="const p=document.getElementById('login-password'); if(p.type==='password'){p.type='text'; this.classList.replace('ph-eye','ph-eye-slash');}else{p.type='password'; this.classList.replace('ph-eye-slash','ph-eye');}"></i>
+                    </div>
+                </div>
+                <div id="login-error" class="status-msg error" style="display: none; margin-top: 1rem; text-align: center;">Credenziali errate</div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; justify-content: center;">Accedi</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Mobile Overlay -->
+    <div id="mobile-sidebar-overlay" class="mobile-overlay" onclick="toggleSidebar()"></div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="data:image/png;base64,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" alt="Sombra Spa Logo" class="sidebar-logo">
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-view="dashboard-view">
+                <i class="ph ph-squares-four"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-view="yearly-history-view">
+                <i class="ph ph-chart-line-up"></i>
+                <span>Storico Annuale</span>
+            </a>
+            <a href="#" class="nav-item" data-view="comparator-view" id="nav-comparator">
+                <i class="ph ph-scales"></i>
+                <span>Comparatore</span>
+            </a>
+            <a href="#" class="nav-item" data-view="analisi-dati-view" id="nav-analisi-dati">
+                <i class="ph ph-chart-bar"></i>
+                <span>Analisi Dati</span>
+            </a>
+            <a href="#" class="nav-item" data-view="analisi-area-view" id="nav-analisi-area">
+                <i class="ph ph-chart-pie-slice"></i>
+                <span>Analisi per Area</span>
+            </a>
+
+            <a href="#" class="nav-item" data-view="table-view" id="nav-table">
+                <i class="ph ph-table"></i>
+                <span>Dettaglio Dati</span>
+            </a>
+            <a href="#" class="nav-item" data-view="input-view" id="nav-input">
+                <i class="ph ph-plus-circle"></i>
+                <span>Inserisci Dati</span>
+            </a>
+            <a href="#" class="nav-item" data-view="settings-view" id="nav-settings">
+                <i class="ph ph-gear"></i>
+                <span>Importa / Esporta</span>
+            </a>
+            <a href="#" class="nav-item" data-view="users-view" id="nav-users">
+                <i class="ph ph-users"></i>
+                <span>Gestione Utenti</span>
+            </a>
+        </nav>
+        
+        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(0,0,0,0.05);">
+            <a href="#" class="nav-item" id="logoutBtn" style="color: var(--accent-red);">
+                <i class="ph ph-sign-out"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                <i class="ph ph-list"></i>
+            </button>
+            <div class="mobile-logo">
+                <img src="Loghi/Sombra marca nova sfondo trasparente senza testo.png" alt="Logo" style="height: 48px; width: auto; object-fit: contain;">
+                <h2 style="font-size:1.2rem; margin:0;">ARCO-IRIS</h2>
+            </div>
+        </div>
+
+        <header class="top-header" style="flex-wrap: wrap; gap: 1.5rem;">
+            <div class="header-title" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; min-width: 300px;">
+                <img src="Loghi/Sombra marca nova sfondo trasparente senza testo.png" alt="Sombra Logo" style="height: 80px; width: auto; object-fit: contain;">
+                <div>
+                    <h1 id="page-title" style="margin-top: 0; margin-bottom: 0.25rem; white-space: nowrap;">ARCO-IRIS Dashboard</h1>
+                    <p style="margin: 0;">Panoramica finanziaria e operativa</p>
+                </div>
+            </div>
+            <div class="header-actions" style="flex-grow: 1; display: flex; justify-content: flex-end;">
+                <div class="year-selector-container" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end;">
+                        <label style="white-space: nowrap; font-weight: 600;">Filtra Anni:</label>
+                        <div id="year-filters" class="year-filters-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end;">
+                            <!-- Popolato via JS -->
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end; flex-wrap: wrap;">
+                        <button id="restoreYearsBtnTop" class="btn-multi-select" style="margin-top: 0;"><i class="ph ph-arrow-counter-clockwise"></i> Ripristina anni nascosti</button>
+                        <button id="toggle-multi-select" class="btn-multi-select" style="margin-top: 0;">Attiva Selezione Multipla</button>
+                        
+                        <div class="pdf-export-container" style="margin-left: 0;">
+                            <button class="btn btn-primary" id="pdf-export-btn" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; height: 100%;">
+                                <i class="ph ph-printer"></i> Esporta PDF <i class="ph ph-caret-down"></i>
+                            </button>
+                            <div class="pdf-export-menu" id="pdf-export-menu">
+                                <button onclick="exportNativePDF('portrait')"><i class="ph ph-file-pdf"></i> PDF (Verticale)</button>
+                                <button onclick="exportNativePDF('landscape')"><i class="ph ph-file-pdf"></i> PDF (Orizzontale)</button>
+                                <button onclick="startSnippingTool()"><i class="ph ph-crop"></i> Ritaglia Area (PDF)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- View: Dashboard -->
+        <div id="dashboard-view" class="view-section active">
+            <!-- KPIs -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon"><i class="ph ph-currency-dollar"></i></div>
+                    <div class="kpi-info">
+                        <h3>Fatturato Totale (Net Sales)</h3>
+                        <p id="kpi-total-revenue" class="kpi-value">R$ 0.00</p>
+                        <span id="kpi-revenue-trend" class="trend positive"><i class="ph ph-trend-up"></i> 0%</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon blue"><i class="ph ph-bed"></i></div>
+                    <div class="kpi-info">
+                        <h3>Ricavi Diarias</h3>
+                        <p class="kpi-value"><span id="kpi-diarias">R$ 0.00</span> <span id="kpi-diarias-perc" style="font-size: 0.65em; color: var(--text-secondary); font-weight: normal; margin-left: 5px;">(0%)</span></p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon purple"><i class="ph ph-users"></i></div>
+                    <div class="kpi-info">
+                        <h3>Occupazione Media</h3>
+                        <p id="kpi-occupancy" class="kpi-value">0%</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon orange"><i class="ph ph-receipt"></i></div>
+                    <div class="kpi-info">
+                        <h3>Fatturato Totale (Gross)</h3>
+                        <p id="kpi-gross-sales" class="kpi-value">R$ 0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card large">
+                    <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 id="monthlyChartTitle">Andamento Mensile Fatturato</h3>
+                        <select class="chart-type-selector" onchange="changeChartType('monthlyRevenueChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <option value="bar">Barre</option>
+                            <option value="line">Linea</option>
+                        </select>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="monthlyRevenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Fatturato Ultimi 5 Anni</h3>
+                        <select class="chart-type-selector" onchange="changeChartType('yearlyRevenueChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <option value="bar">Barre</option>
+                            <option value="line">Linea</option>
+                        </select>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="yearlyRevenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Yearly History -->
+        <div id="yearly-history-view" class="view-section">
+            <div class="header-actions">
+                <h2>Storico Annuale</h2>
+            </div>
+            
+            <div class="table-card" style="margin-bottom: 2rem;">
+                <div class="table-header-custom">
+                    <h3>Tabella Aggregata per Anno</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="premium-table" id="yearlyTable">
+                        <thead>
+                            <tr>
+                                <th>Anno</th>
+                                <th>Diarias</th>
+                                <th>A&B</th>
+                                <th>Spa</th>
+                                <th>Outros</th>
+                                <th>Net Sales</th>
+                                <th>Taxas</th>
+                                <th>Brut Sales</th>
+                                <th>Diaria Media</th>
+                                <th>N. Diarie</th>
+                                <th>% Occup.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yearlyTableBody">
+                            <!-- Popolato via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card large">
+                    <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Andamento Fatturato Annuo (NET)</h3>
+                        <select class="chart-type-selector" onchange="changeChartType('yearlyTrendChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <option value="line">Linea</option>
+                            <option value="bar">Barre</option>
+                        </select>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="yearlyTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 id="yearlyCompositionChartTitle">Composizione Ricavi</h3>
+                        <select class="chart-type-selector" onchange="changeChartType('yearlyCompositionChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <option value="doughnut">Ciambella</option>
+                            <option value="pie">Torta</option>
+                            <option value="polarArea">Area Polare</option>
+                        </select>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="yearlyCompositionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Comparatore -->
+        <div id="comparator-view" class="view-section">
+            <div class="comparator-header" style="display: flex; justify-content: center; align-items: center; margin: 0 auto 1.5rem auto; background: white; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 2rem; max-width: 700px; position: relative; z-index: 10;">
+                <h3 style="margin:0;"><i class="ph ph-scales" style="color: var(--accent-blue); margin-right: 8px;"></i> Comparatore Annuale</h3>
+                <div class="comparator-selectors" style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+                    <div class="select-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label style="font-weight: 600; font-size: 1.1rem;">Anno 1:</label>
+                        <select id="comp-year1" class="form-control" style="width: 130px; padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1.2rem; font-weight: bold; color: #0f172a; cursor: pointer;"></select>
+                    </div>
+                    <div class="select-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label style="font-weight: 600; font-size: 1.1rem;">Anno 2:</label>
+                        <select id="comp-year2" class="form-control" style="width: 130px; padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1.2rem; font-weight: bold; color: #0f172a; cursor: pointer;"></select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="comparator-grid" style="display: grid; grid-template-columns: 1fr; gap: 2.5rem;">
+                <!-- Colonna Superiore (Tabelle) -->
+                <div class="comparator-tables" style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%;">
+                    <!-- Tabella Mesi -->
+                    <div class="table-card" style="padding:0; overflow:hidden;">
+                        <table class="premium-table" style="margin:0;">
+                            <thead>
+                                <tr>
+                                    <th>Mesi</th>
+                                    <th id="comp-th-y1">Anno 1</th>
+                                    <th id="comp-th-y2">Anno 2</th>
+                                    <th>Variazione %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comp-table-body">
+                                <!-- Popolato via JS -->
+                            </tbody>
+                            <tfoot id="comp-table-foot" style="background-color: #f1f5f9; font-weight: bold;">
+                                <!-- Popolato via JS -->
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <!-- Tabella YTD -->
+                    <div class="table-card" style="padding:0; overflow:hidden; border: 1px solid #cbd5e1;">
+                        <div style="background-color: #cbd5e1; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: #1e293b;">ANNO IN CORSO VS PRECEDENTE (YTD)</div>
+                        <table class="premium-table" style="margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th id="comp-ytd-th-y1" style="text-align: right;">Anno 1</th>
+                                    <th id="comp-ytd-th-y2">Anno 2</th>
+                                    <th>Variazione %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comp-ytd-body">
+                                <!-- Popolato via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="padding: 1rem; background-color: #e0f2fe; color: #0369a1; font-size: 0.85rem; border-radius: 8px; border: 1px solid #bae6fd; line-height: 1.4;">
+                        <strong>Info YTD:</strong> La comparazione "Anno in corso vs Precedente" calcola il totale tenendo conto esclusivamente dei mesi in cui sono presenti i dati per l'anno più recente, scartando i mesi successivi dell'anno più vecchio per garantire un confronto a parità di periodo.
+                    </div>
+                </div>
+                
+                <!-- Colonna Inferiore (Grafico) -->
+                <div class="comparator-chart">
+                    <div class="chart-card" style="width: 100%; min-height: 500px;">
+                        <div class="chart-header">
+                            <h3>Andamento Mensile Comparato</h3>
+                        </div>
+                        <div class="chart-container" style="height: calc(100% - 60px); min-height: 400px;">
+                            <canvas id="comparatorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Analisi Dati -->
+        <div id="analisi-dati-view" class="view-section">
+            <div class="header-actions" style="margin-bottom: 2rem; display: flex; align-items: center; position: relative; min-height: 60px;">
+                <h2 style="margin: 0;">Analisi Dati</h2>
+                <div class="toggle-container" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 1.5rem; background: white; padding: 0.8rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); font-size: 1.1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="analisi-toggle" value="diarie" checked onchange="updateAnalisiDati()" style="transform: scale(1.2);"> Nr. Diarie
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="analisi-toggle" value="diaria_media" onchange="updateAnalisiDati()" style="transform: scale(1.2);"> Diaria Media
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
+                        <input type="radio" name="analisi-toggle" value="occupazione" onchange="updateAnalisiDati()" style="transform: scale(1.2);"> Occupazione %
+                    </label>
+                </div>
+            </div>
+
+            <div class="analisi-dati-layout" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <!-- Tabella Principale -->
+                <div class="table-card" style="padding: 0; overflow-x: auto;">
+                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;" id="analisi-table-title">NR DIARIE</div>
+                    <table class="premium-table" style="margin: 0; min-width: max-content;">
+                        <thead>
+                            <tr id="analisi-dati-thead">
+                                <!-- Popolato via JS -->
+                            </tr>
+                        </thead>
+                        <tbody id="analisi-dati-tbody">
+                            <!-- Popolato via JS -->
+                        </tbody>
+                        <tfoot id="analisi-dati-tfoot" style="background-color: #f1f5f9; font-weight: bold;">
+                            <!-- Popolato via JS -->
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Grafico -->
+                <div class="chart-card" style="height: 100%; min-height: 400px; display: flex; flex-direction: column;">
+                    <div class="chart-header">
+                        <h3 id="analisi-chart-title">Andamento Annuo</h3>
+                    </div>
+                    <div class="chart-container" style="flex: 1; min-height: 300px; position: relative;">
+                        <canvas id="analisiDatiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabella Riepilogativa Annuale -->
+            <div class="table-card" style="max-width: 600px;">
+                <div style="background-color: #10b981; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: white;" id="analisi-summary-title">ANDAMENTO ANNUALE</div>
+                <table class="premium-table" style="margin: 0;">
+                    <thead>
+                        <tr>
+                            <th>Anno</th>
+                            <th id="analisi-summary-col2">Dato</th>
+                            <th>Variazione %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analisi-summary-tbody">
+                        <!-- Popolato via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+
+        <!-- View: Analisi Area -->
+        <div id="analisi-area-view" class="view-section">
+            <div class="header-actions" style="margin-bottom: 2rem; display: flex; align-items: center; position: relative; min-height: 60px;">
+                <h2 style="margin: 0;">Analisi per Area</h2>
+                <div class="toggle-container" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 1.5rem; background: white; padding: 0.8rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); font-size: 1.1rem; flex-wrap: wrap; justify-content: center;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
+                        <input type="checkbox" id="area-chk-diarias" checked onchange="updateAnalisiArea()" style="transform: scale(1.2);"> Diarias
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
+                        <input type="checkbox" id="area-chk-ab" checked onchange="updateAnalisiArea()" style="transform: scale(1.2);"> A & B
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
+                        <input type="checkbox" id="area-chk-spa" checked onchange="updateAnalisiArea()" style="transform: scale(1.2);"> Spa (+ Outros)
+                    </label>
+                </div>
+            </div>
+
+            <div class="analisi-area-layout" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                
+                <!-- Chart -->
+                <div class="chart-card" style="width: 100%;">
+                    <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 id="analisi-area-chart-title">Andamento Aree di Ricavo</h3>
+                        <select id="analisi-area-chart-type" onchange="updateAnalisiArea()" style="padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <option value="stacked">Grafico Impilato</option>
+                            <option value="grouped">Grafico Affiancato</option>
+                        </select>
+                    </div>
+                    <div class="chart-body" style="height: 400px; width: 100%;">
+                        <canvas id="analisiAreaChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-card" style="padding: 0; overflow-x: auto;">
+                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;">DETTAGLIO RICAVI PER AREA (R$)</div>
+                    <table class="premium-table" style="margin: 0; min-width: max-content;">
+                        <thead>
+                            <tr>
+                                <th>Anno</th>
+                                <th id="th-area-diarias">Diarias</th>
+                                <th id="th-area-ab">A & B</th>
+                                <th id="th-area-spa">Spa (+ Outros)</th>
+                                <th style="background-color: #d1fae5;">Totale</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analisi-area-tbody">
+                            <!-- Popolato via JS -->
+                        </tbody>
+                        <tfoot id="analisi-area-tfoot" style="background-color: #f1f5f9; font-weight: bold;">
+                            <!-- Popolato via JS -->
+                        </tfoot>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- View: Table -->
+        <div id="table-view" class="view-section">
+            <div class="table-card">
+                <div class="table-header-custom" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Dettaglio Dati Completo</h3>
+                    <button class="btn btn-secondary" onclick="undoLastAction()" title="Annulla l'ultima azione" style="padding: 0.4rem 0.8rem; border-radius: 4px;"><i class="ph ph-arrow-u-up-left"></i> Annulla</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="premium-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Mese/Anno</th>
+                                <th>Diarias</th>
+                                <th>A&B</th>
+                                <th>Spa</th>
+                                <th>Outros</th>
+                                <th>Net Sales</th>
+                                <th>Taxas</th>
+                                <th>Brut Sales</th>
+                                <th>Diaria Media</th>
+                                <th>N. Diarie</th>
+                                <th>% Occup.</th>
+                                <th>Rev Par</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <!-- Popolato via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Input -->
+        <div id="input-view" class="view-section">
+            <div class="form-card">
+                <h3>Inserisci Dati del Mese</h3>
+                <p class="subtitle">Aggiungi manualmente i dati di un nuovo mese. I dati andranno ad aggiungersi allo storico.</p>
+                
+                <form id="dataInputForm" class="premium-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Anno</label>
+                            <input type="number" id="input-anno" required placeholder="Es. 2026">
+                        </div>
+                        <div class="form-group">
+                            <label>Mese</label>
+                            <select id="input-mese" required>
+                                <option value="Jan">Gennaio</option>
+                                <option value="Feb">Febbraio</option>
+                                <option value="Mar">Marzo</option>
+                                <option value="Apr">Aprile</option>
+                                <option value="May">Maggio</option>
+                                <option value="Jun">Giugno</option>
+                                <option value="Jul">Luglio</option>
+                                <option value="Aug">Agosto</option>
+                                <option value="Sep">Settembre</option>
+                                <option value="Oct">Ottobre</option>
+                                <option value="Nov">Novembre</option>
+                                <option value="Dec">Dicembre</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Diarias (R$)</label>
+                            <input type="number" id="input-diarias" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>A&B (R$)</label>
+                            <input type="number" id="input-ab" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Spa (R$)</label>
+                            <input type="number" id="input-spa" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Outros (R$)</label>
+                            <input type="number" id="input-outros" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Taxas (ISS, servicos) (R$)</label>
+                            <input type="number" id="input-taxas" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>% Occupazione (es. 0.80 per 80%)</label>
+                            <input type="number" id="input-occup" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Diaria Media (R$)</label>
+                            <input type="number" id="input-diaria-media" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>N. Diarie</label>
+                            <input type="number" id="input-n-diarie" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salva Dati Mensili</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- View: Settings (Import/Export) -->
+        <div id="settings-view" class="view-section">
+            <div class="settings-grid">
+                <div class="setting-card">
+                    <div class="setting-icon"><i class="ph ph-upload-simple"></i></div>
+                    <h3>Importa da Excel (Iniziale)</h3>
+                    <p>Carica il tuo file "DB Arcoiris Dashboard.xlsx" per popolare il database per la prima volta.</p>
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Seleziona File Excel</button>
+                    <p id="import-status" class="status-msg"></p>
+                </div>
+                
+                <div class="setting-card">
+                    <div class="setting-icon"><i class="ph ph-download-simple"></i></div>
+                    <h3>Esporta Dati</h3>
+                    <p>Scarica una copia dei tuoi dati aggiornati in formato JSON o Excel per backup.</p>
+                    <button class="btn btn-secondary" id="exportBtn"><i class="ph ph-file-json"></i> Scarica Backup JSON</button>
+                </div>
+                
+                <div class="setting-card danger">
+                    <div class="setting-icon"><i class="ph ph-trash"></i></div>
+                    <h3>Cancella Database</h3>
+                    <p>Elimina definitivamente tutti i dati salvati nel sistema. Azione irreversibile.</p>
+                    <button id="resetBtn" class="btn btn-danger"><i class="ph ph-warning-circle"></i> Elimina Tutti i Dati</button>
+                </div>
+                
+                <div class="setting-card">
+                    <div class="setting-icon" style="color: var(--accent-blue)"><i class="ph ph-eye"></i></div>
+                    <h3>Ripristina Anni Nascosti</h3>
+                    <p>Fai riapparire nel filtro tutti gli anni che avevi nascosto cliccando sulla 'x' rossa.</p>
+                    <button id="restoreYearsBtn" class="btn btn-outline"><i class="ph ph-arrow-counter-clockwise"></i> Ripristina Anni</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Users -->
+        <div id="users-view" class="view-section">
+            <div class="header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <h2>Gestione Utenti</h2>
+                <button class="btn btn-primary" onclick="openAddUserModal()"><i class="ph ph-plus"></i> Nuovo Utente</button>
+            </div>
+            
+            <div class="table-card" style="max-width: 800px;">
+                <div class="table-responsive">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>ID (Username)</th>
+                                <th>Password</th>
+                                <th>Ruolo</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Popolato via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Snipping Tool Overlay -->
+    <div id="snipping-overlay">
+        <div class="snipping-instructions"><i class="ph ph-crop"></i> Clicca e trascina per selezionare l'area da salvare. Premi ESC per annullare.</div>
+        <div id="snipping-box"></div>
+    </div>
+
+    <!-- Edit Data Modal -->
+    <div id="edit-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Modifica Dati Mensili</h2>
+                <button onclick="closeEditModal()" class="close-btn"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body-grouped">
+                
+                <div class="form-section">
+                    <h4>Periodo</h4>
+                    <div class="form-grid-2">
+                        <div class="form-group"><label>Mese</label><input type="text" id="edit-mese" disabled></div>
+                        <div class="form-group"><label>Anno</label><input type="text" id="edit-anno" disabled></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>Ricavi e Tasse (R$)</h4>
+                    <div class="form-grid-4">
+                        <div class="form-group"><label>Diarias</label><input type="number" id="edit-diarias-val" step="0.01" oninput="calcEditSales()"></div>
+                        <div class="form-group"><label>A&B</label><input type="number" id="edit-ab" step="0.01" oninput="calcEditSales()"></div>
+                        <div class="form-group"><label>Spa</label><input type="number" id="edit-spa" step="0.01" oninput="calcEditSales()"></div>
+                        <div class="form-group"><label>Outros</label><input type="number" id="edit-outros" step="0.01" oninput="calcEditSales()"></div>
+                        
+                        <div class="form-group highlight"><label>Net Sales (Auto)</label><input type="number" id="edit-netsales" disabled></div>
+                        <div class="form-group"><label>Taxas</label><input type="number" id="edit-taxas" step="0.01" oninput="calcEditSales()"></div>
+                        <div class="form-group highlight"><label>Brut Sales (Auto)</label><input type="number" id="edit-bruto" disabled></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>Performance</h4>
+                    <div class="form-grid-4">
+                        <div class="form-group"><label>N. Diarie</label><input type="number" id="edit-ndiarie" step="1"></div>
+                        <div class="form-group"><label>Diaria Media</label><input type="number" id="edit-diariamedia" step="0.01"></div>
+                        <div class="form-group"><label>RevPar</label><input type="number" id="edit-revpar" step="0.01"></div>
+                        <div class="form-group"><label>Occupazione %</label><input type="number" id="edit-occupazione" step="0.01"></div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeEditModal()" class="btn btn-outline">Annulla</button>
+                <button onclick="saveEditData()" class="btn btn-primary">Salva Modifiche</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div id="user-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="user-modal-title">Nuovo Utente</h2>
+                <button onclick="closeUserModal()" class="close-btn"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body-grouped">
+                <div class="form-section">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>Username</label>
+                        <input type="text" id="user-input-username" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>Password</label>
+                        <input type="password" id="user-input-password" placeholder="(lascia vuoto per non modificare)">
+                    </div>
+                    <div class="form-group">
+                        <label>Ruolo</label>
+                        <select id="user-input-role">
+                            <option value="USER">USER</option>
+                            <option value="ADMIN">ADMIN</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeUserModal()" class="btn btn-outline">Annulla</button>
+                <button onclick="saveUserData()" class="btn btn-primary">Salva Utente</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app2.js"></script>
+</body>
+</html>
+
+
+
+
+

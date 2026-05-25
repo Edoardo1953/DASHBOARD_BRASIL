@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Errori</title>
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            document.body.innerHTML += "<h2 style='color:red;'>ERRORE TROVATO!</h2>";
+            document.body.innerHTML += "<p style='color:red; font-size: 1.2rem;'>" + msg + " alla riga " + line + "</p>";
+        };
+    </script>
+    <script>
+        // Mock Chart and other globals to prevent ReferenceErrors from stopping parsing
+        window.Chart = { register: function(){} };
+    </script>
+    <script src="app.js"></script>
+</head>
+<body style="font-family: sans-serif; padding: 2rem;">
+    <h1>Ricerca dell'errore...</h1>
+    <p>Se vedi solo questo testo senza errori rossi, significa che il file app.js non ha errori di sintassi bloccanti.</p>
+    
+    <!-- Elementi fittizi per evitare che app.js si blocchi se li cerca fuori dalle funzioni -->
+    <div id="pdf-export-btn"></div>
+    <div id="pdf-export-menu"></div>
+    <div id="snipping-overlay"></div>
+    <div id="snipping-box"></div>
+    <form id="loginForm"></form>
+</body>
+</html>
