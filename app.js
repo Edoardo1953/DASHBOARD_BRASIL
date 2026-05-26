@@ -16,24 +16,14 @@ function loadRoleSpecificSettings() {
     
     hiddenYears = JSON.parse(localStorage.getItem(`sombra_spa_hidden_years_${userKey}`) || '[]').map(Number);
     
-    const savedSelected = localStorage.getItem(`sombra_spa_selected_years_${userKey}`);
-    if (savedSelected) {
-        const parsed = JSON.parse(savedSelected);
-        selectedYears = parsed.length > 0 ? new Set(parsed.map(Number)) : new Set();
-    } else {
-        selectedYears = null; // Segnaposto per "prima volta"
-    }
+    // Rimosso il caricamento inziale da localStorage per forzare sempre il default desiderato
+    selectedYears = null; // Segnaposto per far scattare la logica di default
     
-    let isMultiStr = localStorage.getItem(`sombra_spa_is_multi_select_${userKey}`);
-    isMultiSelect = isMultiStr ? JSON.parse(isMultiStr) : false;
+    isMultiSelect = false; // Disabilita la selezione multipla per default
     
     const toggleMultiSelectBtn = document.getElementById('toggle-multi-select');
     if (toggleMultiSelectBtn) {
-        if (isMultiSelect) {
-            toggleMultiSelectBtn.classList.add('active');
-        } else {
-            toggleMultiSelectBtn.classList.remove('active');
-        }
+        toggleMultiSelectBtn.classList.remove('active');
     }
 }
 
@@ -494,9 +484,17 @@ function populateYearSelector(db) {
     
     let years = [...new Set(db.map(item => item["ANNO"]).filter(y => y))].sort((a,b) => b-a);
     
+    // Se primo avvio/default, nascondiamo automaticamente gli anni più vecchi dei primi 6
+    if (selectedYears === null) {
+        hiddenYears = [];
+        if (years.length > 6) {
+            hiddenYears = years.slice(6);
+        }
+    }
+
     // Filtra gli anni nascosti
     years = years.filter(y => !hiddenYears.includes(y));
-    
+
     const container = document.getElementById('year-filters');
     if(!container) return;
     
