@@ -51,20 +51,22 @@ const MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 
 // Auth Config
 // UTENTI DI DEFAULT — questi sono visibili su TUTTI i dispositivi.
-// Quando aggiungi/modifichi/elimini un utente dalla sezione "Gestione Utenti",
-// usa il pulsante "Sincronizza nel Codice" per aggiornare questo blocco su GitHub.
+// Questo blocco viene aggiornato automaticamente dall'app tramite GitHub API
+// ogni volta che aggiungi/modifichi/elimini un utente dalla sezione "Gestione Utenti".
 const DEFAULT_USERS = {
     'admin': { password: 'admin123', role: 'ADMIN' },
     'user': { password: 'user123', role: 'USER' }
 };
 
+const GITHUB_REPO = 'Edoardo1953/DASHBOARD_BRASIL';
+const GITHUB_FILE = 'app2.js';
+
 function getUsers() {
-    // Iniziamo con una copia degli utenti di default (visibili su tutti i dispositivi)
+    // Fonde gli utenti di default (visibili ovunque) con quelli del localStorage (modifiche locali)
     const mergedUsers = Object.assign({}, DEFAULT_USERS);
     try {
         const stored = localStorage.getItem('sombra_spa_users');
         if (stored) {
-            // Gli utenti salvati localmente sovrascrivono o si aggiungono ai default
             const localUsers = JSON.parse(stored);
             Object.assign(mergedUsers, localUsers);
         }
@@ -76,57 +78,134 @@ function getUsers() {
 
 function saveUsers(usersObj) {
     localStorage.setItem('sombra_spa_users', JSON.stringify(usersObj));
-    // Mostra automaticamente il pannello di sincronizzazione
-    showSyncModal(usersObj);
+    // Sincronizza automaticamente su GitHub
+    syncToGitHub(usersObj);
 }
 
-// Genera il codice aggiornato per DEFAULT_USERS e lo mostra nel modal di sincronizzazione
-function showSyncModal(usersObj) {
+// ─── GITHUB AUTO-SYNC ────────────────────────────────────────────────────────
+
+function generateDefaultUsersBlock(usersObj) {
     const lines = Object.entries(usersObj).map(([uname, data]) => {
         return `    '${uname}': { password: '${data.password}', role: '${data.role}' }`;
     });
-    const codeBlock = `const DEFAULT_USERS = {\n${lines.join(',\n')}\n};`;
-
-    let modal = document.getElementById('sync-modal');
-    if (!modal) return;
-
-    const codeEl = document.getElementById('sync-code-block');
-    if (codeEl) codeEl.textContent = codeBlock;
-
-    modal.style.display = 'flex';
+    return `const DEFAULT_USERS = {\n${lines.join(',\n')}\n};`;
 }
 
-window.closeSyncModal = function() {
-    const modal = document.getElementById('sync-modal');
+async function syncToGitHub(usersObj) {
+    const token = localStorage.getItem('sombra_github_token');
+
+    if (!token) {
+        // Nessun token configurato: mostra il pannello di configurazione
+        showGithubTokenSetup();
+        return;
+    }
+
+    showSyncStatus('loading', 'Sincronizzazione in corso...');
+
+    try {
+        // 1. Leggi il file attuale da GitHub
+        const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json'
+            }
+        });
+
+        if (getRes.status === 401) throw new Error('Token non valido o scaduto. Riconfiguralo.');
+        if (!getRes.ok) throw new Error(`Impossibile leggere ${GITHUB_FILE} da GitHub (${getRes.status})`);
+
+        const fileData = await getRes.json();
+        const currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))));
+        const sha = fileData.sha;
+
+        // 2. Sostituisci il blocco DEFAULT_USERS
+        const newBlock = generateDefaultUsersBlock(usersObj);
+        const newContent = currentContent.replace(/const DEFAULT_USERS = \{[\s\S]*?\};/, newBlock);
+
+        if (newContent === currentContent) {
+            throw new Error('Blocco DEFAULT_USERS non trovato nel file. Contatta il supporto.');
+        }
+
+        // 3. Scrivi il file aggiornato su GitHub
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: 'sync: aggiorna utenti da Gestione Utenti',
+                content: btoa(unescape(encodeURIComponent(newContent))),
+                sha: sha
+            })
+        });
+
+        if (putRes.status === 401) throw new Error('Token non valido o scaduto. Riconfiguralo.');
+        if (!putRes.ok) {
+            const errData = await putRes.json().catch(() => ({}));
+            throw new Error(errData.message || `Errore GitHub (${putRes.status})`);
+        }
+
+        // Successo!
+        showSyncStatus('success', '✅ Utenti sincronizzati su GitHub! Tutti potranno accedere entro 1-2 minuti.');
+
+    } catch (err) {
+        console.error('GitHub sync error:', err);
+        const isAuthError = err.message.includes('Token non valido');
+        if (isAuthError) localStorage.removeItem('sombra_github_token');
+        showSyncStatus('error', '❌ ' + err.message + (isAuthError ? ' Usa il pulsante "Configura Token".' : ''));
+    }
+}
+
+function showSyncStatus(type, message) {
+    let bar = document.getElementById('github-sync-bar');
+    if (!bar) return;
+    bar.textContent = message;
+    bar.style.display = 'block';
+    bar.className = 'github-sync-bar';
+    if (type === 'loading') {
+        bar.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+        bar.style.color = 'white';
+    } else if (type === 'success') {
+        bar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        bar.style.color = 'white';
+        setTimeout(() => { bar.style.display = 'none'; }, 5000);
+    } else {
+        bar.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        bar.style.color = 'white';
+    }
+}
+
+function showGithubTokenSetup() {
+    const modal = document.getElementById('github-token-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+window.closeGithubTokenModal = function() {
+    const modal = document.getElementById('github-token-modal');
     if (modal) modal.style.display = 'none';
 };
 
-window.copySyncCode = function() {
-    const codeEl = document.getElementById('sync-code-block');
-    if (!codeEl) return;
-    navigator.clipboard.writeText(codeEl.textContent).then(() => {
-        const btn = document.getElementById('copy-sync-btn');
-        if (btn) {
-            btn.innerHTML = '<i class="ph ph-check"></i> Copiato!';
-            btn.style.background = 'var(--accent-green, #10b981)';
-            setTimeout(() => {
-                btn.innerHTML = '<i class="ph ph-copy"></i> Copia negli Appunti';
-                btn.style.background = '';
-            }, 2500);
-        }
-    }).catch(() => {
-        // Fallback: seleziona il testo manualmente
-        const range = document.createRange();
-        range.selectNodeContents(codeEl);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-        alert('Seleziona il testo e premi Ctrl+C per copiarlo.');
-    });
+window.saveGithubToken = function() {
+    const input = document.getElementById('github-token-input');
+    if (!input) return;
+    const token = input.value.trim();
+    if (!token) return alert('Inserisci un token valido.');
+    localStorage.setItem('sombra_github_token', token);
+    closeGithubTokenModal();
+    showSyncStatus('success', '✅ Token salvato! Ora ri-salva un utente per sincronizzare.');
+    renderUsersTable();
 };
 
-window.openSyncModal = function() {
-    showSyncModal(getUsers());
+window.removeGithubToken = function() {
+    localStorage.removeItem('sombra_github_token');
+    renderUsersTable();
+    showSyncStatus('loading', 'Token rimosso. Configura un nuovo token per la sincronizzazione automatica.');
 };
+
+window.openGithubTokenSetup = showGithubTokenSetup;
+
 
 let currentUserRole = null;
 let currentUsername = null;
@@ -1573,6 +1652,14 @@ window.renderUsersTable = function() {
         `;
         tbody.appendChild(tr);
     });
+
+    // Aggiorna il badge di stato del token GitHub
+    const statusBadge = document.getElementById('github-token-status');
+    if (statusBadge) {
+        const hasToken = !!localStorage.getItem('sombra_github_token');
+        statusBadge.textContent = hasToken ? '✅ Attivo' : 'Non configurato';
+        statusBadge.style.background = hasToken ? '#10b981' : '#ef4444';
+    }
 };
 
 window.openAddUserModal = function() {

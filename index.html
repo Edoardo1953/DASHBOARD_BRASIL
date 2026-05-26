@@ -634,20 +634,26 @@
 
         <!-- View: Users -->
         <div id="users-view" class="view-section">
-            <div class="header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div class="header-actions" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <h2>Gestione Utenti</h2>
-                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                    <button class="btn" id="sync-code-btn" onclick="openSyncModal()" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="ph ph-code"></i> Sincronizza nel Codice
-                    </button>
-                    <button class="btn btn-primary" onclick="openAddUserModal()"><i class="ph ph-plus"></i> Nuovo Utente</button>
-                </div>
+                <button class="btn btn-primary" onclick="openAddUserModal()"><i class="ph ph-plus"></i> Nuovo Utente</button>
             </div>
 
-            <div style="background: linear-gradient(135deg, #ede9fe, #ddd6fe); border: 1px solid #c4b5fd; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; max-width: 800px; color: #4c1d95; font-size: 0.9rem; line-height: 1.6;">
-                <strong><i class="ph ph-info"></i> Come funziona la sincronizzazione:</strong><br>
-                Ogni volta che aggiungi, modifichi o elimini un utente, apparirà automaticamente un pannello con il codice aggiornato.
-                Basta copiarlo e incollarlo nel file <code style="background: rgba(0,0,0,0.1); padding: 1px 4px; border-radius: 3px;">app2.js</code> su GitHub per rendere le modifiche visibili a tutti.
+            <!-- Barra di stato sincronizzazione -->
+            <div id="github-sync-bar" style="display:none; padding: 0.85rem 1.25rem; border-radius: 10px; margin-bottom: 1rem; font-weight: 600; font-size: 0.95rem; max-width: 800px;"></div>
+
+            <!-- Card configurazione GitHub -->
+            <div id="github-config-card" style="max-width: 800px; margin-bottom: 1.5rem; border-radius: 14px; overflow: hidden; border: 1px solid #e2e8f0;">
+                <div style="background: linear-gradient(135deg, #1e293b, #334155); padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: white; font-weight: 600; font-size: 0.95rem;"><i class="ph ph-github-logo"></i> Sincronizzazione Automatica GitHub</span>
+                    <span id="github-token-status" style="font-size: 0.8rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #ef4444; color: white;">Non configurato</span>
+                </div>
+                <div style="background: #f8fafc; padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <p style="margin: 0; color: #475569; font-size: 0.88rem; flex: 1;">Configura il tuo Personal Access Token GitHub per sincronizzare gli utenti automaticamente su tutti i dispositivi ogni volta che salvi.</p>
+                    <button onclick="openGithubTokenSetup()" class="btn" style="background: #1e293b; color: white; border: none; white-space: nowrap; font-size: 0.85rem;">
+                        <i class="ph ph-key"></i> Configura Token
+                    </button>
+                </div>
             </div>
             
             <div class="table-card" style="max-width: 800px;">
@@ -758,34 +764,47 @@
         </div>
     </div>
 
-    <!-- Sync Modal -->
-    <div id="sync-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content large" style="max-width: 680px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border-radius: 12px 12px 0 0;">
-                <h2 style="color: white;"><i class="ph ph-code"></i> Sincronizza Utenti nel Codice</h2>
-                <button onclick="closeSyncModal()" class="close-btn" style="color: white;"><i class="ph ph-x"></i></button>
+    <!-- GitHub Token Setup Modal -->
+    <div id="github-token-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #334155); border-radius: 12px 12px 0 0;">
+                <h2 style="color: white;"><i class="ph ph-github-logo"></i> Configura Sincronizzazione GitHub</h2>
+                <button onclick="closeGithubTokenModal()" class="close-btn" style="color: white;"><i class="ph ph-x"></i></button>
             </div>
             <div class="modal-body-grouped" style="padding: 1.5rem;">
-                <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; color: #78350f; font-size: 0.9rem; line-height: 1.6;">
-                    <strong><i class="ph ph-warning"></i> Come aggiornare gli utenti su GitHub:</strong>
-                    <ol style="margin: 0.75rem 0 0 1.25rem; padding: 0;">
-                        <li>Clicca <strong>"Copia negli Appunti"</strong> qui sotto</li>
-                        <li>Vai su <strong>GitHub &rarr; il tuo repository &rarr; file <code>app2.js</code></strong></li>
-                        <li>Clicca l'icona matita ✏️ per modificarlo</li>
-                        <li>Trova il blocco <code>const DEFAULT_USERS = {</code> (circa riga 52)</li>
-                        <li><strong>Sostituisci tutto quel blocco</strong> con il codice copiato</li>
-                        <li>Clicca <strong>"Commit changes"</strong> per salvare</li>
+
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; color: #1e40af; font-size: 0.88rem; line-height: 1.7;">
+                    <strong><i class="ph ph-info"></i> Come creare il Token (1 minuto):</strong>
+                    <ol style="margin: 0.6rem 0 0 1.2rem; padding: 0;">
+                        <li>Vai su <strong>github.com</strong> → clicca la tua foto → <strong>Settings</strong></li>
+                        <li>In fondo a sinistra: <strong>Developer settings</strong></li>
+                        <li><strong>Personal access tokens</strong> → <strong>Fine-grained tokens</strong></li>
+                        <li>Clicca <strong>Generate new token</strong></li>
+                        <li>Nome: <code>Dashboard Brasil</code> &nbsp;|&nbsp; Expiration: <strong>No expiration</strong></li>
+                        <li>Repository access: <strong>Only select repositories</strong> → seleziona <strong>DASHBOARD_BRASIL</strong></li>
+                        <li>Permissions → Repository permissions → <strong>Contents</strong> → <strong>Read and write</strong></li>
+                        <li>Clicca <strong>Generate token</strong> e copia il codice che appare</li>
                     </ol>
                 </div>
 
-                <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 0.5rem;"><i class="ph ph-code"></i> Blocco da copiare in <code>app2.js</code>:</label>
-                <pre id="sync-code-block" style="background: #0f172a; color: #e2e8f0; padding: 1.25rem; border-radius: 10px; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.6; margin: 0;"></pre>
+                <div class="form-group">
+                    <label style="font-weight: 700; color: #1e293b;"><i class="ph ph-key"></i> Incolla qui il tuo Personal Access Token:</label>
+                    <input type="password" id="github-token-input" placeholder="github_pat_..." style="font-family: monospace; font-size: 0.9rem; margin-top: 0.5rem;">
+                    <p style="font-size: 0.78rem; color: #64748b; margin: 0.4rem 0 0 0;">
+                        <i class="ph ph-shield-check"></i> Il token viene salvato solo nel tuo browser (localStorage). Non viene mai inviato a server di terze parti.
+                    </p>
+                </div>
             </div>
-            <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem;">
-                <button onclick="closeSyncModal()" class="btn btn-outline">Chiudi</button>
-                <button id="copy-sync-btn" onclick="copySyncCode()" class="btn btn-primary" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); border: none;">
-                    <i class="ph ph-copy"></i> Copia negli Appunti
+            <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: space-between; padding: 1rem 1.5rem;">
+                <button onclick="removeGithubToken()" class="btn btn-outline" style="color: #ef4444; border-color: #ef4444; font-size: 0.85rem;">
+                    <i class="ph ph-trash"></i> Rimuovi Token
                 </button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button onclick="closeGithubTokenModal()" class="btn btn-outline">Annulla</button>
+                    <button onclick="saveGithubToken()" class="btn btn-primary" style="background: linear-gradient(135deg, #1e293b, #334155); border: none;">
+                        <i class="ph ph-floppy-disk"></i> Salva e Attiva
+                    </button>
+                </div>
             </div>
         </div>
     </div>
