@@ -50,25 +50,83 @@ function saveRoleSpecificSettings() {
 const MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Auth Config
+// UTENTI DI DEFAULT — questi sono visibili su TUTTI i dispositivi.
+// Quando aggiungi/modifichi/elimini un utente dalla sezione "Gestione Utenti",
+// usa il pulsante "Sincronizza nel Codice" per aggiornare questo blocco su GitHub.
+const DEFAULT_USERS = {
+    'admin': { password: 'admin123', role: 'ADMIN' },
+    'user': { password: 'user123', role: 'USER' }
+};
+
 function getUsers() {
-    const defaultUsers = {
-        'admin': { password: 'admin123', role: 'ADMIN' },
-        'user': { password: 'user123', role: 'USER' }
-    };
+    // Iniziamo con una copia degli utenti di default (visibili su tutti i dispositivi)
+    const mergedUsers = Object.assign({}, DEFAULT_USERS);
     try {
         const stored = localStorage.getItem('sombra_spa_users');
         if (stored) {
-            return JSON.parse(stored);
+            // Gli utenti salvati localmente sovrascrivono o si aggiungono ai default
+            const localUsers = JSON.parse(stored);
+            Object.assign(mergedUsers, localUsers);
         }
     } catch (e) {
         console.error("Error parsing users from local storage", e);
     }
-    return defaultUsers;
+    return mergedUsers;
 }
 
 function saveUsers(usersObj) {
     localStorage.setItem('sombra_spa_users', JSON.stringify(usersObj));
+    // Mostra automaticamente il pannello di sincronizzazione
+    showSyncModal(usersObj);
 }
+
+// Genera il codice aggiornato per DEFAULT_USERS e lo mostra nel modal di sincronizzazione
+function showSyncModal(usersObj) {
+    const lines = Object.entries(usersObj).map(([uname, data]) => {
+        return `    '${uname}': { password: '${data.password}', role: '${data.role}' }`;
+    });
+    const codeBlock = `const DEFAULT_USERS = {\n${lines.join(',\n')}\n};`;
+
+    let modal = document.getElementById('sync-modal');
+    if (!modal) return;
+
+    const codeEl = document.getElementById('sync-code-block');
+    if (codeEl) codeEl.textContent = codeBlock;
+
+    modal.style.display = 'flex';
+}
+
+window.closeSyncModal = function() {
+    const modal = document.getElementById('sync-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.copySyncCode = function() {
+    const codeEl = document.getElementById('sync-code-block');
+    if (!codeEl) return;
+    navigator.clipboard.writeText(codeEl.textContent).then(() => {
+        const btn = document.getElementById('copy-sync-btn');
+        if (btn) {
+            btn.innerHTML = '<i class="ph ph-check"></i> Copiato!';
+            btn.style.background = 'var(--accent-green, #10b981)';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="ph ph-copy"></i> Copia negli Appunti';
+                btn.style.background = '';
+            }, 2500);
+        }
+    }).catch(() => {
+        // Fallback: seleziona il testo manualmente
+        const range = document.createRange();
+        range.selectNodeContents(codeEl);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        alert('Seleziona il testo e premi Ctrl+C per copiarlo.');
+    });
+};
+
+window.openSyncModal = function() {
+    showSyncModal(getUsers());
+};
 
 let currentUserRole = null;
 let currentUsername = null;
