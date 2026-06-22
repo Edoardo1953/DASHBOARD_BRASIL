@@ -119,7 +119,13 @@
     <main class="main-content">
         <!-- Mobile Header (solo spaziatore per layout, il menu è nel top-header) -->
 
-        <header class="top-header" style="flex-wrap: wrap; gap: 1.5rem;">
+        <header class="top-header" style="position: relative; flex-wrap: wrap; gap: 1.5rem;">
+            <!-- Mobile vertical flag selector -->
+            <div class="mobile-lang-selector">
+                <button onclick="setLanguage('it')" title="Italiano">🇮🇹</button>
+                <button onclick="setLanguage('en')" title="English">🇬🇧</button>
+                <button onclick="setLanguage('fr')" title="Français">🇫🇷</button>
+            </div>
             <div class="header-title" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; min-width: 300px;">
                 <button class="mobile-menu-btn mobile-only-hamburger" onclick="toggleSidebar()">
                     <i class="ph ph-list"></i>
