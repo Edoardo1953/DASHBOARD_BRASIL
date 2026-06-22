@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     /* Color Palette */
     --bg-main: #f4f7f9;
     --bg-sidebar: #e2e8f0; /* Light Grey */
@@ -1079,37 +1079,27 @@ p {
     }
 }
 
-@media (max-width: 768px) {
-    /* Permette lo scroll orizzontale per i grafici di andamento su mobile */
-    div:has(> #yearlyTrendChart), div:has(> #monthlyChart) {
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 10px;
-    }
-    #yearlyTrendChart, #monthlyChart {
-        min-width: 700px !important;
-        height: 350px !important;
-    }
-}
 
-
-@media (max-width: 768px) {
-    .chart-container:has(> canvas) {
-        display: block !important;
-        text-align: left !important;
-        justify-content: flex-start !important;
-    }
     canvas {
         margin: 0 !important;
         display: block !important;
     }
 }
 
+
+
 @media (max-width: 768px) {
-    .chart-body, .chart-container {
-        justify-content: flex-start !important;
-        align-items: flex-start !important;
+    .chart-body {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch;
         display: block !important;
+    }
+    .scrollable-canvas-wrapper {
+        min-width: 700px;
+        height: 350px;
+    }
+    canvas {
+        margin: 0 !important;
     }
 }
