@@ -137,18 +137,13 @@
                     <button onclick="setLanguage('fr')" title="Français">🇫🇷</button>
                 </div>
             </div>
-            <div class="header-actions" style="flex-grow: 1; display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
-                
-                <!-- Language Selector -->
-                <div class="language-selector-container" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.8); padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <i class="ph ph-globe" style="color: var(--accent-blue); font-size: 1.2rem;"></i>
-                    <select id="language-selector" onchange="setLanguage(this.value)" style="border: none; background: transparent; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; outline: none; font-size: 0.95rem; color: var(--text-primary);">
-                        <option value="it">🇮🇹 ITA</option>
-                        <option value="en">🇬🇧 ENG</option>
-                        <option value="fr">🇫🇷 FRA</option>
-                    </select>
+                        <div class="header-actions" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 0.8rem;">
+                <!-- Desktop Language Selector (Horizontal Flags) -->
+                <div class="desktop-lang-selector" style="display: flex; gap: 0.5rem;">
+                    <button onclick="setLanguage('it')" title="Italiano" style="background: rgba(255, 255, 255, 0.8); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s;">🇮🇹</button>
+                    <button onclick="setLanguage('en')" title="English" style="background: rgba(255, 255, 255, 0.8); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s;">🇬🇧</button>
+                    <button onclick="setLanguage('fr')" title="Français" style="background: rgba(255, 255, 255, 0.8); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s;">🇫🇷</button>
                 </div>
-
                 <div class="year-selector-container" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; width: 100%;">
                     <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end;">
                         <label style="white-space: nowrap; font-weight: 600;" data-i18n="header.filterYears">Filtra Anni:</label>
@@ -832,6 +827,7 @@
     <script src="app2.js"></script>
 </body>
 </html>
+
 
 
 

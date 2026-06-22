@@ -1017,10 +1017,10 @@ p {
 }
 
 /* Language Selector Styles */
-.language-selector-container {
+.desktop-lang-selector {
     transition: all 0.3s ease;
 }
-.language-selector-container:hover {
+.desktop-lang-selector:hover {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     transform: translateY(-1px);
 }
@@ -1053,7 +1053,7 @@ p {
     display: none;
 }
 @media (max-width: 768px) {
-    .language-selector-container {
+    .desktop-lang-selector {
         display: none !important;
     }
     .mobile-lang-selector {
@@ -1103,3 +1103,4 @@ p {
         margin: 0 !important;
     }
 }
+
