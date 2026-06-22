@@ -1027,3 +1027,23 @@ p {
 #language-selector:focus {
     outline: none;
 }
+
+@media (max-width: 768px) {
+    #yearlyTrendChart {
+        min-height: 350px !important;
+    }
+    #yearlyTrendChart {
+        height: 350px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #yearlyTrendChart, #yearlyTrendChart-parent .chart-body, canvas#yearlyTrendChart {
+        height: 350px !important;
+        min-height: 350px !important;
+    }
+    /* Seleziono l'elemento padre chart-body di quel canvas per forzare l'altezza */
+    div:has(> #yearlyTrendChart) {
+        height: 350px !important;
+    }
+}
