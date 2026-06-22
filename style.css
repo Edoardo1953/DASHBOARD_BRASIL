@@ -1093,3 +1093,15 @@ p {
     }
 }
 
+
+@media (max-width: 768px) {
+    .chart-container:has(> canvas) {
+        display: block !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+    }
+    canvas {
+        margin: 0 !important;
+        display: block !important;
+    }
+}
