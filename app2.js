@@ -2381,3 +2381,13 @@ window.updateAnalisiArea = function() {
         }
     });
 };
+
+
+document.addEventListener('languageChanged', (e) => {
+    console.log('Language changed to', e.detail.language);
+    if (typeof loadData === 'function') {
+        loadData();
+    } else {
+        location.reload();
+    }
+});

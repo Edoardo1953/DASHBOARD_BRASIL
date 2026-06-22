@@ -24,6 +24,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+    <!-- i18n -->
+    <script src="translations.js"></script>
+    <script src="i18n.js"></script>
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css?v=25">
 </head>
@@ -33,23 +37,23 @@
         <div class="login-card">
             <div class="login-header" style="text-align: center;">
                 <i class="ph ph-lock-key" style="font-size: 3rem; color: var(--accent-blue); margin-bottom: 1rem; display: inline-block;"></i>
-                <h2>Accesso Riservato</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Inserisci le tue credenziali per continuare</p>
+                <h2 data-i18n="login.title">Accesso Riservato</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;" data-i18n="login.subtitle">Inserisci le tue credenziali per continuare</p>
             </div>
             <form id="loginForm" class="premium-form">
                 <div class="form-group">
-                    <label style="font-weight: 600; color: var(--text-primary);">Username (ID)</label>
+                    <label style="font-weight: 600; color: var(--text-primary);" data-i18n="login.username">Username (ID)</label>
                     <input type="text" id="login-username" required style="padding: 1rem; font-size: 1.1rem; border: 2px solid var(--border-color); border-radius: 8px; background-color: #f8fafc; transition: all 0.2s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
                 </div>
                 <div class="form-group" style="margin-top: 1.5rem;">
-                    <label style="font-weight: 600; color: var(--text-primary);">Password</label>
+                    <label style="font-weight: 600; color: var(--text-primary);" data-i18n="login.password">Password</label>
                     <div style="position: relative;">
                         <input type="password" id="login-password" required style="padding: 1rem; width: 100%; font-size: 1.1rem; border: 2px solid var(--border-color); border-radius: 8px; background-color: #f8fafc; transition: all 0.2s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
                         <i class="ph ph-eye" id="toggle-password-visibility" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 1.5rem; color: #94a3b8; cursor: pointer;" onclick="const p=document.getElementById('login-password'); if(p.type==='password'){p.type='text'; this.classList.replace('ph-eye','ph-eye-slash');}else{p.type='password'; this.classList.replace('ph-eye-slash','ph-eye');}"></i>
                     </div>
                 </div>
-                <div id="login-error" class="status-msg error" style="display: none; margin-top: 1rem; text-align: center;">Credenziali errate</div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; justify-content: center;">Accedi</button>
+                <div id="login-error" class="status-msg error" style="display: none; margin-top: 1rem; text-align: center;" data-i18n="login.error">Credenziali errate</div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; justify-content: center;" data-i18n="login.button">Accedi</button>
             </form>
         </div>
     </div>
@@ -66,47 +70,47 @@
         <nav class="sidebar-nav">
             <a href="#" class="nav-item active" data-view="dashboard-view">
                 <i class="ph ph-squares-four"></i>
-                <span>Dashboard</span>
+                <span data-i18n="nav.dashboard">Dashboard</span>
             </a>
             <a href="#" class="nav-item" data-view="yearly-history-view">
                 <i class="ph ph-chart-line-up"></i>
-                <span>Storico Annuale</span>
+                <span data-i18n="nav.yearlyHistory">Storico Annuale</span>
             </a>
             <a href="#" class="nav-item" data-view="comparator-view" id="nav-comparator">
                 <i class="ph ph-scales"></i>
-                <span>Comparatore</span>
+                <span data-i18n="nav.comparator">Comparatore</span>
             </a>
             <a href="#" class="nav-item" data-view="analisi-dati-view" id="nav-analisi-dati">
                 <i class="ph ph-chart-bar"></i>
-                <span>Analisi Dati</span>
+                <span data-i18n="nav.dataAnalysis">Analisi Dati</span>
             </a>
             <a href="#" class="nav-item" data-view="analisi-area-view" id="nav-analisi-area">
                 <i class="ph ph-chart-pie-slice"></i>
-                <span>Analisi per Area</span>
+                <span data-i18n="nav.areaAnalysis">Analisi per Area</span>
             </a>
 
             <a href="#" class="nav-item" data-view="table-view" id="nav-table">
                 <i class="ph ph-table"></i>
-                <span>Dettaglio Dati</span>
+                <span data-i18n="nav.dataDetail">Dettaglio Dati</span>
             </a>
             <a href="#" class="nav-item" data-view="input-view" id="nav-input">
                 <i class="ph ph-plus-circle"></i>
-                <span>Inserisci Dati</span>
+                <span data-i18n="nav.insertData">Inserisci Dati</span>
             </a>
             <a href="#" class="nav-item" data-view="settings-view" id="nav-settings">
                 <i class="ph ph-gear"></i>
-                <span>Importa / Esporta</span>
+                <span data-i18n="nav.importExport">Importa / Esporta</span>
             </a>
             <a href="#" class="nav-item" data-view="users-view" id="nav-users">
                 <i class="ph ph-users"></i>
-                <span>Gestione Utenti</span>
+                <span data-i18n="nav.userManagement">Gestione Utenti</span>
             </a>
         </nav>
         
         <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(0,0,0,0.05);">
             <a href="#" class="nav-item" id="logoutBtn" style="color: var(--accent-red);">
                 <i class="ph ph-sign-out"></i>
-                <span>Logout</span>
+                <span data-i18n="nav.logout">Logout</span>
             </a>
         </div>
     </aside>
@@ -119,35 +123,46 @@
             <div class="header-title" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; min-width: 300px;">
                 <button class="mobile-menu-btn mobile-only-hamburger" onclick="toggleSidebar()">
                     <i class="ph ph-list"></i>
-                    <span class="hamburger-label">MENU</span>
+                    <span class="hamburger-label" data-i18n="sidebar.menu">MENU</span>
                 </button>
                 <img src="Loghi/Sombra marca nova sfondo trasparente senza testo.png" alt="Sombra Logo" style="height: 80px; width: auto; object-fit: contain;">
                 <div>
                     <h1 id="page-title" style="margin-top: 0; margin-bottom: 0.25rem;">ARCO-IRIS</h1>
                     <p class="page-subtitle" style="margin: 0; font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">Dashboard</p>
-                    <p style="margin: 0;">Panoramica finanziaria e operativa</p>
+                    <p style="margin: 0;" data-i18n="header.subtitle">Panoramica finanziaria e operativa</p>
                 </div>
             </div>
-            <div class="header-actions" style="flex-grow: 1; display: flex; justify-content: flex-end;">
+            <div class="header-actions" style="flex-grow: 1; display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
+                
+                <!-- Language Selector -->
+                <div class="language-selector-container" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.8); padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <i class="ph ph-globe" style="color: var(--accent-blue); font-size: 1.2rem;"></i>
+                    <select id="language-selector" onchange="setLanguage(this.value)" style="border: none; background: transparent; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; outline: none; font-size: 0.95rem; color: var(--text-primary);">
+                        <option value="it">🇮🇹 ITA</option>
+                        <option value="en">🇬🇧 ENG</option>
+                        <option value="fr">🇫🇷 FRA</option>
+                    </select>
+                </div>
+
                 <div class="year-selector-container" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; width: 100%;">
                     <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end;">
-                        <label style="white-space: nowrap; font-weight: 600;">Filtra Anni:</label>
+                        <label style="white-space: nowrap; font-weight: 600;" data-i18n="header.filterYears">Filtra Anni:</label>
                         <div id="year-filters" class="year-filters-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end;">
                             <!-- Popolato via JS -->
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end; flex-wrap: wrap;">
-                        <button id="restoreYearsBtnTop" class="btn-multi-select" style="margin-top: 0;"><i class="ph ph-arrow-counter-clockwise"></i> Ripristina anni nascosti</button>
-                        <button id="toggle-multi-select" class="btn-multi-select" style="margin-top: 0;">Attiva Selezione Multipla</button>
+                        <button id="restoreYearsBtnTop" class="btn-multi-select" style="margin-top: 0;"><i class="ph ph-arrow-counter-clockwise"></i> <span data-i18n="header.restoreYears">Ripristina anni nascosti</span></button>
+                        <button id="toggle-multi-select" class="btn-multi-select" style="margin-top: 0;" data-i18n="header.enableMultiSelect">Attiva Selezione Multipla</button>
                         
                         <div class="pdf-export-container" style="margin-left: 0;">
                             <button class="btn btn-primary" id="pdf-export-btn" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; height: 100%;">
-                                <i class="ph ph-printer"></i> Esporta PDF <i class="ph ph-caret-down"></i>
+                                <i class="ph ph-printer"></i> <span data-i18n="header.exportPdf">Esporta PDF</span> <i class="ph ph-caret-down"></i>
                             </button>
                             <div class="pdf-export-menu" id="pdf-export-menu">
-                                <button onclick="exportNativePDF('portrait')"><i class="ph ph-file-pdf"></i> PDF (Verticale)</button>
-                                <button onclick="exportNativePDF('landscape')"><i class="ph ph-file-pdf"></i> PDF (Orizzontale)</button>
-                                <button onclick="startSnippingTool()"><i class="ph ph-crop"></i> Ritaglia Area (PDF)</button>
+                                <button onclick="exportNativePDF('portrait')"><i class="ph ph-file-pdf"></i> <span data-i18n="header.pdfPortrait">PDF (Verticale)</span></button>
+                                <button onclick="exportNativePDF('landscape')"><i class="ph ph-file-pdf"></i> <span data-i18n="header.pdfLandscape">PDF (Orizzontale)</span></button>
+                                <button onclick="startSnippingTool()"><i class="ph ph-crop"></i> <span data-i18n="header.pdfCrop">Ritaglia Area (PDF)</span></button>
                             </div>
                         </div>
                     </div>
@@ -162,7 +177,7 @@
                 <div class="kpi-card">
                     <div class="kpi-icon"><i class="ph ph-currency-dollar"></i></div>
                     <div class="kpi-info">
-                        <h3>Fatturato Totale (Net Sales)</h3>
+                        <h3 data-i18n="kpi.totalRevenueNet">Fatturato Totale (Net Sales)</h3>
                         <p id="kpi-total-revenue" class="kpi-value">R$ 0.00</p>
                         <span id="kpi-revenue-trend" class="trend positive"><i class="ph ph-trend-up"></i> 0%</span>
                     </div>
@@ -170,21 +185,21 @@
                 <div class="kpi-card">
                     <div class="kpi-icon blue"><i class="ph ph-bed"></i></div>
                     <div class="kpi-info">
-                        <h3>Ricavi Diarias</h3>
+                        <h3 data-i18n="kpi.revenueDiarias">Ricavi Diarias</h3>
                         <p class="kpi-value"><span id="kpi-diarias">R$ 0.00</span> <span id="kpi-diarias-perc" style="font-size: 0.65em; color: var(--text-secondary); font-weight: normal; margin-left: 5px;">(0%)</span></p>
                     </div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-icon purple"><i class="ph ph-users"></i></div>
                     <div class="kpi-info">
-                        <h3>Occupazione Media</h3>
+                        <h3 data-i18n="kpi.avgOccupancy">Occupazione Media</h3>
                         <p id="kpi-occupancy" class="kpi-value">0%</p>
                     </div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-icon orange"><i class="ph ph-receipt"></i></div>
                     <div class="kpi-info">
-                        <h3>Fatturato Totale (Gross)</h3>
+                        <h3 data-i18n="kpi.totalRevenueGross">Fatturato Totale (Gross)</h3>
                         <p id="kpi-gross-sales" class="kpi-value">R$ 0.00</p>
                     </div>
                 </div>
@@ -194,10 +209,10 @@
             <div class="charts-grid">
                 <div class="chart-card large">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 id="monthlyChartTitle">Andamento Mensile Fatturato</h3>
+                        <h3 id="monthlyChartTitle" data-i18n="chart.monthlyRevenue">Andamento Mensile Fatturato</h3>
                         <select class="chart-type-selector" onchange="changeChartType('monthlyRevenueChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
-                            <option value="bar">Barre</option>
-                            <option value="line">Linea</option>
+                            <option value="bar" data-i18n="selector.bar">Barre</option>
+                            <option value="line" data-i18n="selector.line">Linea</option>
                         </select>
                     </div>
                     <div class="chart-body">
@@ -206,10 +221,10 @@
                 </div>
                 <div class="chart-card">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3>Fatturato Ultimi 5 Anni</h3>
+                        <h3 data-i18n="chart.yearlyRevenue">Fatturato Ultimi 5 Anni</h3>
                         <select class="chart-type-selector" onchange="changeChartType('yearlyRevenueChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
-                            <option value="bar">Barre</option>
-                            <option value="line">Linea</option>
+                            <option value="bar" data-i18n="selector.bar">Barre</option>
+                            <option value="line" data-i18n="selector.line">Linea</option>
                         </select>
                     </div>
                     <div class="chart-body">
@@ -222,28 +237,28 @@
         <!-- View: Yearly History -->
         <div id="yearly-history-view" class="view-section">
             <div class="header-actions">
-                <h2>Storico Annuale</h2>
+                <h2 data-i18n="nav.yearlyHistory">Storico Annuale</h2>
             </div>
             
             <div class="table-card" style="margin-bottom: 2rem;">
                 <div class="table-header-custom">
-                    <h3>Tabella Aggregata per Anno</h3>
+                    <h3 data-i18n="nav.yearlyHistory">Tabella Aggregata per Anno</h3>
                 </div>
                 <div class="table-responsive">
                     <table class="premium-table" id="yearlyTable">
                         <thead>
                             <tr>
-                                <th>Anno</th>
-                                <th>Diarias</th>
-                                <th>A&B</th>
-                                <th>Spa</th>
-                                <th>Outros</th>
-                                <th>Net Sales</th>
-                                <th>Taxas</th>
-                                <th>Brut Sales</th>
-                                <th>Diaria Media</th>
-                                <th>N. Diarie</th>
-                                <th>% Occup.</th>
+                                <th data-i18n="table.year">Anno</th>
+                                <th data-i18n="table.diarias">Diarias</th>
+                                <th data-i18n="table.fb">A&B</th>
+                                <th data-i18n="table.spa">Spa</th>
+                                <th data-i18n="table.others">Outros</th>
+                                <th data-i18n="table.netSales">Net Sales</th>
+                                <th data-i18n="table.taxes">Taxas</th>
+                                <th data-i18n="table.grossSales">Brut Sales</th>
+                                <th data-i18n="table.avgDiaria">Diaria Media</th>
+                                <th data-i18n="table.numDiarie">N. Diarie</th>
+                                <th data-i18n="table.occupancy">% Occup.</th>
                             </tr>
                         </thead>
                         <tbody id="yearlyTableBody">
@@ -256,10 +271,10 @@
             <div class="charts-grid">
                 <div class="chart-card large">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3>Andamento Fatturato Annuo (NET)</h3>
+                        <h3 data-i18n="chart.yearlyTrendNet">Andamento Fatturato Annuo (NET)</h3>
                         <select class="chart-type-selector" onchange="changeChartType('yearlyTrendChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
-                            <option value="line">Linea</option>
-                            <option value="bar">Barre</option>
+                            <option value="line" data-i18n="selector.line">Linea</option>
+                            <option value="bar" data-i18n="selector.bar">Barre</option>
                         </select>
                     </div>
                     <div class="chart-body">
@@ -268,11 +283,11 @@
                 </div>
                 <div class="chart-card">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 id="yearlyCompositionChartTitle">Composizione Ricavi</h3>
+                        <h3 id="yearlyCompositionChartTitle" data-i18n="chart.revenueComposition">Composizione Ricavi</h3>
                         <select class="chart-type-selector" onchange="changeChartType('yearlyCompositionChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
-                            <option value="doughnut">Ciambella</option>
-                            <option value="pie">Torta</option>
-                            <option value="polarArea">Area Polare</option>
+                            <option value="doughnut" data-i18n="selector.doughnut">Ciambella</option>
+                            <option value="pie" data-i18n="selector.pie">Torta</option>
+                            <option value="polarArea" data-i18n="selector.polarArea">Area Polare</option>
                         </select>
                     </div>
                     <div class="chart-body">
@@ -285,14 +300,14 @@
         <!-- View: Comparatore -->
         <div id="comparator-view" class="view-section">
             <div class="comparator-header" style="display: flex; justify-content: center; align-items: center; margin: 0 auto 1.5rem auto; background: white; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 2rem; max-width: 700px; position: relative; z-index: 10;">
-                <h3 style="margin:0;"><i class="ph ph-scales" style="color: var(--accent-blue); margin-right: 8px;"></i> Comparatore Annuale</h3>
+                <h3 style="margin:0;"><i class="ph ph-scales" style="color: var(--accent-blue); margin-right: 8px;"></i> <span data-i18n="comparator.title">Comparatore Annuale</span></h3>
                 <div class="comparator-selectors" style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
                     <div class="select-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                        <label style="font-weight: 600; font-size: 1.1rem;">Anno 1:</label>
+                        <label style="font-weight: 600; font-size: 1.1rem;" data-i18n="comparator.year1">Anno 1:</label>
                         <select id="comp-year1" class="form-control" style="width: 130px; padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1.2rem; font-weight: bold; color: #0f172a; cursor: pointer;"></select>
                     </div>
                     <div class="select-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                        <label style="font-weight: 600; font-size: 1.1rem;">Anno 2:</label>
+                        <label style="font-weight: 600; font-size: 1.1rem;" data-i18n="comparator.year2">Anno 2:</label>
                         <select id="comp-year2" class="form-control" style="width: 130px; padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1.2rem; font-weight: bold; color: #0f172a; cursor: pointer;"></select>
                     </div>
                 </div>
@@ -306,10 +321,10 @@
                         <table class="premium-table" style="margin:0;">
                             <thead>
                                 <tr>
-                                    <th>Mesi</th>
+                                    <th data-i18n="comparator.months">Mesi</th>
                                     <th id="comp-th-y1">Anno 1</th>
                                     <th id="comp-th-y2">Anno 2</th>
-                                    <th>Variazione %</th>
+                                    <th data-i18n="comparator.variation">Variazione %</th>
                                 </tr>
                             </thead>
                             <tbody id="comp-table-body">
@@ -323,13 +338,13 @@
                     
                     <!-- Tabella YTD -->
                     <div class="table-card" style="padding:0; overflow:hidden; border: 1px solid #cbd5e1;">
-                        <div style="background-color: #cbd5e1; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: #1e293b;">ANNO IN CORSO VS PRECEDENTE (YTD)</div>
+                        <div style="background-color: #cbd5e1; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: #1e293b;" data-i18n="comparator.ytd">ANNO IN CORSO VS PRECEDENTE (YTD)</div>
                         <table class="premium-table" style="margin: 0;">
                             <thead>
                                 <tr>
                                     <th id="comp-ytd-th-y1" style="text-align: right;">Anno 1</th>
                                     <th id="comp-ytd-th-y2">Anno 2</th>
-                                    <th>Variazione %</th>
+                                    <th data-i18n="comparator.variation">Variazione %</th>
                                 </tr>
                             </thead>
                             <tbody id="comp-ytd-body">
@@ -346,7 +361,7 @@
                 <div class="comparator-chart">
                     <div class="chart-card" style="width: 100%; min-height: 500px;">
                         <div class="chart-header">
-                            <h3>Andamento Mensile Comparato</h3>
+                            <h3 data-i18n="comparator.monthlyTrend">Andamento Mensile Comparato</h3>
                         </div>
                         <div class="chart-container" style="height: calc(100% - 60px); min-height: 400px;">
                             <canvas id="comparatorChart"></canvas>
@@ -359,16 +374,16 @@
         <!-- View: Analisi Dati -->
         <div id="analisi-dati-view" class="view-section">
             <div class="header-actions" style="margin-bottom: 2rem; display: flex; align-items: center; position: relative; min-height: 60px;">
-                <h2 style="margin: 0;">Analisi Dati</h2>
+                <h2 style="margin: 0;" data-i18n="nav.dataAnalysis">Analisi Dati</h2>
                 <div class="toggle-container" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 1.5rem; background: white; padding: 0.8rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); font-size: 1.1rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
-                        <input type="radio" name="analisi-toggle" value="diarie" checked onchange="updateAnalisiDati()" style="transform: scale(1.2);"> Nr. Diarie
+                        <input type="radio" name="analisi-toggle" value="diarie" checked onchange="updateAnalisiDati()" style="transform: scale(1.2);"> <span data-i18n="analysis.numDiarie">Nr. Diarie</span>
                     </label>
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
-                        <input type="radio" name="analisi-toggle" value="diaria_media" onchange="updateAnalisiDati()" style="transform: scale(1.2);"> Diaria Media
+                        <input type="radio" name="analisi-toggle" value="diaria_media" onchange="updateAnalisiDati()" style="transform: scale(1.2);"> <span data-i18n="analysis.avgDiaria">Diaria Media</span>
                     </label>
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
-                        <input type="radio" name="analisi-toggle" value="occupazione" onchange="updateAnalisiDati()" style="transform: scale(1.2);"> Occupazione %
+                        <input type="radio" name="analisi-toggle" value="occupazione" onchange="updateAnalisiDati()" style="transform: scale(1.2);"> <span data-i18n="analysis.occupancy">Occupazione %</span>
                     </label>
                 </div>
             </div>
@@ -376,7 +391,7 @@
             <div class="analisi-dati-layout" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                 <!-- Tabella Principale -->
                 <div class="table-card" style="padding: 0; overflow-x: auto;">
-                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;" id="analisi-table-title">NR DIARIE</div>
+                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;" id="analisi-table-title" data-i18n="analysis.numDiarie">NR DIARIE</div>
                     <table class="premium-table" style="margin: 0; min-width: max-content;">
                         <thead>
                             <tr id="analisi-dati-thead">
@@ -395,7 +410,7 @@
                 <!-- Grafico -->
                 <div class="chart-card" style="height: 100%; min-height: 400px; display: flex; flex-direction: column;">
                     <div class="chart-header">
-                        <h3 id="analisi-chart-title">Andamento Annuo</h3>
+                        <h3 id="analisi-chart-title" data-i18n="analysis.yearlyTrend">Andamento Annuo</h3>
                     </div>
                     <div class="chart-container" style="flex: 1; min-height: 300px; position: relative;">
                         <canvas id="analisiDatiChart"></canvas>
@@ -409,9 +424,9 @@
                 <table class="premium-table" style="margin: 0;">
                     <thead>
                         <tr>
-                            <th>Anno</th>
+                            <th data-i18n="table.year">Anno</th>
                             <th id="analisi-summary-col2">Dato</th>
-                            <th>Variazione %</th>
+                            <th data-i18n="comparator.variation">Variazione %</th>
                         </tr>
                     </thead>
                     <tbody id="analisi-summary-tbody">
@@ -462,7 +477,7 @@
                     <table class="premium-table" style="margin: 0; min-width: max-content;">
                         <thead>
                             <tr>
-                                <th>Anno</th>
+                                <th data-i18n="table.year">Anno</th>
                                 <th id="th-area-diarias">Diarias</th>
                                 <th id="th-area-ab">A & B</th>
                                 <th id="th-area-spa">Spa (+ Outros)</th>
@@ -493,16 +508,16 @@
                         <thead>
                             <tr>
                                 <th>Mese/Anno</th>
-                                <th>Diarias</th>
-                                <th>A&B</th>
-                                <th>Spa</th>
-                                <th>Outros</th>
-                                <th>Net Sales</th>
-                                <th>Taxas</th>
-                                <th>Brut Sales</th>
-                                <th>Diaria Media</th>
-                                <th>N. Diarie</th>
-                                <th>% Occup.</th>
+                                <th data-i18n="table.diarias">Diarias</th>
+                                <th data-i18n="table.fb">A&B</th>
+                                <th data-i18n="table.spa">Spa</th>
+                                <th data-i18n="table.others">Outros</th>
+                                <th data-i18n="table.netSales">Net Sales</th>
+                                <th data-i18n="table.taxes">Taxas</th>
+                                <th data-i18n="table.grossSales">Brut Sales</th>
+                                <th data-i18n="table.avgDiaria">Diaria Media</th>
+                                <th data-i18n="table.numDiarie">N. Diarie</th>
+                                <th data-i18n="table.occupancy">% Occup.</th>
                                 <th>Rev Par</th>
                                 <th>Azioni</th>
                             </tr>

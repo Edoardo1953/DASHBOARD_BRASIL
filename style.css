@@ -1015,3 +1015,15 @@ p {
         grid-template-columns: 1fr !important;
     }
 }
+
+/* Language Selector Styles */
+.language-selector-container {
+    transition: all 0.3s ease;
+}
+.language-selector-container:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+#language-selector:focus {
+    outline: none;
+}
