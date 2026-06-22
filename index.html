@@ -426,7 +426,7 @@
 
             <!-- Tabella Riepilogativa Annuale -->
             <div class="table-card" style="max-width: 600px;">
-                <div style="background-color: #10b981; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: white;" id="analisi-summary-title">ANDAMENTO ANNUALE</div>
+                <div style="background-color: #10b981; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: white;" id="analisi-summary-title" data-i18n="analysis.annualTrend">ANDAMENTO ANNUALE</div>
                 <table class="premium-table" style="margin: 0;">
                     <thead>
                         <tr>
@@ -466,7 +466,7 @@
                 <!-- Chart -->
                 <div class="chart-card" style="width: 100%;">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 id="analisi-area-chart-title">Andamento Aree di Ricavo</h3>
+                        <h3 id="analisi-area-chart-title" data-i18n="area.chartTitle">Andamento Aree di Ricavo</h3>
                         <select id="analisi-area-chart-type" onchange="updateAnalisiArea()" style="padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color);">
                             <option value="stacked">Grafico Impilato</option>
                             <option value="grouped">Grafico Affiancato</option>
@@ -506,7 +506,7 @@
         <div id="table-view" class="view-section">
             <div class="table-card">
                 <div class="table-header-custom" style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Dettaglio Dati Completo</h3>
+                    <h3 data-i18n="table.detailTitle">Dettaglio Dati Completo</h3>
                     <button class="btn btn-secondary" onclick="undoLastAction()" title="Annulla l'ultima azione" style="padding: 0.4rem 0.8rem; border-radius: 4px;"><i class="ph ph-arrow-u-up-left"></i> Annulla</button>
                 </div>
                 <div class="table-responsive">
@@ -833,6 +833,7 @@
     <script src="app2.js"></script>
 </body>
 </html>
+
 
 
 
