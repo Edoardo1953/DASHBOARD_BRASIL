@@ -54,7 +54,10 @@ const translations = {
         "analysis.numDiarie": "Nr. Diarie",
         "analysis.avgDiaria": "Diaria Media",
         "analysis.occupancy": "Occupazione %",
-        "analysis.yearlyTrend": "Andamento Annuo",`n        "analysis.annualTrend": "ANDAMENTO ANNUALE",`n        "area.chartTitle": "Andamento Aree di Ricavo",`n        "table.detailTitle": "Dettaglio Dati Completo",
+        "analysis.yearlyTrend": "Andamento Annuo",
+        "analysis.annualTrend": "ANDAMENTO ANNUALE",
+        "area.chartTitle": "Andamento Aree di Ricavo",
+        "table.detailTitle": "Dettaglio Dati Completo",
         "month.jan": "Gen",
         "month.feb": "Feb",
         "month.mar": "Mar",
@@ -134,7 +137,10 @@ const translations = {
         "analysis.numDiarie": "Num Diarias",
         "analysis.avgDiaria": "Avg Diaria",
         "analysis.occupancy": "Occupancy %",
-        "analysis.yearlyTrend": "Yearly Trend",`n        "analysis.annualTrend": "ANNUAL TREND",`n        "area.chartTitle": "Revenue Areas Trend",`n        "table.detailTitle": "Complete Data Detail",
+        "analysis.yearlyTrend": "Yearly Trend",
+        "analysis.annualTrend": "ANNUAL TREND",
+        "area.chartTitle": "Revenue Areas Trend",
+        "table.detailTitle": "Complete Data Detail",
         "month.jan": "Jan",
         "month.feb": "Feb",
         "month.mar": "Mar",
@@ -214,7 +220,10 @@ const translations = {
         "analysis.numDiarie": "Nb. Diarias",
         "analysis.avgDiaria": "Diaria Moyenne",
         "analysis.occupancy": "Occupation %",
-        "analysis.yearlyTrend": "Tendance Annuelle",`n        "analysis.annualTrend": "TENDANCE ANNUELLE",`n        "area.chartTitle": "Tendance des Domaines de Revenus",`n        "table.detailTitle": "Détail Complet des Données",
+        "analysis.yearlyTrend": "Tendance Annuelle",
+        "analysis.annualTrend": "TENDANCE ANNUELLE",
+        "area.chartTitle": "Tendance des Domaines de Revenus",
+        "table.detailTitle": "Détail Complet des Données",
         "month.jan": "Jan",
         "month.feb": "FÃ©v",
         "month.mar": "Mar",
@@ -242,4 +251,5 @@ const translations = {
 };
 
 window.translations = translations;
+
 
