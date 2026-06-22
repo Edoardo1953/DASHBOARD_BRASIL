@@ -1080,3 +1080,17 @@ p {
         transform: scale(0.9);
     }
 }
+
+@media (max-width: 768px) {
+    /* Permette lo scroll orizzontale per i grafici di andamento su mobile */
+    div:has(> #yearlyTrendChart), div:has(> #monthlyChart) {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+    }
+    #yearlyTrendChart, #monthlyChart {
+        min-width: 700px !important;
+        height: 350px !important;
+    }
+}
