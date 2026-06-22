@@ -822,11 +822,11 @@ function updateDashboard() {
     const chartTitleEl = document.getElementById('monthlyChartTitle');
     if(chartTitleEl) {
         if(isMultiSelect && selectedYears.size > 0) {
-            chartTitleEl.textContent = `Andamento Mensile Fatturato (${Array.from(selectedYears).sort().join(', ')})`;
+            chartTitleEl.textContent = `${typeof t === "function" ? t("chart.monthlyRevenue") : "Andamento Mensile Fatturato"} (${Array.from(selectedYears).sort().join(", ")})`;
         } else if(selectedYears.size > 0) {
-            chartTitleEl.textContent = `Andamento Mensile Fatturato (${Array.from(selectedYears)[0]})`;
+            chartTitleEl.textContent = `${typeof t === "function" ? t("chart.monthlyRevenue") : "Andamento Mensile Fatturato"} (${Array.from(selectedYears)[0]})`;
         } else {
-            chartTitleEl.textContent = `Andamento Mensile Fatturato`;
+            chartTitleEl.textContent = `${typeof t === "function" ? t("chart.monthlyRevenue") : "Andamento Mensile Fatturato"}`;
         }
     }
     
@@ -1118,7 +1118,7 @@ function drawYearlyCompositionChart(years, dataObj) {
     
     const titleEl = document.getElementById('yearlyCompositionChartTitle');
     if(titleEl) {
-        titleEl.textContent = `Composizione Ricavi (${activeYears.join(', ')})`;
+        titleEl.textContent = `${typeof t === "function" ? t("chart.revenueComposition") : "Composizione Ricavi"} (${activeYears.join(", ")})`;
     }
     
     if(yearlyCompositionChartInstance) {
@@ -2385,9 +2385,10 @@ window.updateAnalisiArea = function() {
 
 document.addEventListener('languageChanged', (e) => {
     console.log('Language changed to', e.detail.language);
-    if (typeof loadData === 'function') {
-        loadData();
-    } else {
-        location.reload();
-    }
+    if (document.getElementById('monthlyChart')) { if(typeof updateMonthlyDashboard === 'function') updateMonthlyDashboard(); }
+    if (document.getElementById('yearlyTableBody')) { if(typeof updateYearlyHistory === 'function') updateYearlyHistory(); }
+    if (document.getElementById('analisi-dati-tbody')) { if(typeof updateAnalisiDati === 'function') updateAnalisiDati(); }
+    if (document.getElementById('analisi-area-tbody')) { if(typeof updateAnalisiArea === 'function') updateAnalisiArea(); }
 });
+
+
