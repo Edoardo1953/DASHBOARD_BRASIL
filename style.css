@@ -1105,3 +1105,11 @@ p {
         display: block !important;
     }
 }
+
+@media (max-width: 768px) {
+    .chart-body, .chart-container {
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+        display: block !important;
+    }
+}
