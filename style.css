@@ -303,8 +303,10 @@ p {
 }
 
 .scrollable-canvas-wrapper {
+    position: relative;
     height: 100%;
     width: 100%;
+    min-height: 350px;
 }
 
 /* Tables */
