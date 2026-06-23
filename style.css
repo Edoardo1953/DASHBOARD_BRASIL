@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     /* Color Palette */
     --bg-main: #f4f7f9;
     --bg-sidebar: #e2e8f0; /* Light Grey */
@@ -299,6 +299,11 @@ p {
 .chart-body {
     position: relative;
     height: 350px;
+    width: 100%;
+}
+
+.scrollable-canvas-wrapper {
+    height: 100%;
     width: 100%;
 }
 
