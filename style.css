@@ -905,7 +905,7 @@ p {
         flex-wrap: nowrap !important;
         justify-content: flex-start !important;
     }
-    .header-title img {
+    .header-title > img {
         height: 70px !important;
     }
     .header-title h1 {
