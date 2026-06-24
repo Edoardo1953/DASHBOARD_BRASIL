@@ -175,11 +175,10 @@
             <!-- KPIs -->
             <div class="kpi-grid">
                 <div class="kpi-card">
-                    <div class="kpi-icon"><i class="ph ph-currency-dollar"></i></div>
+                    <div class="kpi-icon orange"><i class="ph ph-receipt"></i></div>
                     <div class="kpi-info">
-                        <h3 data-i18n="kpi.totalRevenueNet">Fatturato Totale (Net Sales)</h3>
-                        <p id="kpi-total-revenue" class="kpi-value">R$ 0.00</p>
-                        <span id="kpi-revenue-trend" class="trend positive"><i class="ph ph-trend-up"></i> 0%</span>
+                        <h3 data-i18n="kpi.totalRevenueGross">Fatturato Totale (Gross)</h3>
+                        <p id="kpi-gross-sales" class="kpi-value">R$ 0.00</p>
                     </div>
                 </div>
                 <div class="kpi-card">
@@ -189,18 +188,19 @@
                         <p class="kpi-value"><span id="kpi-diarias">R$ 0.00</span> <span id="kpi-diarias-perc" style="font-size: 0.65em; color: var(--text-secondary); font-weight: normal; margin-left: 5px;">(0%)</span></p>
                     </div>
                 </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon"><i class="ph ph-currency-dollar"></i></div>
+                    <div class="kpi-info">
+                        <h3 data-i18n="kpi.totalRevenueNet">Fatturato Totale (Net Sales)</h3>
+                        <p id="kpi-total-revenue" class="kpi-value">R$ 0.00</p>
+                        <span id="kpi-revenue-trend" class="trend positive"><i class="ph ph-trend-up"></i> 0%</span>
+                    </div>
+                </div>
                 <div class="kpi-card" onclick="goToAnalisiOccupazione()" style="cursor: pointer;" title="Vai a Analisi Dati - Occupazione">
                     <div class="kpi-icon purple"><i class="ph ph-users"></i></div>
                     <div class="kpi-info">
                         <h3 data-i18n="kpi.avgOccupancy">Occupazione Media</h3>
                         <p id="kpi-occupancy" class="kpi-value">0%</p>
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon orange"><i class="ph ph-receipt"></i></div>
-                    <div class="kpi-info">
-                        <h3 data-i18n="kpi.totalRevenueGross">Fatturato Totale (Gross)</h3>
-                        <p id="kpi-gross-sales" class="kpi-value">R$ 0.00</p>
                     </div>
                 </div>
             </div>
