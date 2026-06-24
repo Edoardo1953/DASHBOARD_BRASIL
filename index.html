@@ -189,7 +189,7 @@
                         <p class="kpi-value"><span id="kpi-diarias">R$ 0.00</span> <span id="kpi-diarias-perc" style="font-size: 0.65em; color: var(--text-secondary); font-weight: normal; margin-left: 5px;">(0%)</span></p>
                     </div>
                 </div>
-                <div class="kpi-card">
+                <div class="kpi-card" onclick="goToAnalisiOccupazione()" style="cursor: pointer;" title="Vai a Analisi Dati - Occupazione">
                     <div class="kpi-icon purple"><i class="ph ph-users"></i></div>
                     <div class="kpi-info">
                         <h3 data-i18n="kpi.avgOccupancy">Occupazione Media</h3>
@@ -825,6 +825,21 @@
     </div>
 
     <script src="app2.js"></script>
+    <script>
+        function goToAnalisiOccupazione() {
+            // Seleziona il radio button dell'occupazione
+            const occupazioneRadio = document.querySelector('input[name="analisi-toggle"][value="occupazione"]');
+            if (occupazioneRadio) {
+                occupazioneRadio.checked = true;
+            }
+            
+            // Simula il click sul nav-item Analisi Dati
+            const navItem = document.querySelector('.nav-item[data-view="analisi-dati-view"]');
+            if (navItem) {
+                navItem.click();
+            }
+        }
+    </script>
 </body>
 </html>
 
