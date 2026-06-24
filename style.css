@@ -865,27 +865,34 @@ p {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-end;
-        background: none;
+        justify-content: center;
+        background: var(--accent-blue);
         border: none;
-        color: var(--text-primary);
+        color: white;
+        border-radius: 8px;
         cursor: pointer;
-        padding: 0;
+        padding: 8px 12px;
         line-height: 1;
-        gap: 2px;
-        align-self: flex-end;
-        margin-bottom: 4px;
+        gap: 4px;
+        align-self: center;
+        margin-bottom: 0;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s, background 0.2s;
+    }
+    .mobile-only-hamburger:active {
+        transform: scale(0.95);
+        background: var(--accent-indigo);
     }
     .mobile-only-hamburger i {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
     .mobile-only-hamburger .hamburger-label {
         display: block !important;
-        font-size: 0.55rem;
+        font-size: 0.65rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: var(--text-secondary);
+        color: white;
     }
     
     /* Logo e titolo su mobile — tutto a sinistra */
@@ -1083,6 +1090,9 @@ p {
         display: flex;
         align-items: center;
         justify-content: center;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
     }
     .mobile-lang-selector button:active {
         transform: scale(0.9);
