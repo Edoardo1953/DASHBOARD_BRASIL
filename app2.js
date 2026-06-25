@@ -1049,7 +1049,22 @@ function drawYearlyTrendChart(years, dataObj) {
     const activeYears = years.filter(y => selectedYears.has(parseInt(y, 10)));
     if(activeYears.length === 0) return;
     
-    const data = activeYears.map(y => dataObj[y].netSales === 0 ? null : dataObj[y].netSales);
+    let chartLabels = [];
+    let chartData = [];
+    
+    if (activeYears.length === 1) {
+        const singleYear = activeYears[0];
+        chartLabels = [...MONTHS_ORDER];
+        const db = getDB();
+        const yearData = db.filter(item => item["ANNO"] == singleYear);
+        chartData = MONTHS_ORDER.map(month => {
+            const item = yearData.find(x => x["MESE"] === month);
+            return item ? (parseFloat(item["Total (Net sales)"]) || 0) : null;
+        });
+    } else {
+        chartLabels = activeYears;
+        chartData = activeYears.map(y => dataObj[y].netSales === 0 ? null : dataObj[y].netSales);
+    }
     
     if(yearlyTrendChartInstance) {
         yearlyTrendChartInstance.destroy();
@@ -1058,10 +1073,10 @@ function drawYearlyTrendChart(years, dataObj) {
     yearlyTrendChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: activeYears,
+            labels: chartLabels,
             datasets: [{
                 label: 'Net Sales (R$)',
-                data: data,
+                data: chartData,
                 borderColor: 'rgba(59, 130, 246, 1)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 borderWidth: 2,
