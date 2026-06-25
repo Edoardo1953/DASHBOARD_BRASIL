@@ -1046,7 +1046,10 @@ function drawYearlyTrendChart(years, dataObj) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    const activeYears = years;
+    let activeYears = years.filter(y => selectedYears.has(parseInt(y, 10)));
+    if(activeYears.length === 0 && selectedYears.size > 0) {
+        activeYears = Array.from(selectedYears).map(String);
+    }
     if(activeYears.length === 0) return;
     
     let chartLabels = [];
