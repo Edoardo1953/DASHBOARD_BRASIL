@@ -1045,7 +1045,11 @@ function drawYearlyTrendChart(years, dataObj) {
     const canvas = document.getElementById('yearlyTrendChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const data = years.map(y => dataObj[y].netSales === 0 ? null : dataObj[y].netSales);
+    
+    const activeYears = years.filter(y => selectedYears.has(parseInt(y, 10)));
+    if(activeYears.length === 0) return;
+    
+    const data = activeYears.map(y => dataObj[y].netSales === 0 ? null : dataObj[y].netSales);
     
     if(yearlyTrendChartInstance) {
         yearlyTrendChartInstance.destroy();
@@ -1054,7 +1058,7 @@ function drawYearlyTrendChart(years, dataObj) {
     yearlyTrendChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: years,
+            labels: activeYears,
             datasets: [{
                 label: 'Net Sales (R$)',
                 data: data,
@@ -1755,8 +1759,15 @@ window.changeChartType = function(chartId, newType) {
                 ds.tension = 0.4;
             });
         }
+        const ctx = instance.canvas.getContext('2d');
+        const config = instance.config;
+        instance.destroy();
+        const newInstance = new Chart(ctx, config);
         
-        instance.update();
+        if (chartId === 'monthlyRevenueChart') monthlyChartInstance = newInstance;
+        else if (chartId === 'yearlyRevenueChart') yearlyChartInstance = newInstance;
+        else if (chartId === 'yearlyTrendChart') yearlyTrendChartInstance = newInstance;
+        else if (chartId === 'yearlyCompositionChart') yearlyCompositionChartInstance = newInstance;
     }
 };
 
