@@ -1046,7 +1046,7 @@ function drawYearlyTrendChart(years, dataObj) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    const activeYears = years.filter(y => selectedYears.has(parseInt(y, 10)));
+    const activeYears = years;
     if(activeYears.length === 0) return;
     
     let chartLabels = [];
@@ -1066,19 +1066,23 @@ function drawYearlyTrendChart(years, dataObj) {
         chartData = activeYears.map(y => dataObj[y].netSales === 0 ? null : dataObj[y].netSales);
     }
     
+    const selectEl = document.querySelector('select[onchange*="yearlyTrendChart"]');
+    const currentType = selectEl ? selectEl.value : 'line';
+    const bgColor = currentType === 'bar' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.1)';
+    
     if(yearlyTrendChartInstance) {
         yearlyTrendChartInstance.destroy();
     }
 
     yearlyTrendChartInstance = new Chart(ctx, {
-        type: 'line',
+        type: currentType,
         data: {
             labels: chartLabels,
             datasets: [{
                 label: 'Net Sales (R$)',
                 data: chartData,
                 borderColor: 'rgba(59, 130, 246, 1)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                backgroundColor: bgColor,
                 borderWidth: 2,
                 pointBackgroundColor: 'rgba(59, 130, 246, 1)',
                 fill: true,
