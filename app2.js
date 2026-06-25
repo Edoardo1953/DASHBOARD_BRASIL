@@ -1067,7 +1067,9 @@ function drawYearlyTrendChart(years, dataObj) {
                 borderWidth: 2,
                 pointBackgroundColor: 'rgba(59, 130, 246, 1)',
                 fill: true,
-                tension: 0.4
+                tension: 0.4,
+                maxBarThickness: 40,
+                barPercentage: 0.8
             }]
         },
         options: {
