@@ -425,15 +425,7 @@ function initDB() {
                     if(document.getElementById('analisi-area-tbody')) {
                         if(typeof updateAnalisiArea === "function") updateAnalisiArea();
                     }
-                }
-            } catch (e) {
-                console.error("Errore nel parsing del file Excel:", e);
-                fallbackLoadDB();
-            }
-        })
-        .catch(error => {
-            console.error("Errore nel caricamento del file Excel dal server:", error);
-            fallbackLoadDB();
+                });
         });
 }
 
