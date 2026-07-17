@@ -618,9 +618,10 @@
                 <div class="setting-card">
                     <div class="setting-icon"><i class="ph ph-upload-simple"></i></div>
                     <h3>Importa da Excel (Iniziale)</h3>
-                    <p>Carica il tuo file "DB Arcoiris Dashboard.xlsx" per popolare il database per la prima volta.</p>
+                    <p>Carica il tuo file "DB Arcoiris Dashboard.xlsx" per popolare il database locale dell'Admin.</p>
                     <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none;">
                     <button class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()">Seleziona File Excel</button>
+                    <button class="btn btn-primary" id="publishDbBtn" onclick="publishDatabaseToGitHub()" style="margin-top: 10px; width: 100%; background: linear-gradient(135deg, #10b981, #059669);"><i class="ph ph-globe"></i> Pubblica Database su Internet</button>
                     <p id="import-status" class="status-msg"></p>
                 </div>
                 

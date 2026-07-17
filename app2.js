@@ -294,10 +294,15 @@ function applyRoleRestrictions() {
     const navTable = document.getElementById('nav-table');
     const navUsers = document.getElementById('nav-users');
     
-    // Nascondiamo per tutti l'inserimento manuale e l'importazione,
-    // dato che ora si gestisce centralmente tramite GitHub
+    // Nascondiamo per tutti l'inserimento manuale
     if(navInput) navInput.style.display = 'none';
-    if(navSettings) navSettings.style.display = 'none';
+    
+    // Il menu Importa/Esporta è visibile solo all'Admin per caricare e pubblicare i dati
+    if(currentUserRole === 'ADMIN') {
+        if(navSettings) navSettings.style.display = 'flex';
+    } else {
+        if(navSettings) navSettings.style.display = 'none';
+    }
 
     if(currentUserRole === 'USER') {
         if(navTable) navTable.style.display = 'none';
@@ -366,21 +371,52 @@ window.toggleSidebar = function() {
 
 // --- Database & Local Storage ---
 function initDB() {
-    // Scarica automaticamente il file excel dal server GitHub Pages
-    fetch('DB Arcoiris Dashboard.xlsx?t=' + new Date().getTime())
+    // 1. Prova a scaricare il db.json pubblicato tramite il bottone
+    fetch('sombra_spa_db.json?t=' + new Date().getTime())
         .then(response => {
-            if(!response.ok) throw new Error("Network response was not ok");
-            return response.arrayBuffer();
+            if(!response.ok) throw new Error("JSON not found");
+            return response.json();
         })
-        .then(data => {
-            try {
-                const workbook = XLSX.read(new Uint8Array(data), {type: 'array'});
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet);
-                
-                if(json.length > 0) {
-                    saveDB(json); // Aggiorna il localStorage con i nuovi dati centrali
+        .then(json => {
+            if(json && json.length > 0) {
+                saveDB(json);
+            }
+            populateYearSelector(getDB());
+            updateDashboard();
+            if(document.getElementById('dataTableBody')) updateTable();
+            if(document.getElementById('yearlyTableBody')) updateYearlyHistory();
+            if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+            if(document.getElementById('analisi-area-tbody')) {
+                if(typeof updateAnalisiArea === "function") updateAnalisiArea();
+            }
+        })
+        .catch(err => {
+            console.log("File JSON non trovato, fallback su Excel:", err);
+            // 2. Fallback: Scarica automaticamente il file excel dal server GitHub Pages
+            fetch('DB Arcoiris Dashboard.xlsx?t=' + new Date().getTime())
+                .then(response => {
+                    if(!response.ok) throw new Error("Network response was not ok");
+                    return response.arrayBuffer();
+                })
+                .then(data => {
+                    try {
+                        const workbook = XLSX.read(new Uint8Array(data), {type: 'array'});
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const excelJson = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        if(excelJson.length > 0) {
+                            saveDB(excelJson); // Aggiorna il localStorage con i nuovi dati centrali
+                        }
+                    } catch(e) {
+                        console.error("Errore parsing excel online", e);
+                    }
+                })
+                .catch(err2 => {
+                    console.log("Nessun excel aggiornato trovato, o errore di rete:", err2);
+                    // Uso i dati locali
+                })
+                .finally(() => {
                     populateYearSelector(getDB());
                     updateDashboard();
                     if(document.getElementById('dataTableBody')) updateTable();
@@ -465,6 +501,95 @@ window.undoLastAction = function() {
         alert('Nessuna azione da annullare.');
     }
 }
+
+window.publishDatabaseToGitHub = async function() {
+    const token = localStorage.getItem('sombra_github_token');
+    if (!token) {
+        alert('Devi prima configurare il Token GitHub (nella Gestione Utenti) per poter pubblicare.');
+        return;
+    }
+    
+    const dbData = localStorage.getItem(DB_KEY);
+    if (!dbData || dbData === '[]') {
+        alert('Il database è vuoto. Carica prima il file Excel!');
+        return;
+    }
+
+    const btn = document.getElementById('publishDbBtn');
+    const statusMsg = document.getElementById('import-status');
+    const originalText = btn ? btn.innerHTML : 'Pubblica Database su Internet';
+    
+    if(btn) {
+        btn.innerHTML = 'Pubblicazione in corso...';
+        btn.disabled = true;
+    }
+    if(statusMsg) {
+        statusMsg.className = 'status-msg';
+        statusMsg.textContent = 'Caricamento su GitHub in corso...';
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#3b82f6';
+    }
+
+    try {
+        const DB_FILE = 'sombra_spa_db.json';
+        
+        // 1. Leggi il file attuale da GitHub per ottenere il SHA
+        let fileSha = null;
+        try {
+            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${DB_FILE}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json'
+                }
+            });
+            if (getRes.ok) {
+                const fileData = await getRes.json();
+                fileSha = fileData.sha;
+            }
+        } catch(e) {
+            console.warn('Il file db.json non esiste ancora, verrà creato.');
+        }
+
+        // 2. Scrivi il file aggiornato su GitHub
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${DB_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: 'sync: aggiorna database da app web',
+                content: btoa(unescape(encodeURIComponent(dbData))),
+                ...(fileSha && { sha: fileSha })
+            })
+        });
+
+        if (putRes.status === 401) throw new Error('Token non valido o scaduto.');
+        if (!putRes.ok) {
+            const errData = await putRes.json().catch(() => ({}));
+            throw new Error(errData.message || `Errore GitHub (${putRes.status})`);
+        }
+
+        if(statusMsg) {
+            statusMsg.className = 'status-msg success';
+            statusMsg.textContent = 'Database pubblicato con successo! Tutti gli utenti vedranno i nuovi dati ricaricando la pagina entro 1-2 minuti.';
+            statusMsg.style.color = '#10b981';
+        }
+    } catch (err) {
+        console.error('GitHub sync error:', err);
+        if(statusMsg) {
+            statusMsg.className = 'status-msg error';
+            statusMsg.textContent = 'Errore: ' + err.message;
+            statusMsg.style.color = '#ef4444';
+        }
+    } finally {
+        if(btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+};
 
 // --- Event Listeners ---
 function setupEventListeners() {
