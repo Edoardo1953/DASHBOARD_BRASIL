@@ -206,6 +206,7 @@ function bootApp() {
     try { initNavigation(); } catch(e) { alert("Errore in initNavigation: " + e.message); }
     try { initDB(); } catch(e) { alert("Errore in initDB: " + e.message); }
     try { setupEventListeners(); } catch(e) { alert("Errore in setupEventListeners: " + e.message); }
+    try { fetchLayoutFromGitHub(); } catch(e) { console.error("Errore fetch layout:", e); }
 }
 
 if (document.readyState === 'loading') {
@@ -300,8 +301,12 @@ function applyRoleRestrictions() {
     // Il menu Importa/Esporta è visibile solo all'Admin per caricare e pubblicare i dati
     if(currentUserRole === 'ADMIN') {
         if(navSettings) navSettings.style.display = 'flex';
+        const adminLayoutControls = document.getElementById('admin-layout-controls');
+        if(adminLayoutControls) adminLayoutControls.style.display = 'flex';
     } else {
         if(navSettings) navSettings.style.display = 'none';
+        const adminLayoutControls = document.getElementById('admin-layout-controls');
+        if(adminLayoutControls) adminLayoutControls.style.display = 'none';
     }
 
     if(currentUserRole === 'USER') {
@@ -2549,5 +2554,158 @@ document.addEventListener('languageChanged', (e) => {
     if (document.getElementById('analisi-dati-tbody')) { if(typeof updateAnalisiDati === 'function') updateAnalisiDati(); }
     if (document.getElementById('analisi-area-tbody')) { if(typeof updateAnalisiArea === 'function') updateAnalisiArea(); }
 });
+
+
+
+// --- LAYOUT EDIT MODE ---
+let isLayoutEditMode = false;
+const LAYOUT_FILE = 'sombra_layout.json';
+
+window.toggleLayoutEditMode = function() {
+    isLayoutEditMode = !isLayoutEditMode;
+    const body = document.body;
+    const toggleBtn = document.getElementById('toggleLayoutBtn');
+    const saveBtn = document.getElementById('saveLayoutBtn');
+    
+    if (isLayoutEditMode) {
+        body.classList.add('layout-edit-mode');
+        if(toggleBtn) {
+            toggleBtn.innerHTML = '<i class="ph ph-x"></i> <span class="hide-mobile">Annulla Modifica</span>';
+            toggleBtn.classList.replace('btn-outline', 'btn-secondary');
+        }
+        if(saveBtn) saveBtn.style.display = 'inline-flex';
+        
+        // Ensure all resizable widgets have the class
+        document.querySelectorAll('.layout-widget').forEach(el => {
+            el.classList.add('resizable-widget');
+        });
+    } else {
+        body.classList.remove('layout-edit-mode');
+        if(toggleBtn) {
+            toggleBtn.innerHTML = '<i class="ph ph-layout"></i> <span class="hide-mobile">Modifica Layout</span>';
+            toggleBtn.classList.replace('btn-secondary', 'btn-outline');
+        }
+        if(saveBtn) saveBtn.style.display = 'none';
+        
+        // Remove class
+        document.querySelectorAll('.layout-widget').forEach(el => {
+            el.classList.remove('resizable-widget');
+        });
+        
+        // Optionally, reload to cancel unsaved changes
+        fetchLayoutFromGitHub();
+    }
+};
+
+window.publishLayoutToGitHub = async function() {
+    const token = localStorage.getItem('sombra_github_token');
+    if (!token) {
+        alert('Devi configurare il Token GitHub (nella Gestione Utenti) per poter salvare il layout per tutti.');
+        return;
+    }
+    
+    const saveBtn = document.getElementById('saveLayoutBtn');
+    const originalText = saveBtn ? saveBtn.innerHTML : 'Salva Layout';
+    if(saveBtn) {
+        saveBtn.innerHTML = 'Salvataggio...';
+        saveBtn.disabled = true;
+    }
+    
+    try {
+        // Collect current dimensions
+        const layoutConfig = {};
+        document.querySelectorAll('.layout-widget').forEach(el => {
+            if(el.id) {
+                // Get computed style or inline style
+                const width = el.style.width || window.getComputedStyle(el).width;
+                const height = el.style.height || window.getComputedStyle(el).height;
+                layoutConfig[el.id] = { width, height };
+            }
+        });
+        
+        const jsonContent = JSON.stringify(layoutConfig, null, 2);
+        
+        // Check if file exists
+        let sha = null;
+        try {
+            const getRes = await fetch(https://api.github.com/repos/\/contents/\, {
+                headers: { 'Authorization': 	oken \ }
+            });
+            if(getRes.ok) {
+                const data = await getRes.json();
+                sha = data.sha;
+            }
+        } catch(e) {
+            console.log("File layout non esiste ancora, verrà creato.");
+        }
+        
+        const bodyData = {
+            message: 'Update layout configuration',
+            content: btoa(unescape(encodeURIComponent(jsonContent)))
+        };
+        if(sha) bodyData.sha = sha;
+        
+        const putRes = await fetch(https://api.github.com/repos/\/contents/\, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 	oken \,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bodyData)
+        });
+        
+        if(!putRes.ok) throw new Error("Errore durante il caricamento del layout su GitHub");
+        
+        alert('Layout salvato con successo per tutti gli utenti!');
+        toggleLayoutEditMode(); // exit edit mode
+        
+    } catch(err) {
+        alert('Errore: ' + err.message);
+    } finally {
+        if(saveBtn) {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+};
+
+window.applyLayoutConfig = function(config) {
+    if(!config) return;
+    let applied = false;
+    for(const id in config) {
+        const el = document.getElementById(id);
+        if(el) {
+            if(config[id].width) el.style.width = config[id].width;
+            if(config[id].height) el.style.height = config[id].height;
+            applied = true;
+        }
+    }
+    
+    // If we resized chart containers, we need to tell Chart.js to resize
+    if(applied) {
+        if(typeof window.monthlyChart !== 'undefined' && window.monthlyChart) window.monthlyChart.resize();
+        if(typeof window.yearlyChart !== 'undefined' && window.yearlyChart) window.yearlyChart.resize();
+        if(typeof window.yearlyTrendChart !== 'undefined' && window.yearlyTrendChart) window.yearlyTrendChart.resize();
+        if(typeof window.yearlyCompositionChart !== 'undefined' && window.yearlyCompositionChart) window.yearlyCompositionChart.resize();
+        if(typeof window.comparatorChart !== 'undefined' && window.comparatorChart) window.comparatorChart.resize();
+        if(typeof window.analisiChart !== 'undefined' && window.analisiChart) window.analisiChart.resize();
+        if(typeof window.areaChart !== 'undefined' && window.areaChart) window.areaChart.resize();
+    }
+};
+
+window.fetchLayoutFromGitHub = function() {
+    fetch(LAYOUT_FILE + '?t=' + new Date().getTime())
+        .then(response => {
+            if(!response.ok) throw new Error("Layout JSON not found");
+            return response.json();
+        })
+        .then(config => {
+            applyLayoutConfig(config);
+        })
+        .catch(err => {
+            console.log("Layout non personalizzato, uso default.");
+        });
+};
+
 
 

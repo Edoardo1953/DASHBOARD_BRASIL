@@ -1136,3 +1136,24 @@ p {
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* Layout Edit Mode */
+body.layout-edit-mode .resizable-widget {
+    resize: both;
+    overflow: auto;
+    border: 2px dashed #3b82f6 !important;
+    position: relative;
+    min-height: 150px;
+    min-width: 200px;
+}
+body.layout-edit-mode .resizable-widget::after {
+    content: "Trascina in basso a destra";
+    position: absolute;
+    bottom: 2px;
+    right: 15px;
+    font-size: 0.7rem;
+    color: #3b82f6;
+    pointer-events: none;
+    background: rgba(255,255,255,0.9);
+    padding: 2px;
+}

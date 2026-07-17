@@ -139,6 +139,13 @@
             </div>
                         <div class="header-actions" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 0.8rem;">
                 <!-- Desktop Language Selector (Horizontal Flags) -->
+                
+                <!-- Admin Layout Controls -->
+                <div id="admin-layout-controls" style="display: none; align-items: center; gap: 0.5rem; margin-right: 1rem;">
+                    <button id="toggleLayoutBtn" onclick="toggleLayoutEditMode()" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"><i class="ph ph-layout"></i> <span class="hide-mobile">Modifica Layout</span></button>
+                    <button id="saveLayoutBtn" onclick="publishLayoutToGitHub()" class="btn btn-primary" style="display: none; padding: 0.4rem 0.8rem; font-size: 0.85rem;"><i class="ph ph-floppy-disk"></i> <span class="hide-mobile">Salva Layout</span></button>
+                </div>
+                
                 <div class="desktop-lang-selector" style="display: flex; gap: 0.5rem;">
                     <button onclick="setLanguage('it')" title="Italiano" style="background: transparent; border: none; border-radius: 50%; padding: 0; font-size: 0; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0;"><img src="https://flagcdn.com/w40/it.png" alt="IT" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"></button>
                     <button onclick="setLanguage('en')" title="English" style="background: transparent; border: none; border-radius: 50%; padding: 0; font-size: 0; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0;"><img src="https://flagcdn.com/w40/gb.png" alt="GB" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"></button>
@@ -207,7 +214,7 @@
 
             <!-- Charts -->
             <div class="charts-grid">
-                <div class="chart-card large">
+                <div class="chart-card large layout-widget" id="widget-monthly-revenue">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 id="monthlyChartTitle" data-i18n="chart.monthlyRevenue">Andamento Mensile Fatturato</h3>
                         <select class="chart-type-selector" onchange="changeChartType('monthlyRevenueChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
@@ -219,7 +226,7 @@
                         <canvas id="monthlyRevenueChart"></canvas>
                     </div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card layout-widget" id="widget-yearly-revenue">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 data-i18n="chart.yearlyRevenue">Fatturato Ultimi 5 Anni</h3>
                         <select class="chart-type-selector" onchange="changeChartType('yearlyRevenueChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
@@ -240,7 +247,7 @@
                 <h2 data-i18n="nav.yearlyHistory">Storico Annuale</h2>
             </div>
             
-            <div class="table-card" style="margin-bottom: 2rem;">
+            <div class="table-card layout-widget" style="margin-bottom: 2rem;" id="widget-yearly-table">
                 <div class="table-header-custom">
                     <h3 data-i18n="nav.yearlyHistory">Tabella Aggregata per Anno</h3>
                 </div>
@@ -269,7 +276,7 @@
             </div>
 
             <div class="charts-grid">
-                <div class="chart-card large">
+                <div class="chart-card large layout-widget" id="widget-yearly-trend">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 id="yearlyTrendChartTitle" data-i18n="chart.yearlyTrendNet">Andamento Fatturato Annuo (NET)</h3>
                         <select class="chart-type-selector" onchange="changeChartType('yearlyTrendChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
@@ -281,7 +288,7 @@
                         <canvas id="yearlyTrendChart"></canvas>
                     </div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card layout-widget" id="widget-revenue-composition">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 id="yearlyCompositionChartTitle" data-i18n="chart.revenueComposition">Composizione Ricavi</h3>
                         <select class="chart-type-selector" onchange="changeChartType('yearlyCompositionChart', this.value)" style="padding: 0.2rem; border-radius: 4px; border: 1px solid var(--border-color);">
@@ -366,7 +373,7 @@
                 
                 <!-- Colonna Inferiore (Grafico) -->
                 <div class="comparator-chart" style="width: 100%;">
-                    <div class="chart-card" style="width: 100%; min-height: 500px; height: 100%;">
+                    <div class="chart-card layout-widget" style="width: 100%; min-height: 500px; height: 100%;" id="widget-comparator-chart">
                         <div class="chart-header">
                             <h3 data-i18n="comparator.monthlyTrend">Andamento Mensile Comparato</h3>
                         </div>
@@ -397,7 +404,7 @@
 
             <div class="analisi-dati-layout" style="display: grid; grid-template-columns: auto 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                 <!-- Tabella Principale -->
-                <div class="table-card" style="padding: 0; overflow-x: auto;">
+                <div class="table-card layout-widget" style="padding: 0; overflow-x: auto;" id="widget-analysis-table">
                     <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;" id="analisi-table-title" data-i18n="analysis.numDiarie">NR DIARIE</div>
                     <table class="premium-table" style="margin: 0 auto; width: max-content; min-width: 50%;">
                         <thead>
@@ -415,7 +422,7 @@
                 </div>
 
                 <!-- Grafico -->
-                <div class="chart-card" style="height: 100%; min-height: 400px; display: flex; flex-direction: column;">
+                <div class="chart-card layout-widget" style="height: 100%; min-height: 400px; display: flex; flex-direction: column;" id="widget-analysis-chart">
                     <div class="chart-header">
                         <h3 id="analisi-chart-title" data-i18n="analysis.yearlyTrend">Andamento Annuo</h3>
                     </div>
@@ -465,7 +472,7 @@
             <div class="analisi-area-layout" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                 
                 <!-- Chart -->
-                <div class="chart-card" style="width: 100%;">
+                <div class="chart-card layout-widget" style="width: 100%;" id="widget-area-chart">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 id="analisi-area-chart-title" data-i18n="area.chartTitle">Andamento Aree di Ricavo</h3>
                         <select id="analisi-area-chart-type" onchange="updateAnalisiArea()" style="padding: 0.4rem; border-radius: 4px; border: 1px solid var(--border-color);">
@@ -479,7 +486,7 @@
                 </div>
 
                 <!-- Table -->
-                <div class="table-card" style="padding: 0; overflow-x: auto;">
+                <div class="table-card layout-widget" style="padding: 0; overflow-x: auto;" id="widget-area-table">
                     <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;">DETTAGLIO RICAVI PER AREA (R$)</div>
                     <table class="premium-table" style="margin: 0 auto; width: max-content; min-width: 50%;">
                         <thead>
