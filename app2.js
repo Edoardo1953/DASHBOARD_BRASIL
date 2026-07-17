@@ -2560,6 +2560,95 @@ document.addEventListener('languageChanged', (e) => {
 // --- LAYOUT EDIT MODE ---
 let isLayoutEditMode = false;
 const LAYOUT_FILE = 'sombra_layout.json';
+window.sortableInstances = [];
+
+function initCustomResizers(widget) {
+    if(widget.dataset.resizersInitialized) return;
+    
+    // Add Drag Handle
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '<i class="ph ph-dots-six-vertical"></i>';
+    widget.appendChild(dragHandle);
+
+    // Add Resizers
+    const sides = ['left', 'right', 'bottom'];
+    sides.forEach(side => {
+        const resizer = document.createElement('div');
+        resizer.className = `custom-resizer resizer-${side}`;
+        widget.appendChild(resizer);
+        
+        resizer.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startWidth = parseFloat(window.getComputedStyle(widget).width);
+            const startHeight = parseFloat(window.getComputedStyle(widget).height);
+            
+            resizer.classList.add('resizing');
+            
+            function onMouseMove(e) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                if (side === 'right') {
+                    widget.style.width = `${startWidth + dx}px`;
+                } else if (side === 'left') {
+                    // When dragging left handle leftwards (dx < 0), width increases by -dx
+                    // But if it's centered with margin:0 auto, changing width expands both sides
+                    // If we just want to change width symmetrically:
+                    widget.style.width = `${startWidth - dx * 2}px`;
+                } else if (side === 'bottom') {
+                    widget.style.height = `${startHeight + dy}px`;
+                }
+            }
+            
+            function onMouseUp() {
+                resizer.classList.remove('resizing');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Resize charts
+                if(typeof window.monthlyChart !== 'undefined' && window.monthlyChart) window.monthlyChart.resize();
+                if(typeof window.yearlyChart !== 'undefined' && window.yearlyChart) window.yearlyChart.resize();
+                if(typeof window.yearlyTrendChart !== 'undefined' && window.yearlyTrendChart) window.yearlyTrendChart.resize();
+                if(typeof window.yearlyCompositionChart !== 'undefined' && window.yearlyCompositionChart) window.yearlyCompositionChart.resize();
+                if(typeof window.comparatorChart !== 'undefined' && window.comparatorChart) window.comparatorChart.resize();
+                if(typeof window.analisiChart !== 'undefined' && window.analisiChart) window.analisiChart.resize();
+                if(typeof window.areaChart !== 'undefined' && window.areaChart) window.areaChart.resize();
+            }
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    });
+    
+    widget.dataset.resizersInitialized = 'true';
+}
+
+function setupSortable() {
+    if(typeof Sortable === 'undefined') return;
+    const containers = document.querySelectorAll('.dashboard-grid, .charts-grid, .analisi-dati-layout, .view-section');
+    containers.forEach(container => {
+        const hasWidgets = Array.from(container.children).some(c => c.classList.contains('layout-widget'));
+        if(hasWidgets) {
+            const sortable = new Sortable(container, {
+                animation: 150,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                filter: '.chart-header, .table-header-custom'
+            });
+            window.sortableInstances.push(sortable);
+        }
+    });
+}
+
+function destroySortable() {
+    window.sortableInstances.forEach(s => s.destroy());
+    window.sortableInstances = [];
+}
 
 window.toggleLayoutEditMode = function() {
     isLayoutEditMode = !isLayoutEditMode;
@@ -2578,7 +2667,10 @@ window.toggleLayoutEditMode = function() {
         // Ensure all resizable widgets have the class
         document.querySelectorAll('.layout-widget').forEach(el => {
             el.classList.add('resizable-widget');
+            initCustomResizers(el);
         });
+        
+        setupSortable();
     } else {
         body.classList.remove('layout-edit-mode');
         if(toggleBtn) {
@@ -2591,6 +2683,8 @@ window.toggleLayoutEditMode = function() {
         document.querySelectorAll('.layout-widget').forEach(el => {
             el.classList.remove('resizable-widget');
         });
+        
+        destroySortable();
         
         // Optionally, reload to cancel unsaved changes
         fetchLayoutFromGitHub();
@@ -2619,7 +2713,12 @@ window.publishLayoutToGitHub = async function() {
                 // Get computed style or inline style
                 const width = el.style.width || window.getComputedStyle(el).width;
                 const height = el.style.height || window.getComputedStyle(el).height;
-                layoutConfig[el.id] = { width, height };
+                
+                // Get DOM order index within parent
+                const parent = el.parentNode;
+                const order = Array.from(parent.children).indexOf(el);
+                
+                layoutConfig[el.id] = { width, height, order };
             }
         });
         
@@ -2640,7 +2739,7 @@ window.publishLayoutToGitHub = async function() {
         }
         
         const bodyData = {
-            message: 'Update layout configuration',
+            message: 'Update layout configuration (Drag&Resize)',
             content: btoa(unescape(encodeURIComponent(jsonContent)))
         };
         if(sha) bodyData.sha = sha;
@@ -2677,7 +2776,16 @@ window.applyLayoutConfig = function(config) {
         if(el) {
             if(config[id].width) el.style.width = config[id].width;
             if(config[id].height) el.style.height = config[id].height;
+            if(config[id].order !== undefined) el.style.order = config[id].order;
             applied = true;
+            
+            // Flexbox needs display: flex for order to work if it's not a flex item already,
+            // but our grids are 'display: grid' or 'display: flex', which respect order.
+            const parent = el.parentNode;
+            if (parent && window.getComputedStyle(parent).display === 'block') {
+                parent.style.display = 'flex';
+                parent.style.flexDirection = 'column';
+            }
         }
     }
     

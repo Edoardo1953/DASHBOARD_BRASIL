@@ -1139,21 +1139,81 @@ p {
 
 /* Layout Edit Mode */
 body.layout-edit-mode .resizable-widget {
-    resize: both;
-    overflow: auto;
     border: 2px dashed #3b82f6 !important;
     position: relative;
     min-height: 150px;
     min-width: 200px;
 }
-body.layout-edit-mode .resizable-widget::after {
-    content: "Trascina in basso a destra";
+
+/* Drag Handle */
+.drag-handle {
     position: absolute;
-    bottom: 2px;
-    right: 15px;
-    font-size: 0.7rem;
-    color: #3b82f6;
-    pointer-events: none;
-    background: rgba(255,255,255,0.9);
-    padding: 2px;
+    top: 5px;
+    left: 5px;
+    background: #3b82f6;
+    color: white;
+    padding: 6px;
+    border-radius: 4px;
+    cursor: grab;
+    z-index: 101;
+    display: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+body.layout-edit-mode .resizable-widget .drag-handle {
+    display: flex;
+}
+
+/* Custom Resize Handles */
+.custom-resizer {
+    position: absolute;
+    background: transparent;
+    z-index: 100;
+    display: none;
+}
+
+.custom-resizer:hover, .custom-resizer.resizing {
+    background: rgba(59, 130, 246, 0.5);
+}
+
+body.layout-edit-mode .resizable-widget .custom-resizer {
+    display: block;
+}
+
+/* Right Handle */
+.resizer-right {
+    top: 0;
+    right: -5px;
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+/* Left Handle */
+.resizer-left {
+    top: 0;
+    left: -5px;
+    width: 10px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+/* Bottom Handle */
+.resizer-bottom {
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    cursor: ns-resize;
+}
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #f8fafc;
+    border: 2px dashed #3b82f6 !important;
 }
