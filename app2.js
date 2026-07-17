@@ -2628,8 +2628,8 @@ window.publishLayoutToGitHub = async function() {
         // Check if file exists
         let sha = null;
         try {
-            const getRes = await fetch(https://api.github.com/repos/\/contents/\, {
-                headers: { 'Authorization': 	oken \ }
+            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}`, {
+                headers: { 'Authorization': `token ${token}` }
             });
             if(getRes.ok) {
                 const data = await getRes.json();
@@ -2645,10 +2645,10 @@ window.publishLayoutToGitHub = async function() {
         };
         if(sha) bodyData.sha = sha;
         
-        const putRes = await fetch(https://api.github.com/repos/\/contents/\, {
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': 	oken \,
+                'Authorization': `token ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(bodyData)
@@ -2706,6 +2706,3 @@ window.fetchLayoutFromGitHub = function() {
             console.log("Layout non personalizzato, uso default.");
         });
 };
-
-
-
