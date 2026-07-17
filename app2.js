@@ -2594,12 +2594,13 @@ function initCustomResizers(widget) {
                 const dy = e.clientY - startY;
                 
                 if (side === 'right') {
+                    widget.style.marginLeft = '0';
+                    widget.style.marginRight = 'auto';
                     widget.style.width = `${startWidth + dx}px`;
                 } else if (side === 'left') {
-                    // When dragging left handle leftwards (dx < 0), width increases by -dx
-                    // But if it's centered with margin:0 auto, changing width expands both sides
-                    // If we just want to change width symmetrically:
-                    widget.style.width = `${startWidth - dx * 2}px`;
+                    widget.style.marginRight = '0';
+                    widget.style.marginLeft = 'auto';
+                    widget.style.width = `${startWidth - dx}px`;
                 } else if (side === 'bottom') {
                     widget.style.height = `${startHeight + dy}px`;
                 }
@@ -2772,23 +2773,37 @@ window.publishLayoutToGitHub = async function() {
 window.applyLayoutConfig = function(config) {
     if(!config) return;
     let applied = false;
+    
+    // Array for sorting
+    const toSort = [];
+
     for(const id in config) {
         const el = document.getElementById(id);
         if(el) {
             if(config[id].width) el.style.width = config[id].width;
             if(config[id].height) el.style.height = config[id].height;
-            if(config[id].order !== undefined) el.style.order = config[id].order;
-            applied = true;
             
-            // Flexbox needs display: flex for order to work if it's not a flex item already,
-            // but our grids are 'display: grid' or 'display: flex', which respect order.
-            const parent = el.parentNode;
-            if (parent && window.getComputedStyle(parent).display === 'block') {
-                parent.style.display = 'flex';
-                parent.style.flexDirection = 'column';
+            if(config[id].order !== undefined) {
+                toSort.push({ el: el, order: config[id].order, parent: el.parentNode });
             }
+            applied = true;
         }
     }
+    
+    // Group by parent and physically sort DOM elements so SortableJS works correctly later
+    const parentGroups = new Map();
+    toSort.forEach(item => {
+        if(!parentGroups.has(item.parent)) parentGroups.set(item.parent, []);
+        parentGroups.get(item.parent).push(item);
+    });
+    
+    parentGroups.forEach((group, parent) => {
+        group.sort((a, b) => a.order - b.order);
+        group.forEach(item => {
+            parent.appendChild(item.el); // Appends at the end, effectively sorting them
+            item.el.style.order = ''; // Ensure CSS order is clear
+        });
+    });
     
     // If we resized chart containers, we need to tell Chart.js to resize
     if(applied) {
