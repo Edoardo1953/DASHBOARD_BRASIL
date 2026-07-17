@@ -2665,7 +2665,7 @@ function initCustomResizers(widget) {
     widget.dataset.resizersInitialized = 'true';
 }
 
-window.toggleLayoutEditMode = function() {
+window.toggleLayoutEditMode = function(skipFetch = false) {
     isLayoutEditMode = !isLayoutEditMode;
     const body = document.body;
     const toggleBtn = document.getElementById('toggleLayoutBtn');
@@ -2695,7 +2695,9 @@ window.toggleLayoutEditMode = function() {
             el.classList.remove('resizable-widget');
         });
         
-        fetchLayoutFromGitHub();
+        if (!skipFetch) {
+            fetchLayoutFromGitHub();
+        }
     }
 };
 
@@ -2768,7 +2770,7 @@ window.publishLayoutToGitHub = async function() {
         }
         
         alert('Layout salvato!');
-        toggleLayoutEditMode();
+        toggleLayoutEditMode(true);
         
     } catch(err) {
         alert('Errore: ' + err.message);
