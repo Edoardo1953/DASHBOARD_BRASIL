@@ -2764,7 +2764,7 @@ window.publishLayoutToGitHub = async function() {
         
         if(!putRes.ok) {
             const errorData = await putRes.json();
-            throw new Error(Errore GitHub (): );
+            throw new Error(`Errore GitHub (${putRes.status}): ${errorData.message}`);
         }
         
         alert('Layout salvato!');
