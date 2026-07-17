@@ -2636,10 +2636,13 @@ function setupSortable() {
         const hasWidgets = Array.from(container.children).some(c => c.classList.contains('layout-widget'));
         if(hasWidgets) {
             const sortable = new Sortable(container, {
+                group: 'dashboard-widgets',
                 animation: 150,
                 handle: '.drag-handle',
                 draggable: '.layout-widget',
                 ghostClass: 'sortable-ghost',
+                forceFallback: true,
+                fallbackOnBody: true,
                 filter: '.chart-header, .table-header-custom'
             });
             window.sortableInstances.push(sortable);
