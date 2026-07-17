@@ -1953,6 +1953,11 @@ window.updateComparator = function() {
     const year1 = parseInt(selectY1.value);
     const year2 = parseInt(selectY2.value);
     
+    const ytdTitle = document.getElementById('comp-ytd-title');
+    if(ytdTitle) {
+        ytdTitle.textContent = `YTD (${year1} VS ${year2})`;
+    }
+    
     document.getElementById('comp-th-y1').textContent = year1;
     document.getElementById('comp-th-y2').textContent = year2;
     document.getElementById('comp-ytd-th-y1').textContent = year1;
@@ -2085,12 +2090,15 @@ function drawComparatorChart(dataY1, dataY2, year1, year2) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
+    const chartTypeSelect = document.getElementById('comp-chart-type');
+    const chartType = chartTypeSelect ? chartTypeSelect.value : 'bar';
+    
     if(comparatorChartInstance) {
         comparatorChartInstance.destroy();
     }
 
     comparatorChartInstance = new Chart(ctx, {
-        type: 'bar',
+        type: chartType,
         data: {
             labels: MONTHS_ORDER.map(m => m.substring(0,3)),
             datasets: [
@@ -2168,7 +2176,7 @@ window.updateAnalisiDati = function() {
     
     // Header tabella
     const thead = document.getElementById('analisi-dati-thead');
-    let thHtml = `<th>Mesi</th>`;
+    let thHtml = `<th style="text-align: center;" data-i18n="comparator.months">Mesi</th>`;
     availableYears.forEach(year => {
         thHtml += `<th>${year}</th>`;
     });

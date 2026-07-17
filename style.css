@@ -1124,3 +1124,15 @@ p {
     }
 }
 
+/* Responsive Comparator Grid */
+.responsive-comparator-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+}
+
+@media (min-width: 992px) {
+    .responsive-comparator-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

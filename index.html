@@ -310,12 +310,19 @@
                         <label style="font-weight: 600; font-size: 1.1rem;" data-i18n="comparator.year2">Anno 2:</label>
                         <select id="comp-year2" class="form-control" style="width: 130px; padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1.2rem; font-weight: bold; color: #0f172a; cursor: pointer;"></select>
                     </div>
+                    <div class="select-group" style="display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem;">
+                        <label style="font-weight: 600; font-size: 1.1rem;" data-i18n="comparator.chartType">Grafico:</label>
+                        <select id="comp-chart-type" class="form-control" style="padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1rem; font-weight: bold; color: #0f172a; cursor: pointer;" onchange="updateComparator()">
+                            <option value="bar" data-i18n="comparator.bar">Barre</option>
+                            <option value="line" data-i18n="comparator.line">Linee</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             
-            <div class="comparator-grid" style="display: grid; grid-template-columns: 1fr; gap: 2.5rem;">
+            <div class="comparator-grid responsive-comparator-grid">
                 <!-- Colonna Superiore (Tabelle) -->
-                <div class="comparator-tables" style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; width: 100%;">
+                <div class="comparator-tables" style="display: flex; flex-direction: column; gap: 1.5rem; width: 100%;">
                     <!-- Tabella Mesi -->
                     <div class="table-card" style="padding:0; overflow-x:auto; overflow-y:hidden; width: 100%; max-width: 100%; min-width: 0;">
                         <table class="premium-table" style="margin:0;">
@@ -338,7 +345,7 @@
                     
                     <!-- Tabella YTD -->
                     <div class="table-card" style="padding:0; overflow-x:auto; overflow-y:hidden; border: 1px solid #cbd5e1; width: 100%; max-width: 100%; min-width: 0;">
-                        <div style="background-color: #cbd5e1; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: #1e293b;" data-i18n="comparator.ytd">ANNO IN CORSO VS PRECEDENTE (YTD)</div>
+                        <div id="comp-ytd-title" style="background-color: #cbd5e1; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: #1e293b;">YTD</div>
                         <table class="premium-table" style="margin: 0;">
                             <thead>
                                 <tr>
@@ -353,13 +360,13 @@
                         </table>
                     </div>
                     <div style="padding: 1rem; background-color: #e0f2fe; color: #0369a1; font-size: 0.85rem; border-radius: 8px; border: 1px solid #bae6fd; line-height: 1.4;">
-                        <strong>Info YTD:</strong> La comparazione "Anno in corso vs Precedente" calcola il totale tenendo conto esclusivamente dei mesi in cui sono presenti i dati per l'anno più recente, scartando i mesi successivi dell'anno più vecchio per garantire un confronto a parità di periodo.
+                        <strong data-i18n="comparator.infoTitle">Info YTD:</strong> <span data-i18n="comparator.info">La comparazione "Anno in corso vs Precedente" calcola il totale tenendo conto esclusivamente dei mesi in cui sono presenti i dati per l'anno più recente, scartando i mesi successivi dell'anno più vecchio per garantire un confronto a parità di periodo.</span>
                     </div>
                 </div>
                 
                 <!-- Colonna Inferiore (Grafico) -->
-                <div class="comparator-chart" style="max-width: 900px; width: 100%;">
-                    <div class="chart-card" style="width: 100%; min-height: 500px;">
+                <div class="comparator-chart" style="width: 100%;">
+                    <div class="chart-card" style="width: 100%; min-height: 500px; height: 100%;">
                         <div class="chart-header">
                             <h3 data-i18n="comparator.monthlyTrend">Andamento Mensile Comparato</h3>
                         </div>
@@ -388,11 +395,11 @@
                 </div>
             </div>
 
-            <div class="analisi-dati-layout" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="analisi-dati-layout" style="display: grid; grid-template-columns: auto 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                 <!-- Tabella Principale -->
                 <div class="table-card" style="padding: 0; overflow-x: auto;">
                     <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;" id="analisi-table-title" data-i18n="analysis.numDiarie">NR DIARIE</div>
-                    <table class="premium-table" style="margin: 0; min-width: max-content;">
+                    <table class="premium-table" style="margin: 0 auto; width: max-content; min-width: 50%;">
                         <thead>
                             <tr id="analisi-dati-thead">
                                 <!-- Popolato via JS -->
@@ -474,7 +481,7 @@
                 <!-- Table -->
                 <div class="table-card" style="padding: 0; overflow-x: auto;">
                     <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;">DETTAGLIO RICAVI PER AREA (R$)</div>
-                    <table class="premium-table" style="margin: 0; min-width: max-content;">
+                    <table class="premium-table" style="margin: 0 auto; width: max-content; min-width: 50%;">
                         <thead>
                             <tr>
                                 <th data-i18n="table.year">Anno</th>
