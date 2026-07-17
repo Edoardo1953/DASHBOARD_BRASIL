@@ -18,22 +18,22 @@
     "ty": 0
   },
   "widget-yearly-trend": {
-    "width": "816.33px",
-    "height": "451.531px",
+    "width": "983.328px",
+    "height": "451.438px",
     "tx": 0,
     "ty": 0
   },
   "widget-revenue-composition": {
-    "width": "501.656px",
-    "height": "451.531px",
-    "tx": -177,
+    "width": "520.656px",
+    "height": "451.438px",
+    "tx": -2,
     "ty": 1
   },
   "widget-comparator-chart": {
     "width": "100%",
     "height": "100%",
-    "tx": -11,
-    "ty": -224
+    "tx": -16,
+    "ty": -228
   },
   "widget-analysis-table": {
     "width": "auto",
