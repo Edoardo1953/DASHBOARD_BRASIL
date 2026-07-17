@@ -2637,6 +2637,7 @@ function setupSortable() {
             const sortable = new Sortable(container, {
                 animation: 150,
                 handle: '.drag-handle',
+                draggable: '.layout-widget',
                 ghostClass: 'sortable-ghost',
                 filter: '.chart-header, .table-header-custom'
             });

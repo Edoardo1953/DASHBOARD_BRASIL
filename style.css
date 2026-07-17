@@ -1217,3 +1217,21 @@ body.layout-edit-mode .resizable-widget .custom-resizer {
     background-color: #f8fafc;
     border: 2px dashed #3b82f6 !important;
 }
+
+/* Drag & Resize Fixes */
+body.layout-edit-mode .layout-widget {
+    display: flex !important;
+    flex-direction: column !important;
+}
+body.layout-edit-mode .layout-widget > .chart-body,
+body.layout-edit-mode .layout-widget > .chart-container,
+body.layout-edit-mode .layout-widget > .table-responsive,
+body.layout-edit-mode .layout-widget > div:has(canvas) {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+}
+body.layout-edit-mode .layout-widget canvas {
+    height: 100% !important;
+    max-height: 100% !important;
+}
