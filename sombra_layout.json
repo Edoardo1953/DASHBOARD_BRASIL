@@ -1,0 +1,62 @@
+{
+  "widget-monthly-revenue": {
+    "width": "auto",
+    "height": "auto",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-yearly-revenue": {
+    "width": "auto",
+    "height": "auto",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-yearly-table": {
+    "width": "1529px",
+    "height": "293.625px",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-yearly-trend": {
+    "width": "816.33px",
+    "height": "451.531px",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-revenue-composition": {
+    "width": "501.656px",
+    "height": "451.531px",
+    "tx": -177,
+    "ty": 1
+  },
+  "widget-comparator-chart": {
+    "width": "100%",
+    "height": "100%",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-analysis-table": {
+    "width": "auto",
+    "height": "auto",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-analysis-chart": {
+    "width": "auto",
+    "height": "100%",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-area-chart": {
+    "width": "100%",
+    "height": "auto",
+    "tx": 0,
+    "ty": 0
+  },
+  "widget-area-table": {
+    "width": "auto",
+    "height": "auto",
+    "tx": 0,
+    "ty": 0
+  }
+}
