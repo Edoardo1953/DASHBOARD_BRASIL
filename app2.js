@@ -2560,7 +2560,6 @@ document.addEventListener('languageChanged', (e) => {
 // --- LAYOUT EDIT MODE ---
 let isLayoutEditMode = false;
 const LAYOUT_FILE = 'sombra_layout.json';
-window.sortableInstances = [];
 
 function initCustomResizers(widget) {
     if(widget.dataset.resizersInitialized) return;
@@ -2568,8 +2567,45 @@ function initCustomResizers(widget) {
     // Add Drag Handle
     const dragHandle = document.createElement('div');
     dragHandle.className = 'drag-handle';
-    dragHandle.innerHTML = '<i class="ph ph-dots-six-vertical"></i>';
+    dragHandle.innerHTML = '<i class="ph ph-arrows-out-cardinal"></i>'; // Use arrows icon to indicate free movement
     widget.appendChild(dragHandle);
+
+    // Freeform Dragging Logic
+    dragHandle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        
+        let currentX = 0;
+        let currentY = 0;
+        const transform = widget.style.transform;
+        if (transform && transform.includes('translate')) {
+            const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+            if (match) {
+                currentX = parseFloat(match[1]);
+                currentY = parseFloat(match[2]);
+            }
+        }
+        
+        widget.style.zIndex = '9999';
+
+        function onMouseMove(e) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            widget.style.transform = `translate(${currentX + dx}px, ${currentY + dy}px)`;
+        }
+
+        function onMouseUp() {
+            widget.style.zIndex = '';
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
 
     // Add Resizers
     const sides = ['left', 'right', 'bottom'];
@@ -2629,32 +2665,6 @@ function initCustomResizers(widget) {
     widget.dataset.resizersInitialized = 'true';
 }
 
-function setupSortable() {
-    if(typeof Sortable === 'undefined') return;
-    const containers = document.querySelectorAll('.dashboard-grid, .charts-grid, .analisi-dati-layout, .view-section');
-    containers.forEach(container => {
-        const hasWidgets = Array.from(container.children).some(c => c.classList.contains('layout-widget'));
-        if(hasWidgets) {
-            const sortable = new Sortable(container, {
-                group: 'dashboard-widgets',
-                animation: 150,
-                handle: '.drag-handle',
-                draggable: '.layout-widget',
-                ghostClass: 'sortable-ghost',
-                forceFallback: true,
-                fallbackOnBody: true,
-                filter: '.chart-header, .table-header-custom'
-            });
-            window.sortableInstances.push(sortable);
-        }
-    });
-}
-
-function destroySortable() {
-    window.sortableInstances.forEach(s => s.destroy());
-    window.sortableInstances = [];
-}
-
 window.toggleLayoutEditMode = function() {
     isLayoutEditMode = !isLayoutEditMode;
     const body = document.body;
@@ -2669,13 +2679,10 @@ window.toggleLayoutEditMode = function() {
         }
         if(saveBtn) saveBtn.style.display = 'inline-flex';
         
-        // Ensure all resizable widgets have the class
         document.querySelectorAll('.layout-widget').forEach(el => {
             el.classList.add('resizable-widget');
             initCustomResizers(el);
         });
-        
-        setupSortable();
     } else {
         body.classList.remove('layout-edit-mode');
         if(toggleBtn) {
@@ -2684,14 +2691,10 @@ window.toggleLayoutEditMode = function() {
         }
         if(saveBtn) saveBtn.style.display = 'none';
         
-        // Remove class
         document.querySelectorAll('.layout-widget').forEach(el => {
             el.classList.remove('resizable-widget');
         });
         
-        destroySortable();
-        
-        // Optionally, reload to cancel unsaved changes
         fetchLayoutFromGitHub();
     }
 };
@@ -2711,25 +2714,28 @@ window.publishLayoutToGitHub = async function() {
     }
     
     try {
-        // Collect current dimensions
         const layoutConfig = {};
         document.querySelectorAll('.layout-widget').forEach(el => {
             if(el.id) {
-                // Get computed style or inline style
                 const width = el.style.width || window.getComputedStyle(el).width;
                 const height = el.style.height || window.getComputedStyle(el).height;
                 
-                // Get DOM order index within parent
-                const parent = el.parentNode;
-                const order = Array.from(parent.children).indexOf(el);
+                let tx = 0, ty = 0;
+                const transform = el.style.transform;
+                if (transform && transform.includes('translate')) {
+                    const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+                    if (match) {
+                        tx = parseFloat(match[1]);
+                        ty = parseFloat(match[2]);
+                    }
+                }
                 
-                layoutConfig[el.id] = { width, height, order };
+                layoutConfig[el.id] = { width, height, tx, ty };
             }
         });
         
         const jsonContent = JSON.stringify(layoutConfig, null, 2);
         
-        // Check if file exists
         let sha = null;
         try {
             const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}`, {
@@ -2739,12 +2745,10 @@ window.publishLayoutToGitHub = async function() {
                 const data = await getRes.json();
                 sha = data.sha;
             }
-        } catch(e) {
-            console.log("File layout non esiste ancora, verrà creato.");
-        }
+        } catch(e) {}
         
         const bodyData = {
-            message: 'Update layout configuration (Drag&Resize)',
+            message: 'Update layout config (Freeform Drag)',
             content: btoa(unescape(encodeURIComponent(jsonContent)))
         };
         if(sha) bodyData.sha = sha;
@@ -2758,10 +2762,10 @@ window.publishLayoutToGitHub = async function() {
             body: JSON.stringify(bodyData)
         });
         
-        if(!putRes.ok) throw new Error("Errore durante il caricamento del layout su GitHub");
+        if(!putRes.ok) throw new Error("Errore salvataggio su GitHub");
         
-        alert('Layout salvato con successo per tutti gli utenti!');
-        toggleLayoutEditMode(); // exit edit mode
+        alert('Layout salvato!');
+        toggleLayoutEditMode();
         
     } catch(err) {
         alert('Errore: ' + err.message);
@@ -2777,38 +2781,18 @@ window.applyLayoutConfig = function(config) {
     if(!config) return;
     let applied = false;
     
-    // Array for sorting
-    const toSort = [];
-
     for(const id in config) {
         const el = document.getElementById(id);
         if(el) {
             if(config[id].width) el.style.width = config[id].width;
             if(config[id].height) el.style.height = config[id].height;
-            
-            if(config[id].order !== undefined) {
-                toSort.push({ el: el, order: config[id].order, parent: el.parentNode });
+            if(config[id].tx !== undefined && config[id].ty !== undefined) {
+                el.style.transform = `translate(${config[id].tx}px, ${config[id].ty}px)`;
             }
             applied = true;
         }
     }
     
-    // Group by parent and physically sort DOM elements so SortableJS works correctly later
-    const parentGroups = new Map();
-    toSort.forEach(item => {
-        if(!parentGroups.has(item.parent)) parentGroups.set(item.parent, []);
-        parentGroups.get(item.parent).push(item);
-    });
-    
-    parentGroups.forEach((group, parent) => {
-        group.sort((a, b) => a.order - b.order);
-        group.forEach(item => {
-            parent.appendChild(item.el); // Appends at the end, effectively sorting them
-            item.el.style.order = ''; // Ensure CSS order is clear
-        });
-    });
-    
-    // If we resized chart containers, we need to tell Chart.js to resize
     if(applied) {
         if(typeof window.monthlyChart !== 'undefined' && window.monthlyChart) window.monthlyChart.resize();
         if(typeof window.yearlyChart !== 'undefined' && window.yearlyChart) window.yearlyChart.resize();
@@ -2830,6 +2814,6 @@ window.fetchLayoutFromGitHub = function() {
             applyLayoutConfig(config);
         })
         .catch(err => {
-            console.log("Layout non personalizzato, uso default.");
+            console.log("Layout non personalizzato.");
         });
 };
