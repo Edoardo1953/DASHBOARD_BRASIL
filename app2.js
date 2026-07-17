@@ -2738,8 +2738,8 @@ window.publishLayoutToGitHub = async function() {
         
         let sha = null;
         try {
-            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}`, {
-                headers: { 'Authorization': `token ${token}` }
+            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}?t=${new Date().getTime()}`, { cache: 'no-store',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if(getRes.ok) {
                 const data = await getRes.json();
@@ -2756,13 +2756,16 @@ window.publishLayoutToGitHub = async function() {
         const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${token}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(bodyData)
         });
         
-        if(!putRes.ok) throw new Error("Errore salvataggio su GitHub");
+        if(!putRes.ok) {
+            const errorData = await putRes.json();
+            throw new Error(Errore GitHub (): );
+        }
         
         alert('Layout salvato!');
         toggleLayoutEditMode();
