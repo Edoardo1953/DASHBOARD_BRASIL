@@ -588,15 +588,6 @@ function setupEventListeners() {
     // Import Excel
     document.getElementById('excelFileInput').addEventListener('change', handleExcelUpload);
     
-    // Reset DB
-    document.getElementById('resetBtn').addEventListener('click', () => {
-        if(confirm("Sei sicuro di voler cancellare tutti i dati? Questa operazione è irreversibile.")) {
-            localStorage.removeItem(DB_KEY);
-            alert("Dati cancellati con successo.");
-            location.reload();
-        }
-    });
-
     // Export JSON
     document.getElementById('exportBtn').addEventListener('click', exportData);
 
