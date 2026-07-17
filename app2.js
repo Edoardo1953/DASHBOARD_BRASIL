@@ -1062,11 +1062,19 @@ function drawYearlyTrendChart(years, dataObj) {
         const yearData = db.filter(item => item["ANNO"] == singleYear);
         chartData = MONTHS_ORDER.map(month => {
             const item = yearData.find(x => x["MESE"] === month);
-            return item ? (parseFloat(item["Total (Net sales)"]) || 0) : null;
+            if (!item) return null;
+            let val = parseFloat(item["Total (Net sales)"]);
+            if (isNaN(val) || val === 0) return null;
+            return val;
         });
     } else {
         chartLabels = activeYears;
         chartData = activeYears.map(y => dataObj[y].netSales === 0 ? null : dataObj[y].netSales);
+    }
+    
+    const titleEl = document.getElementById('yearlyTrendChartTitle');
+    if (titleEl) {
+        titleEl.textContent = `Andamento Fatturato Annuo (NET) - ${activeYears.join(', ')}`;
     }
     
     const selectEl = document.querySelector('select[onchange*="yearlyTrendChart"]');
