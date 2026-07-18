@@ -2943,7 +2943,7 @@ function renderAzionariato() {
             subTr.style.backgroundColor = "rgba(59,130,246,0.05)";
             subTr.innerHTML = `
                 <td></td>
-                <td style="font-weight: bold; color: #3b82f6; text-align: right;">Subtotale Classe A</td>
+                <td style="font-weight: bold; color: #3b82f6; text-align: right;" data-i18n="azionariato.subtotalA">Subtotale Classe A</td>
                 <td></td>
                 <td style="font-weight: bold; color: #3b82f6;">${(subTotDetA * 100).toFixed(2)}%</td>
                 <td style="font-weight: bold; color: #3b82f6;">${formatCurrency(subTotSottA)}</td>
@@ -2954,7 +2954,7 @@ function renderAzionariato() {
         }
         
         const idStr = String(index + 1).padStart(2, "0");
-        let displayName = currentUserRole === "ADMIN" ? item.partner : "Azionista " + idStr;
+        let displayName = currentUserRole === "ADMIN" ? item.partner : (typeof t === "function" ? t("azionariato.shareholder") : "Azionista") + " " + idStr;
         let displayNameWithId = currentUserRole === "ADMIN" ? idStr + " - " + item.partner : displayName;
         
         labels.push(displayNameWithId);
@@ -2987,7 +2987,7 @@ function renderAzionariato() {
     subTrB.style.backgroundColor = "rgba(16,185,129,0.05)";
     subTrB.innerHTML = `
         <td></td>
-        <td style="font-weight: bold; color: #10b981; text-align: right;">Subtotale Classe B</td>
+        <td style="font-weight: bold; color: #10b981; text-align: right;" data-i18n="azionariato.subtotalB">Subtotale Classe B</td>
         <td></td>
         <td style="font-weight: bold; color: #10b981;">${(subTotDetB * 100).toFixed(2)}%</td>
         <td style="font-weight: bold; color: #10b981;">${formatCurrency(subTotSottB)}</td>
@@ -3004,7 +3004,7 @@ function renderAzionariato() {
         tfoot.innerHTML = `
             <tr>
                 <td></td>
-                <td style="font-size: 1.1rem; text-align: right;">TOTALE GENERALE</td>
+                <td style="font-size: 1.1rem; text-align: right;" data-i18n="azionariato.grandTotal">TOTALE GENERALE</td>
                 <td></td>
                 <td style="color: #f59e0b; font-size: 1.1rem;">${(totDet * 100).toFixed(0)}%</td>
                 <td style="font-size: 1.1rem;">${formatCurrency(totSott)}</td>
@@ -3014,6 +3014,7 @@ function renderAzionariato() {
     }
     
     updateAzionariatoChartData(labels, values, bgColors);
+    if (typeof translatePage === 'function') translatePage();
 }
 
 function updateAzionariatoChartData(labels, values, bgColors) {
