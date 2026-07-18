@@ -1,12 +1,12 @@
 {
   "widget-monthly-revenue": {
-    "width": "auto",
+    "width": "927.33px",
     "height": "auto",
     "tx": 0,
     "ty": 0
   },
   "widget-yearly-revenue": {
-    "width": "auto",
+    "width": "586.656px",
     "height": "auto",
     "tx": 0,
     "ty": 0
@@ -34,12 +34,6 @@
     "height": "100%",
     "tx": -10,
     "ty": -227
-  },
-  "widget-analysis-table": {
-    "width": "auto",
-    "height": "auto",
-    "tx": 0,
-    "ty": 0
   },
   "widget-analysis-chart": {
     "width": "855.625px",
