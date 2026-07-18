@@ -130,8 +130,8 @@
     <main class="main-content">
         <!-- Mobile Header (solo spaziatore per layout, il menu è nel top-header) -->
 
-        <header class="top-header" style="position: relative; flex-wrap: wrap; gap: 1.5rem;">
-                        <div class="header-title" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; min-width: 300px; width: 100%;">
+        <header class="top-header" style="position: relative; display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: space-between; align-items: flex-start;">
+                        <div class="header-title" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex: 1 1 300px;">
                 <button class="mobile-menu-btn mobile-only-hamburger" onclick="toggleSidebar()">
                     <i class="ph ph-list"></i>
                     <span class="hamburger-label" data-i18n="sidebar.menu">MENU</span>
@@ -148,7 +148,7 @@
                     <button onclick="setLanguage('fr')" title="Français"><img src="https://flagcdn.com/w40/fr.png" alt="FR" style="vertical-align: middle; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"></button>
                 </div>
             </div>
-                        <div class="header-actions" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 0.8rem;">
+                        <div class="header-actions" style="display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-end; gap: 0.8rem; flex: 1 1 400px; min-width: 300px;">
                 <!-- Desktop Language Selector (Horizontal Flags) -->
                 
                 <div class="desktop-lang-selector" style="display: flex; gap: 0.5rem;">
