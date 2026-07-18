@@ -49,6 +49,7 @@ function setLanguage(lang) {
         
         // Traduce gli elementi DOM statici
         translatePage();
+        updateFlagsUI();
         
         // Emette un evento per notificare altre parti dell'app (es. per aggiornare i grafici in app2.js)
         document.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
@@ -83,5 +84,30 @@ function translatePage() {
     });
 }
 
+/**
+ * Aggiorna lo stato visivo dei pulsanti lingua
+ */
+function updateFlagsUI() {
+    document.querySelectorAll('button[onclick^="setLanguage"]').forEach(btn => {
+        // Estrai il codice lingua (es: 'it') dall'onclick
+        const match = btn.getAttribute('onclick').match(/setLanguage\('([^']+)'\)/);
+        if (match && match[1]) {
+            const lang = match[1];
+            if (lang === currentLanguage) {
+                btn.style.opacity = '1';
+                btn.style.boxShadow = '0 0 0 3px #10b981';
+                btn.style.filter = 'grayscale(0)';
+            } else {
+                btn.style.opacity = '0.5';
+                btn.style.boxShadow = 'none';
+                btn.style.filter = 'grayscale(0.8)';
+            }
+        }
+    });
+}
+
 // Inizializza i18n quando il DOM è caricato
-document.addEventListener('DOMContentLoaded', initI18n);
+document.addEventListener('DOMContentLoaded', () => {
+    initI18n();
+    updateFlagsUI();
+});

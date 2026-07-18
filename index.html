@@ -320,13 +320,6 @@
                         <label style="font-weight: 600; font-size: 1.1rem;" data-i18n="comparator.year2">Anno 2:</label>
                         <select id="comp-year2" class="form-control" style="width: 130px; padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1.2rem; font-weight: bold; color: #0f172a; cursor: pointer;"></select>
                     </div>
-                    <div class="select-group" style="display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem;">
-                        <label style="font-weight: 600; font-size: 1.1rem;" data-i18n="comparator.chartType">Grafico:</label>
-                        <select id="comp-chart-type" class="form-control" style="padding: 0.6rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 1rem; font-weight: bold; color: #0f172a; cursor: pointer;" onchange="updateComparator()">
-                            <option value="bar" data-i18n="comparator.bar">Barre</option>
-                            <option value="line" data-i18n="comparator.line">Linee</option>
-                        </select>
-                    </div>
                 </div>
             </div>
             
@@ -334,8 +327,9 @@
                 <!-- Colonna Superiore (Tabelle) -->
                 <div class="comparator-tables" style="display: flex; flex-direction: column; gap: 1.5rem; width: 100%;">
                     <!-- Tabella Mesi -->
-                    <div class="table-card" style="padding:0; overflow-x:auto; overflow-y:hidden; width: 100%; max-width: 100%; min-width: 0;">
-                        <table class="premium-table" style="margin:0;">
+                    <div class="table-card layout-widget" id="widget-comparator-table-mesi" style="padding:0; display: flex; flex-direction: column; width: 100%; max-width: 100%; min-width: 0;">
+                        <div style="overflow: auto; flex-grow: 1; width: 100%;">
+                            <table class="premium-table" style="margin:0;">
                             <thead>
                                 <tr>
                                     <th data-i18n="comparator.months">Mesi</th>
@@ -351,12 +345,14 @@
                                 <!-- Popolato via JS -->
                             </tfoot>
                         </table>
+                        </div>
                     </div>
                     
                     <!-- Tabella YTD -->
-                    <div class="table-card" style="padding:0; overflow-x:auto; overflow-y:hidden; border: 1px solid #cbd5e1; width: 100%; max-width: 100%; min-width: 0;">
-                        <div id="comp-ytd-title" style="background-color: #cbd5e1; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: #1e293b;">YTD</div>
-                        <table class="premium-table" style="margin: 0;">
+                    <div class="table-card layout-widget" id="widget-comparator-table-ytd" style="padding:0; display: flex; flex-direction: column; border: 1px solid #cbd5e1; width: 100%; max-width: 100%; min-width: 0;">
+                        <div id="comp-ytd-title" style="background-color: #cbd5e1; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 0.9rem; color: #1e293b; flex-shrink: 0;">YTD</div>
+                        <div style="overflow: auto; flex-grow: 1; width: 100%;">
+                            <table class="premium-table" style="margin: 0;">
                             <thead>
                                 <tr>
                                     <th id="comp-ytd-th-y1" style="text-align: right;">Anno 1</th>
@@ -368,6 +364,7 @@
                                 <!-- Popolato via JS -->
                             </tbody>
                         </table>
+                        </div>
                     </div>
                     <div style="padding: 1rem; background-color: #e0f2fe; color: #0369a1; font-size: 0.85rem; border-radius: 8px; border: 1px solid #bae6fd; line-height: 1.4;">
                         <strong data-i18n="comparator.infoTitle">Info YTD:</strong> <span data-i18n="comparator.info">La comparazione "Anno in corso vs Precedente" calcola il totale tenendo conto esclusivamente dei mesi in cui sono presenti i dati per l'anno più recente, scartando i mesi successivi dell'anno più vecchio per garantire un confronto a parità di periodo.</span>
@@ -377,8 +374,12 @@
                 <!-- Colonna Inferiore (Grafico) -->
                 <div class="comparator-chart" style="width: 100%;">
                     <div class="chart-card layout-widget" style="width: 100%; min-height: 500px; height: 100%;" id="widget-comparator-chart">
-                        <div class="chart-header">
+                        <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                             <h3 data-i18n="comparator.monthlyTrend">Andamento Mensile Comparato</h3>
+                            <select id="comp-chart-type" class="form-control" style="padding: 0.4rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 0.9rem; font-weight: bold; color: #0f172a; cursor: pointer;" onchange="updateComparator()">
+                                <option value="bar" data-i18n="comparator.bar">Barre</option>
+                                <option value="line" data-i18n="comparator.line">Linee</option>
+                            </select>
                         </div>
                         <div class="chart-container" style="height: calc(100% - 60px); min-height: 400px;">
                             <canvas id="comparatorChart"></canvas>
@@ -489,9 +490,10 @@
                 </div>
 
                 <!-- Table -->
-                <div class="table-card layout-widget" style="padding: 0; overflow-x: auto;" id="widget-area-table">
-                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;">DETTAGLIO RICAVI PER AREA (R$)</div>
-                    <table class="premium-table" style="margin: 0 auto; width: max-content; min-width: 50%;">
+                <div class="table-card layout-widget" style="padding: 0; display: flex; flex-direction: column;" id="widget-area-table">
+                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white; flex-shrink: 0;">DETTAGLIO RICAVI PER AREA (R$)</div>
+                    <div style="overflow: auto; flex-grow: 1; width: 100%;">
+                        <table class="premium-table" style="margin: 0 auto; width: max-content; min-width: 50%;">
                         <thead>
                             <tr>
                                 <th data-i18n="table.year">Anno</th>
@@ -508,6 +510,7 @@
                             <!-- Popolato via JS -->
                         </tfoot>
                     </table>
+                    </div>
                 </div>
 
             </div>
