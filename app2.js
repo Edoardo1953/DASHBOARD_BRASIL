@@ -298,15 +298,15 @@ function applyRoleRestrictions() {
     // Nascondiamo per tutti l'inserimento manuale
     if(navInput) navInput.style.display = 'none';
     
-    // Il menu Importa/Esporta è visibile solo all'Admin per caricare e pubblicare i dati
+    // Il menu Importa/Esporta e Modifica Layout sono visibili solo all'Admin
     if(currentUserRole === 'ADMIN') {
         if(navSettings) navSettings.style.display = 'flex';
-        const adminLayoutControls = document.getElementById('admin-layout-controls');
-        if(adminLayoutControls) adminLayoutControls.style.display = 'flex';
+        const navLayout = document.getElementById('nav-layout-toggle');
+        if(navLayout) navLayout.style.display = 'flex';
     } else {
         if(navSettings) navSettings.style.display = 'none';
-        const adminLayoutControls = document.getElementById('admin-layout-controls');
-        if(adminLayoutControls) adminLayoutControls.style.display = 'none';
+        const navLayout = document.getElementById('nav-layout-toggle');
+        if(navLayout) navLayout.style.display = 'none';
     }
 
     if(currentUserRole === 'USER') {
@@ -1832,6 +1832,42 @@ window.closeUserModal = function() {
     document.getElementById('user-modal').style.display = 'none';
 };
 
+window.openChangePasswordModal = function() {
+    document.getElementById('change-pwd-old').value = '';
+    document.getElementById('change-pwd-new').value = '';
+    document.getElementById('change-pwd-modal').style.display = 'flex';
+};
+
+window.closeChangePasswordModal = function() {
+    document.getElementById('change-pwd-modal').style.display = 'none';
+};
+
+window.submitChangePassword = function() {
+    const oldPwd = document.getElementById('change-pwd-old').value.trim();
+    const newPwd = document.getElementById('change-pwd-new').value.trim();
+
+    if(!newPwd) {
+        alert("Inserisci una nuova password.");
+        return;
+    }
+
+    const usersObj = getUsers();
+    if (usersObj[currentUsername]) {
+        if (usersObj[currentUsername].password !== oldPwd) {
+            alert("La vecchia password è errata!");
+            return;
+        }
+
+        usersObj[currentUsername].password = newPwd;
+        saveUsers(usersObj);
+        syncToGitHub(usersObj);
+        closeChangePasswordModal();
+        alert("Password modificata con successo!");
+    } else {
+        alert("Utente non trovato.");
+    }
+};
+
 window.saveUserData = function() {
     const uname = document.getElementById('user-input-username').value.trim().toLowerCase();
     const p = document.getElementById('user-input-password').value.trim();
@@ -2666,9 +2702,9 @@ function initCustomResizers(widget) {
 }
 
 window.toggleLayoutEditMode = function(skipFetch = false) {
-    isLayoutEditMode = !isLayoutEditMode;
     const body = document.body;
-    const toggleBtn = document.getElementById('toggleLayoutBtn');
+    isLayoutEditMode = !isLayoutEditMode;
+    const toggleBtn = document.getElementById('nav-layout-toggle');
     const saveBtn = document.getElementById('saveLayoutBtn');
     
     if (isLayoutEditMode) {
@@ -2676,8 +2712,9 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
         if(toggleBtn) {
             toggleBtn.innerHTML = '<i class="ph ph-x"></i> <span class="hide-mobile">Annulla Modifica</span>';
             toggleBtn.classList.replace('btn-outline', 'btn-secondary');
+            toggleBtn.style.color = 'var(--accent-red)';
         }
-        if(saveBtn) saveBtn.style.display = 'inline-flex';
+        if(saveBtn) saveBtn.style.display = 'flex';
         
         document.querySelectorAll('.layout-widget').forEach(el => {
             el.classList.add('resizable-widget');
@@ -2688,6 +2725,7 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
         if(toggleBtn) {
             toggleBtn.innerHTML = '<i class="ph ph-layout"></i> <span class="hide-mobile">Modifica Layout</span>';
             toggleBtn.classList.replace('btn-secondary', 'btn-outline');
+            toggleBtn.style.color = '';
         }
         if(saveBtn) saveBtn.style.display = 'none';
         
