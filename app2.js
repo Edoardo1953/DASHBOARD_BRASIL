@@ -2740,12 +2740,6 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
 };
 
 window.publishLayoutToGitHub = async function() {
-    const token = localStorage.getItem('sombra_github_token');
-    if (!token) {
-        alert('Devi configurare il Token GitHub (nella Gestione Utenti) per poter salvare il layout per tutti.');
-        return;
-    }
-    
     const saveBtn = document.getElementById('saveLayoutBtn');
     const originalText = saveBtn ? saveBtn.innerHTML : 'Salva Layout';
     if(saveBtn) {
@@ -2775,6 +2769,14 @@ window.publishLayoutToGitHub = async function() {
         });
         
         const jsonContent = JSON.stringify(layoutConfig, null, 2);
+        localStorage.setItem('local_layout_config', jsonContent);
+        
+        const token = localStorage.getItem('sombra_github_token');
+        if (!token) {
+            alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
+            toggleLayoutEditMode(true);
+            return;
+        }
         
         let sha = null;
         try {
@@ -2848,15 +2850,31 @@ window.applyLayoutConfig = function(config) {
 };
 
 window.fetchLayoutFromGitHub = function() {
+    const localConfig = localStorage.getItem('local_layout_config');
+    
     fetch(LAYOUT_FILE + '?t=' + new Date().getTime())
         .then(response => {
             if(!response.ok) throw new Error("Layout JSON not found");
             return response.json();
         })
         .then(config => {
-            applyLayoutConfig(config);
+            if (localConfig) {
+                try {
+                    const parsedLocal = JSON.parse(localConfig);
+                    applyLayoutConfig(Object.assign({}, config, parsedLocal));
+                } catch(e) {
+                    applyLayoutConfig(config);
+                }
+            } else {
+                applyLayoutConfig(config);
+            }
         })
         .catch(err => {
-            console.log("Layout non personalizzato.");
+            console.log("Layout non personalizzato su server.");
+            if (localConfig) {
+                try {
+                    applyLayoutConfig(JSON.parse(localConfig));
+                } catch(e) {}
+            }
         });
 };
