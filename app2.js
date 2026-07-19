@@ -48,7 +48,8 @@ const DEFAULT_USERS = {
     'user': { password: 'user123', role: 'USER' },
     'visitor': { password: 'visitor123', role: 'USER' },
     '01 alfonso': { password: 'alfonso', role: 'USER' },
-    '11 glenelg': { password: 'glenelg', role: 'USER' }
+    '11 glenelg': { password: 'glenelg', role: 'USER' },
+    '02 sergio': { password: 'sergio', role: 'USER' }
 };
 
 const GITHUB_REPO = 'Edoardo1953/DASHBOARD_BRASIL';
