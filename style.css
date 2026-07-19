@@ -1359,3 +1359,8 @@ body.layout-edit-mode .layout-widget canvas {
     filter: brightness(1.1);
 }
 
+
+/* Drag and drop per tabella utenti */
+.premium-table tr.dragging { opacity: 0.5; background-color: #f8fafc; }
+.premium-table tr.drag-over-top { border-top: 2px solid var(--accent-blue); }
+.premium-table tr.drag-over-bottom { border-bottom: 2px solid var(--accent-blue); }

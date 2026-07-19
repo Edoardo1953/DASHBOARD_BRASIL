@@ -110,8 +110,8 @@
                 <span data-i18n="nav.insertData">Inserisci Dati</span>
             </a>
             <a href="#" class="nav-item" data-view="settings-view" id="nav-settings">
-                <i class="ph ph-gear"></i>
-                <span data-i18n="nav.importExport">Importa / Esporta</span>
+                <i class="ph ph-wrench"></i>
+                <span data-i18n="nav.importExport">Utensili</span>
             </a>
             <a href="#" class="nav-item" data-view="users-view" id="nav-users">
                 <i class="ph ph-users"></i>
@@ -717,6 +717,16 @@
                     </select>
                 </div>
                 
+                <div class="setting-card">
+                    <div class="setting-icon"><i class="ph ph-magnifying-glass-plus"></i></div>
+                    <h3>Zoom Schema Societario</h3>
+                    <p>Imposta la larghezza dello schema in percentuale (es. 100% per adattarlo allo schermo, 150% per ingrandirlo con scorrimento).</p>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
+                        <input type="range" id="admin-schema-zoom" class="form-control" min="50" max="300" step="5" value="100" oninput="document.getElementById('zoom-val-display').innerText = this.value + '%'" onchange="saveAdminSchemaZoom()">
+                        <span id="zoom-val-display" style="font-weight: bold; width: 50px; text-align: right;">100%</span>
+                    </div>
+                </div>
+                
 
                 <div class="setting-card">
                     <div class="setting-icon" style="color: var(--accent-blue)"><i class="ph ph-eye"></i></div>
@@ -756,7 +766,8 @@
                     <table class="premium-table">
                         <thead>
                             <tr>
-                                <th>ID (Username)</th>
+                                <th style="width: 40px; text-align: center;"><i class="ph ph-arrows-out-line-vertical"></i></th>
+                                <th style="min-width: 150px; white-space: nowrap;">Username</th>
                                 <th>Password</th>
                                 <th>Ruolo</th>
                                 <th>Azioni</th>
@@ -819,9 +830,11 @@
 
     <!-- Modal Schema Azionariato -->
     <div id="schema-modal" class="modal-overlay" style="display: none; z-index: 10000;">
-        <div class="modal-content large" style="max-width: 95vw; max-height: 95vh; background: transparent; box-shadow: none; border: none; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
-            <button onclick="closeSchemaModal()" class="close-btn" style="position: absolute; top: 0px; right: 0px; background: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 2;"><i class="ph ph-x" style="font-size: 1.2rem;"></i></button>
-            <img src="structure Brésil.png" alt="Schema Struttura" style="max-width: 100%; max-height: 90vh; object-fit: contain;">
+        <div class="modal-content" style="width: 100vw; height: 100vh; max-width: none; max-height: none; background: rgba(0,0,0,0.5); box-shadow: none; border: none; padding: 0; border-radius: 0; display: flex; align-items: flex-start; justify-content: center; position: relative; overflow: auto;">
+            <button onclick="closeSchemaModal()" class="close-btn" style="position: fixed; top: 15px; right: 25px; background: white; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; cursor: pointer;"><i class="ph ph-x" style="font-size: 1.4rem; color: #000;"></i></button>
+            <div style="padding: 2rem; display: flex; justify-content: center; width: 100%; min-height: 100%;">
+                <img id="schema-img" src="structure Brésil.png" alt="Schema Struttura" style="width: var(--schema-zoom, 100%); max-width: none; height: auto; display: block; margin: auto; object-fit: contain;">
+            </div>
         </div>
     </div>
     <div id="snipping-overlay">
@@ -987,7 +1000,7 @@
         <i class="ph ph-floppy-disk"></i> <span style="margin-left: 0.5rem;" data-i18n="action.saveLayout">Salva Layout</span>
     </button>
 
-    <script src="app2.js?v=5"></script>
+    <script src="app2.js?v=6"></script>
     <script>
         function goToAnalisiOccupazione() {
             // Seleziona il radio button dell'occupazione

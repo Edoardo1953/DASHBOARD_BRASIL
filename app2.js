@@ -1804,7 +1804,14 @@ window.renderUsersTable = function() {
         const user = usersObj[uname];
         const tr = document.createElement('tr');
         
+        // Setup Drag & Drop
+        tr.draggable = true;
+        tr.dataset.uname = uname;
+        
         tr.innerHTML = `
+            <td style="width: 40px; text-align: center; cursor: grab;" class="drag-handle" title="Trascina per riordinare">
+                <i class="ph ph-list" style="font-size: 1.2rem; color: #94a3b8;"></i>
+            </td>
             <td><strong>${uname}</strong></td>
             <td>${user.password || ''}</td>
             <td>${user.role}</td>
@@ -1813,6 +1820,50 @@ window.renderUsersTable = function() {
                 ${uname !== currentUsername ? `<button class="btn-action delete-btn" onclick="deleteUser('${uname}')"><i class="ph ph-trash"></i></button>` : ''}
             </td>
         `;
+        
+        // Eventi Drag & Drop
+        tr.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', uname);
+            e.dataTransfer.effectAllowed = 'move';
+            tr.classList.add('dragging');
+        });
+        
+        tr.addEventListener('dragend', () => {
+            tr.classList.remove('dragging');
+            document.querySelectorAll('#usersTableBody tr').forEach(row => {
+                row.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+        });
+        
+        tr.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const rect = tr.getBoundingClientRect();
+            const relY = e.clientY - rect.top;
+            if(relY < rect.height / 2) {
+                tr.classList.add('drag-over-top');
+                tr.classList.remove('drag-over-bottom');
+            } else {
+                tr.classList.add('drag-over-bottom');
+                tr.classList.remove('drag-over-top');
+            }
+        });
+        
+        tr.addEventListener('dragleave', () => {
+            tr.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+        
+        tr.addEventListener('drop', (e) => {
+            e.preventDefault();
+            tr.classList.remove('drag-over-top', 'drag-over-bottom');
+            const draggedUname = e.dataTransfer.getData('text/plain');
+            if (draggedUname && draggedUname !== uname) {
+                const rect = tr.getBoundingClientRect();
+                const position = (e.clientY - rect.top < rect.height / 2) ? 'before' : 'after';
+                reorderUser(draggedUname, uname, position);
+            }
+        });
+        
         tbody.appendChild(tr);
     });
 
@@ -1823,6 +1874,28 @@ window.renderUsersTable = function() {
         statusBadge.textContent = hasToken ? '✅ Attivo' : 'Non configurato';
         statusBadge.style.background = hasToken ? '#10b981' : '#ef4444';
     }
+};
+
+window.reorderUser = function(draggedUname, targetUname, position) {
+    const usersObj = getUsers();
+    const keys = Object.keys(usersObj);
+    
+    const draggedIndex = keys.indexOf(draggedUname);
+    if(draggedIndex === -1) return;
+    keys.splice(draggedIndex, 1);
+    
+    let targetIndex = keys.indexOf(targetUname);
+    if(position === 'after') targetIndex++;
+    
+    keys.splice(targetIndex, 0, draggedUname);
+    
+    const newUsersObj = {};
+    keys.forEach(k => {
+        newUsersObj[k] = usersObj[k];
+    });
+    
+    saveUsers(newUsersObj);
+    renderUsersTable();
 };
 
 window.openAddUserModal = function() {
@@ -3189,5 +3262,32 @@ function goToWelcomeView() {
     const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
     if(welcomeBtn) welcomeBtn.click();
 }
+
+function saveAdminSchemaZoom() {
+    const slider = document.getElementById("admin-schema-zoom");
+    if(slider) {
+        localStorage.setItem("sombra_schema_zoom", slider.value);
+        applySchemaZoom();
+    }
+}
+
+function applySchemaZoom() {
+    const zoom = localStorage.getItem("sombra_schema_zoom") || "100";
+    const img = document.getElementById("schema-img");
+    if(img) {
+        img.style.setProperty("--schema-zoom", zoom + "%");
+    }
+    const slider = document.getElementById("admin-schema-zoom");
+    if(slider) {
+        slider.value = zoom;
+        const display = document.getElementById("zoom-val-display");
+        if(display) display.innerText = zoom + "%";
+    }
+}
+
+// Applica al caricamento della pagina
+document.addEventListener("DOMContentLoaded", () => {
+    applySchemaZoom();
+});
 
 
