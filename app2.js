@@ -47,7 +47,6 @@ const DEFAULT_USERS = {
     'admin': { password: 'admin123', role: 'ADMIN' },
     'user': { password: 'user123', role: 'USER' },
     'visitor': { password: 'visitor123', role: 'USER' },
-    'franco': { password: 'franco123', role: 'USER' },
     '01 alfonso': { password: 'alfonso', role: 'USER' }
 };
 
