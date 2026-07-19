@@ -1125,7 +1125,8 @@ window.updateYearlyHistory = function() {
                 diarias: 0, ab: 0, spa: 0, outros: 0,
                 netSales: 0, taxas: 0, brutSales: 0,
                 diariaMediaSum: 0, nDiarie: 0, occupazioneSum: 0,
-                count: 0
+                count: 0,
+                dataCount: 0
             };
         }
         
@@ -1156,6 +1157,10 @@ window.updateYearlyHistory = function() {
         yearlyData[y].nDiarie += parseFloat(item["n. diarie"]) || 0;
         yearlyData[y].occupazioneSum += parseFloat(item["% occup."] || item["Ocupação %"]) || 0;
         yearlyData[y].count += 1;
+        
+        if (parseFloat(item["Diaria media"]) > 0 || parseFloat(item["% occup."] || item["Ocupação %"]) > 0 || parseFloat(item["Diarias"]) > 0 || parseFloat(item["Total (Net sales)"]) > 0) {
+            yearlyData[y].dataCount += 1;
+        }
     });
 
     const years = Object.keys(yearlyData).sort((a,b) => a-b);
@@ -1168,8 +1173,9 @@ window.updateYearlyHistory = function() {
         const tableYears = [...years].reverse();
         tableYears.forEach(y => {
             const d = yearlyData[y];
-            const avgDiaria = d.count > 0 ? d.diariaMediaSum / d.count : 0;
-            const avgOccup = d.count > 0 ? d.occupazioneSum / d.count : 0;
+            const activeMonths = d.dataCount > 0 ? d.dataCount : d.count;
+            const avgDiaria = activeMonths > 0 ? d.diariaMediaSum / activeMonths : 0;
+            const avgOccup = activeMonths > 0 ? d.occupazioneSum / activeMonths : 0;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
