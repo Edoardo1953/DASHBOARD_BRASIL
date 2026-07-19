@@ -48,7 +48,20 @@ const DEFAULT_USERS = {
     'user': { password: 'user123', role: 'USER' },
     'visitor': { password: 'visitor123', role: 'USER' },
     '01 alfonso': { password: 'alfonso', role: 'USER' },
-    '11 glenelg': { password: 'glenelg', role: 'USER' }
+    '11 glenelg': { password: 'glenelg', role: 'USER' },
+    '02 sergio': { password: 'sergio', role: 'USER' },
+    '03 jean-pierre': { password: 'jean-pierre', role: 'USER' },
+    '04 stefano': { password: 'stefano', role: 'USER' },
+    '05 marco': { password: 'marco', role: 'USER' },
+    '06 susik': { password: 'susik', role: 'USER' },
+    '07 giorgio': { password: 'giorgio', role: 'USER' },
+    '08 marco': { password: 'marco', role: 'USER' },
+    '09 edoardo': { password: 'edoardo', role: 'USER' },
+    '10 enrico': { password: 'enrico', role: 'USER' },
+    '12 marylene': { password: 'marylene', role: 'USER' },
+    '13 adonella': { password: 'adonella', role: 'USER' },
+    '16 salvatore': { password: 'salvatore', role: 'USER' },
+    '17 mmm': { password: 'mmm', role: 'USER' }
 };
 
 const GITHUB_REPO = 'Edoardo1953/DASHBOARD_BRASIL';
