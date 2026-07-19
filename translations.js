@@ -1,4 +1,4 @@
-﻿const translations = {
+const translations = {
     it: {
         "nav.dashboard": "Dashboard",
         "nav.yearlyHistory": "Storico Annuale",
@@ -7,7 +7,7 @@
         "nav.areaAnalysis": "Analisi per Area",
         "nav.dataDetail": "Dettaglio Dati",
         "nav.insertData": "Inserisci Dati",
-        "nav.importExport": "Importa / Esporta",
+        "nav.importExport": "Utensili",
         "nav.userManagement": "Gestione Utenti",
         "nav.logout": "Logout",
         "nav.azionariato": "Azionariato",
