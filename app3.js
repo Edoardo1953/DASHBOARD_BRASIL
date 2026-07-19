@@ -68,18 +68,22 @@ const GITHUB_REPO = 'Edoardo1953/DASHBOARD_BRASIL';
 const GITHUB_FILE = 'app2.js';
 
 function getUsers() {
-    // Fonde gli utenti di default (visibili ovunque) con quelli del localStorage (modifiche locali)
-    const mergedUsers = Object.assign({}, DEFAULT_USERS);
     try {
         const stored = localStorage.getItem('sombra_spa_users');
         if (stored) {
             const localUsers = JSON.parse(stored);
-            Object.assign(mergedUsers, localUsers);
+            const mergedUsers = { ...localUsers };
+            for(let k in DEFAULT_USERS) {
+                if(!mergedUsers.hasOwnProperty(k)) {
+                    mergedUsers[k] = DEFAULT_USERS[k];
+                }
+            }
+            return mergedUsers;
         }
     } catch (e) {
         console.error("Error parsing users from local storage", e);
     }
-    return mergedUsers;
+    return Object.assign({}, DEFAULT_USERS);
 }
 
 function saveUsers(usersObj) {
@@ -335,10 +339,18 @@ function applyRoleRestrictions() {
         if(navTable) navTable.style.display = 'none';
         if(navUsers) navUsers.style.display = 'none';
         if(navWelcome) navWelcome.style.display = 'flex';
+        
+        // Forza la visualizzazione della Home (welcome-view) per lo USER
+        const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+        if(welcomeBtn) setTimeout(() => welcomeBtn.click(), 50);
     } else {
         if(navTable) navTable.style.display = 'flex';
         if(navUsers) navUsers.style.display = 'flex';
         if(navWelcome) navWelcome.style.display = 'none';
+        
+        // Forza la visualizzazione della Dashboard per l'ADMIN
+        const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
+        if(dashBtn) setTimeout(() => dashBtn.click(), 50);
     }
 }
 
@@ -1822,10 +1834,10 @@ window.renderUsersTable = function() {
         tr.dataset.uname = uname;
         
         tr.innerHTML = `
-            <td style="width: 40px; text-align: center; cursor: grab;" class="drag-handle" title="Trascina per riordinare">
+            <td style="width: 40px; text-align: center; cursor: grab;" class="row-drag-handle" title="Trascina per riordinare">
                 <i class="ph ph-list" style="font-size: 1.2rem; color: #94a3b8;"></i>
             </td>
-            <td><strong>${uname}</strong></td>
+            <td style="text-align: left;"><strong>${uname}</strong></td>
             <td>${user.password || ''}</td>
             <td>${user.role}</td>
             <td>
@@ -3251,17 +3263,52 @@ function updateWelcomeView() {
         name = name.charAt(0).toUpperCase() + name.slice(1);
         titleEl.textContent = "Benvenuto " + name;
 
+        const subtitleEl = document.getElementById("welcome-subtitle");
+
         // Se abbiamo un ID valido, cerchiamo in azionariatoData (che usa indici 0, 1, 2... per ID 01, 02, 03...)
         if (idNum !== null && idNum > 0 && idNum <= azionariatoData.length) {
-            const data = azionariatoData[idNum - 1];
-            if(sharesEl) sharesEl.textContent = data.shares.toLocaleString('it-IT');
-            if(classEl) classEl.textContent = "Classe " + data.type;
-            if(percEl) percEl.textContent = (data.det * 100).toFixed(2) + "%";
+            const targetPartner = azionariatoData[idNum - 1].partner;
+            
+            // Trova tutte le quote di questo partner
+            const partnerShares = azionariatoData.filter(d => d.partner === targetPartner);
+            
+            // Imposta il sottotitolo con gli ID dell'azionista
+            if (subtitleEl) {
+                const partnerIds = partnerShares.map(d => {
+                    const idx = azionariatoData.indexOf(d);
+                    return String(idx + 1).padStart(2, '0');
+                });
+                subtitleEl.textContent = partnerIds.map(id => "Azionista " + id).join(" - ");
+                subtitleEl.style.display = "block";
+            }
+            
+            if (partnerShares.length === 1) {
+                const data = partnerShares[0];
+                if(sharesEl) sharesEl.innerHTML = data.shares.toLocaleString('it-IT');
+                if(classEl) classEl.innerHTML = "Classe " + data.type;
+                if(percEl) percEl.innerHTML = (data.det * 100).toFixed(2) + "%";
+            } else {
+                // Multipli valori (es. Classe A e Classe B)
+                let sharesHtml = "";
+                let classHtml = "";
+                let percHtml = "";
+                
+                partnerShares.forEach((data, idx) => {
+                    sharesHtml += `<span style="font-size: 1.1rem">${data.shares.toLocaleString('it-IT')} (Cl. ${data.type})</span>${idx < partnerShares.length - 1 ? '<br>' : ''}`;
+                    classHtml += `<span style="font-size: 1.1rem">Classe ${data.type}</span>${idx < partnerShares.length - 1 ? '<br>' : ''}`;
+                    percHtml += `<span style="font-size: 1.1rem">${(data.det * 100).toFixed(2)}% (Cl. ${data.type})</span>${idx < partnerShares.length - 1 ? '<br>' : ''}`;
+                });
+                
+                if(sharesEl) sharesEl.innerHTML = sharesHtml;
+                if(classEl) classEl.innerHTML = classHtml;
+                if(percEl) percEl.innerHTML = percHtml;
+            }
         } else {
             // Per "user", "visitor", o se non c'è corrispondenza
-            if(sharesEl) sharesEl.textContent = "N/D";
-            if(classEl) classEl.textContent = "N/D";
-            if(percEl) percEl.textContent = "N/D";
+            if(subtitleEl) subtitleEl.style.display = "none";
+            if(sharesEl) sharesEl.innerHTML = "N/D";
+            if(classEl) classEl.innerHTML = "N/D";
+            if(percEl) percEl.innerHTML = "N/D";
         }
     }
 }
