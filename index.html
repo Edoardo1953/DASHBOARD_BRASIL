@@ -71,7 +71,11 @@
         </div>
 
         <nav class="sidebar-nav">
-            <a href="#" class="nav-item active" data-view="dashboard-view">
+            <a href="#" class="nav-item" data-view="welcome-view" id="nav-welcome">
+                <i class="ph ph-house"></i>
+                <span>Home</span>
+            </a>
+            <a href="#" class="nav-item active" data-view="dashboard-view" id="nav-dashboard">
                 <i class="ph ph-squares-four"></i>
                 <span data-i18n="nav.dashboard">Dashboard</span>
             </a>
@@ -186,6 +190,50 @@
                 </div>
             </div>
         </header>
+
+        <!-- View: Welcome (Home per USERS) -->
+        <div id="welcome-view" class="view-section">
+            <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+                <h2 id="welcome-title" style="font-size: 2.5rem; color: var(--text-primary); margin-bottom: 0;">Benvenuto</h2>
+                
+                <div style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); background: #000;">
+                    <video id="welcome-video" autoplay muted loop controls style="width: 100%; display: block; max-height: 500px; object-fit: cover;">
+                        <source src="Sombra Floresta.mp4" type="video/mp4">
+                        Il tuo browser non supporta il tag video.
+                    </video>
+                </div>
+
+                <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue"><i class="ph ph-files"></i></div>
+                        <div class="kpi-info">
+                            <h3>Numero Azioni</h3>
+                            <p class="kpi-value" id="welcome-shares">-</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green"><i class="ph ph-certificate"></i></div>
+                        <div class="kpi-info">
+                            <h3>Classe</h3>
+                            <p class="kpi-value" id="welcome-class">-</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon orange"><i class="ph ph-percent"></i></div>
+                        <div class="kpi-info">
+                            <h3>Percentuale</h3>
+                            <p class="kpi-value" id="welcome-percentage">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button class="btn btn-primary" onclick="goToAzionariato()" style="padding: 1rem 2rem; font-size: 1.1rem; border-radius: 30px;">
+                        <i class="ph ph-users-three"></i> Azionariato
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- View: Dashboard -->
         <div id="dashboard-view" class="view-section active">
@@ -659,6 +707,16 @@
                     <button class="btn btn-secondary" id="exportBtn"><i class="ph ph-file-json"></i> Scarica Backup JSON</button>
                 </div>
                 
+                <div class="setting-card">
+                    <div class="setting-icon"><i class="ph ph-video"></i></div>
+                    <h3>Video di Benvenuto (USER)</h3>
+                    <p>Scegli quale video mostrare nella pagina Home degli utenti con ruolo USER.</p>
+                    <select id="admin-video-select" class="form-control" onchange="saveAdminVideoSelection()" style="margin-bottom: 1rem;">
+                        <option value="Sombra Floresta.mp4">Sombra Floresta.mp4</option>
+                        <option value="SPA Sombra Floresta 12.2024.MP4">SPA Sombra Floresta 12.2024.MP4</option>
+                    </select>
+                </div>
+                
 
                 <div class="setting-card">
                     <div class="setting-icon" style="color: var(--accent-blue)"><i class="ph ph-eye"></i></div>
@@ -714,6 +772,7 @@
 
         <!-- Vista Azionariato -->
         <div id="azionariato-view" class="view-section">
+
             <div class="header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <h2 data-i18n="azionariato.title">Azionariato</h2>
                 <button class="btn btn-primary" onclick="openSchemaModal()"><i class="ph ph-tree-structure"></i> <span data-i18n="azionariato.schemaBtn">SCHEMA</span></button>

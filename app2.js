@@ -268,8 +268,13 @@ function setupAuthListeners() {
                     console.error("Error in initDB:", err);
                     alert("Errore in initDB: " + err.message);
                 }
-                const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
-                if(dashBtn) dashBtn.click();
+                if (currentUserRole === 'USER') {
+                    const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+                    if (welcomeBtn) welcomeBtn.click();
+                } else {
+                    const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
+                    if (dashBtn) dashBtn.click();
+                }
             } else {
                 errorEl.style.display = 'block';
             }
@@ -294,6 +299,7 @@ function applyRoleRestrictions() {
     const navSettings = document.getElementById('nav-settings');
     const navTable = document.getElementById('nav-table');
     const navUsers = document.getElementById('nav-users');
+    const navWelcome = document.getElementById('nav-welcome');
     
     // Nascondiamo per tutti l'inserimento manuale
     if(navInput) navInput.style.display = 'none';
@@ -312,9 +318,11 @@ function applyRoleRestrictions() {
     if(currentUserRole === 'USER') {
         if(navTable) navTable.style.display = 'none';
         if(navUsers) navUsers.style.display = 'none';
+        if(navWelcome) navWelcome.style.display = 'flex';
     } else {
         if(navTable) navTable.style.display = 'flex';
         if(navUsers) navUsers.style.display = 'flex';
+        if(navWelcome) navWelcome.style.display = 'none';
     }
 }
 
@@ -337,7 +345,9 @@ function initNavigation() {
             document.getElementById(targetView).classList.add('active');
             
             // Se andiamo in dashboard, aggiorniamo i dati
-            if(targetView === 'dashboard-view') {
+            if(targetView === 'welcome-view') {
+                if (typeof updateWelcomeView === 'function') updateWelcomeView();
+            } else if(targetView === 'dashboard-view') {
                 updateDashboard();
             } else if (targetView === 'table-view') {
                 updateTable();
@@ -3110,3 +3120,71 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+// --- WELCOME VIEW LOGIC ---
+function saveAdminVideoSelection() {
+    const sel = document.getElementById("admin-video-select");
+    if (sel) {
+        localStorage.setItem("sombra_welcome_video", sel.value);
+    }
+}
+
+function updateWelcomeView() {
+    const titleEl = document.getElementById("welcome-title");
+    const sharesEl = document.getElementById("welcome-shares");
+    const classEl = document.getElementById("welcome-class");
+    const percEl = document.getElementById("welcome-percentage");
+    const videoEl = document.getElementById("welcome-video");
+
+    if(videoEl) {
+        const adminVideo = localStorage.getItem("sombra_welcome_video") || "Sombra Floresta.mp4";
+        const source = videoEl.querySelector("source");
+        if(source && source.src.indexOf(adminVideo) === -1) {
+            source.src = adminVideo;
+            videoEl.load();
+            videoEl.play().catch(e => console.log("Autoplay prevented", e));
+        }
+    }
+
+    if(currentUsername && titleEl) {
+        const parts = currentUsername.split(" ");
+        let name = currentUsername;
+        let idNum = null;
+        if(parts.length > 1 && !isNaN(parts[0])) {
+            idNum = parseInt(parts[0], 10);
+            name = parts.slice(1).join(" ");
+        } else {
+            // Se l'username è "user" o "visitor", manteniamo il nome senza cercare azioni
+            name = currentUsername;
+        }
+        
+        // Capitalize nome (prima lettera maiuscola)
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        titleEl.textContent = "Benvenuto " + name;
+
+        // Se abbiamo un ID valido, cerchiamo in azionariatoData (che usa indici 0, 1, 2... per ID 01, 02, 03...)
+        if (idNum !== null && idNum > 0 && idNum <= azionariatoData.length) {
+            const data = azionariatoData[idNum - 1];
+            if(sharesEl) sharesEl.textContent = data.shares.toLocaleString('it-IT');
+            if(classEl) classEl.textContent = "Classe " + data.type;
+            if(percEl) percEl.textContent = (data.det * 100).toFixed(2) + "%";
+        } else {
+            // Per "user", "visitor", o se non c'è corrispondenza
+            if(sharesEl) sharesEl.textContent = "N/D";
+            if(classEl) classEl.textContent = "N/D";
+            if(percEl) percEl.textContent = "N/D";
+        }
+    }
+}
+
+function goToAzionariato() {
+    const azBtn = document.querySelector('.nav-item[data-view="azionariato-view"]');
+    if(azBtn) azBtn.click();
+}
+
+function goToWelcomeView() {
+    const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+    if(welcomeBtn) welcomeBtn.click();
+}
+
+
