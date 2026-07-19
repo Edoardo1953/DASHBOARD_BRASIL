@@ -1,54 +1,54 @@
 {
   "widget-monthly-revenue": {
-    "width": "927.33px",
+    "width": "auto",
     "height": "auto",
     "tx": 0,
     "ty": 0
   },
   "widget-yearly-revenue": {
-    "width": "586.656px",
+    "width": "auto",
     "height": "auto",
     "tx": 0,
     "ty": 0
   },
   "widget-yearly-table": {
-    "width": "1529px",
-    "height": "293.625px",
+    "width": "auto",
+    "height": "auto",
     "tx": 0,
     "ty": 0
   },
   "widget-yearly-trend": {
-    "width": "983.328px",
-    "height": "451.438px",
+    "width": "auto",
+    "height": "auto",
     "tx": 0,
     "ty": 0
   },
   "widget-revenue-composition": {
-    "width": "520.656px",
-    "height": "451.438px",
-    "tx": -2,
-    "ty": 1
+    "width": "auto",
+    "height": "auto",
+    "tx": 0,
+    "ty": 0
   },
   "widget-comparator-table-mesi": {
-    "width": "100%",
+    "width": "702px",
     "height": "359.25px",
     "tx": 0,
     "ty": 0
   },
   "widget-comparator-table-ytd": {
-    "width": "100%",
+    "width": "701px",
     "height": "150px",
     "tx": 0,
     "ty": 0
   },
   "widget-comparator-chart": {
     "width": "100%",
-    "height": "687.344px",
-    "tx": -23,
-    "ty": -156
+    "height": "689.344px",
+    "tx": -20,
+    "ty": -159
   },
   "widget-analysis-chart": {
-    "width": "855.625px",
+    "width": "auto",
     "height": "100%",
     "tx": 0,
     "ty": 0
