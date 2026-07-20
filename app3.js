@@ -65,7 +65,7 @@ const DEFAULT_USERS = {
 };
 
 const GITHUB_REPO = 'Edoardo1953/DASHBOARD_BRASIL';
-const GITHUB_FILE = 'app2.js';
+const GITHUB_FILE = 'app3.js';
 
 function getUsers() {
     try {
