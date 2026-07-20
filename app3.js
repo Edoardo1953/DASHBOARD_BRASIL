@@ -3336,12 +3336,12 @@ function saveAdminSchemaZoom() {
         applySchemaZoom();
     }
 }
-
 function applySchemaZoom() {
     const zoom = localStorage.getItem("sombra_schema_zoom") || "100";
     const img = document.getElementById("schema-img");
     if(img) {
-        img.style.setProperty("--schema-zoom", zoom + "%");
+        const actualZoom = parseFloat(zoom) * 0.6;
+        img.style.setProperty("--schema-zoom", actualZoom + "%");
     }
     const slider = document.getElementById("admin-schema-zoom");
     if(slider) {
