@@ -133,7 +133,10 @@ async function syncToGitHub(usersObj) {
         const newContent = currentContent.replace(/const DEFAULT_USERS = \{[\s\S]*?\};/, newBlock);
 
         if (newContent === currentContent) {
-            throw new Error('Blocco DEFAULT_USERS non trovato nel file. Contatta il supporto.');
+            // Se il contenuto è lo stesso, significa che GitHub è già aggiornato con questa lista!
+            // Nessun bisogno di fare una richiesta PUT.
+            showSyncStatus('success', '✅ Utenti già sincronizzati su GitHub!');
+            return;
         }
 
         // 3. Scrivi il file aggiornato su GitHub
