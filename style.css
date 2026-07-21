@@ -1364,3 +1364,72 @@ body.layout-edit-mode .layout-widget canvas {
 .premium-table tr.dragging { opacity: 0.5; background-color: #f8fafc; }
 .premium-table tr.drag-over-top { border-top: 2px solid var(--accent-blue); }
 .premium-table tr.drag-over-bottom { border-bottom: 2px solid var(--accent-blue); }
+
+/* ---- BILANCI PAGE ---- */
+.bilanci-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+    gap: 1rem;
+}
+.bilanci-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+}
+.bilanci-item-icon {
+    font-size: 2.5rem;
+    color: var(--accent-blue);
+    flex-shrink: 0;
+}
+.bilanci-item-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+.bilanci-item-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin: 0 0 0.2rem 0;
+}
+.bilanci-item-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+.bilanci-item-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.bilanci-action-btn {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+.bilanci-action-btn:hover {
+    background: #e2e8f0;
+    color: var(--text-primary);
+}
+.bilanci-action-btn.delete:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+.bilanci-action-btn.drag-handle {
+    cursor: grab;
+}
+.bilanci-action-btn.drag-handle:active {
+    cursor: grabbing;
+}

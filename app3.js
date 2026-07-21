@@ -2827,6 +2827,7 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
     const body = document.body;
     isLayoutEditMode = !isLayoutEditMode;
     const toggleBtn = document.getElementById('nav-layout-toggle');
+    const saveContainer = document.getElementById('saveLayoutContainer');
     const saveBtn = document.getElementById('saveLayoutBtn');
     
     if (isLayoutEditMode) {
@@ -2836,7 +2837,7 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
             toggleBtn.classList.replace('btn-outline', 'btn-secondary');
             toggleBtn.style.color = 'var(--accent-red)';
         }
-        if(saveBtn) saveBtn.style.display = 'flex';
+        if(saveContainer) saveContainer.style.display = 'flex';
         
         document.querySelectorAll('.layout-widget').forEach(el => {
             el.classList.add('resizable-widget');
@@ -2849,7 +2850,7 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
             toggleBtn.classList.replace('btn-secondary', 'btn-outline');
             toggleBtn.style.color = '';
         }
-        if(saveBtn) saveBtn.style.display = 'none';
+        if(saveContainer) saveContainer.style.display = 'none';
         
         document.querySelectorAll('.layout-widget').forEach(el => {
             el.classList.remove('resizable-widget');
@@ -3360,3 +3361,305 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+
+// ==========================================
+// BILANCI E DOCUMENTAZIONE
+// ==========================================
+
+let bilanciDB = {
+    watergarden: [],
+    arcoiris: []
+};
+
+const BILANCI_FILE = 'bilanci_db.json';
+
+window.fetchBilanciFromGitHub = async function() {
+    try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BILANCI_FILE}?t=${new Date().getTime()}`, {
+            headers: { 'Accept': 'application/vnd.github+json' },
+            cache: 'no-store'
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const content = decodeURIComponent(escape(atob(data.content)));
+            bilanciDB = JSON.parse(content);
+        } else if (res.status === 404) {
+            console.log("bilanci_db.json not found, using empty db.");
+        }
+    } catch (e) {
+        console.error("Error fetching Bilanci DB:", e);
+    }
+    window.renderBilanciList('watergarden');
+    window.renderBilanciList('arcoiris');
+};
+
+window.saveBilanciToGitHub = async function() {
+    const token = localStorage.getItem('sombra_github_token');
+    if (!token) return;
+
+    try {
+        let sha = null;
+        try {
+            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BILANCI_FILE}?t=${new Date().getTime()}`, {
+                headers: { 'Accept': 'application/vnd.github+json', 'Authorization': `Bearer ${token}` },
+                cache: 'no-store'
+            });
+            if (getRes.ok) {
+                const data = await getRes.json();
+                sha = data.sha;
+            }
+        } catch(e) {}
+
+        const contentStr = JSON.stringify(bilanciDB, null, 2);
+        const base64Content = btoa(unescape(encodeURIComponent(contentStr)));
+
+        const body = {
+            message: "Update bilanci_db.json",
+            content: base64Content
+        };
+        if (sha) body.sha = sha;
+
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BILANCI_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!putRes.ok) {
+            console.error("Failed to save Bilanci DB");
+        }
+    } catch (e) {
+        console.error("Error saving Bilanci DB:", e);
+    }
+};
+
+window.triggerBilanciUpload = function(company) {
+    document.getElementById(`bilanci-upload-${company}`).click();
+};
+
+window.handleBilanciUpload = async function(event, company) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const token = localStorage.getItem('sombra_github_token');
+    if (!token) {
+        alert("Errore: Token GitHub mancante. Non puoi caricare file.");
+        return;
+    }
+
+    const MAX_SIZE = 25 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+        alert(`Il file è troppo grande (${(file.size/1024/1024).toFixed(1)}MB). Il limite massimo è 25MB.`);
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const fileContent = e.target.result; 
+        const base64Data = fileContent.split(',')[1];
+        
+        const safeFileName = file.name.replace(/\s+/g, '_');
+        const githubPath = `Bilanci_Docs/${new Date().getTime()}_${safeFileName}`;
+
+        const uploadBtn = event.target.previousElementSibling;
+        const origHtml = uploadBtn.innerHTML;
+        uploadBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> <span>Caricamento in corso...</span>';
+        uploadBtn.disabled = true;
+
+        try {
+            const body = {
+                message: `Upload ${safeFileName}`,
+                content: base64Data
+            };
+
+            const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${githubPath}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (putRes.ok) {
+                const data = await putRes.json();
+                const fileUrl = data.content.download_url;
+                
+                const docObj = {
+                    id: Date.now().toString(),
+                    name: file.name,
+                    url: fileUrl,
+                    type: file.type.startsWith('video') ? 'video' : (file.type.startsWith('image') ? 'image' : 'pdf'),
+                    date: new Date().toLocaleDateString()
+                };
+
+                if(!bilanciDB[company]) bilanciDB[company] = [];
+                bilanciDB[company].push(docObj);
+                
+                await window.saveBilanciToGitHub();
+                window.renderBilanciList(company);
+            } else {
+                const errData = await putRes.json();
+                alert("Errore durante il caricamento del file: " + errData.message);
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Errore di rete durante il caricamento.");
+        } finally {
+            uploadBtn.innerHTML = origHtml;
+            uploadBtn.disabled = false;
+            event.target.value = '';
+        }
+    };
+    reader.readAsDataURL(file);
+};
+
+window.deleteBilanciDoc = async function(company, id) {
+    if (!confirm("Sei sicuro di voler eliminare questo documento?")) return;
+    bilanciDB[company] = bilanciDB[company].filter(doc => doc.id !== id);
+    window.renderBilanciList(company);
+    await window.saveBilanciToGitHub();
+};
+
+window.switchBilanciTab = function(company) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.color = 'var(--text-secondary)';
+    });
+    document.querySelectorAll('.bilanci-tab-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+    
+    event.currentTarget.classList.add('active');
+    event.currentTarget.style.color = 'var(--text-primary)';
+    const container = document.getElementById(`bilanci-${company}-container`);
+    if (container) {
+        container.classList.add('active');
+        container.style.display = 'block';
+    }
+};
+
+window.renderBilanciList = function(company) {
+    const container = document.getElementById(`bilanci-list-${company}`);
+    if (!container) return;
+    
+    const docs = bilanciDB[company] || [];
+    const isAdmin = currentUserRole === 'ADMIN';
+    
+    const adminUploadDiv = document.querySelector(`#bilanci-${company}-container .admin-only`);
+    if(adminUploadDiv) {
+        adminUploadDiv.style.display = isAdmin ? 'block' : 'none';
+    }
+
+    if (docs.length === 0) {
+        const emptyText = (window.translations && window.translations[window.currentLang] && window.translations[window.currentLang]['bilanci.empty']) ? window.translations[window.currentLang]['bilanci.empty'] : 'Nessun documento presente in questa sezione.';
+        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--text-secondary);"><i class="ph ph-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p data-i18n="bilanci.empty">${emptyText}</p></div>`;
+        return;
+    }
+
+    let html = '';
+    docs.forEach(doc => {
+        let icon = 'ph-file';
+        if(doc.type === 'pdf') icon = 'ph-file-pdf';
+        if(doc.type === 'video') icon = 'ph-video-camera';
+        if(doc.type === 'image') icon = 'ph-image';
+
+        html += `
+        <div class="bilanci-item" data-id="${doc.id}">
+            <div class="bilanci-item-icon"><i class="ph ${icon}"></i></div>
+            <div class="bilanci-item-info">
+                <h4 class="bilanci-item-title">${doc.name}</h4>
+                <div class="bilanci-item-meta">${doc.date} &bull; ${doc.type.toUpperCase()}</div>
+            </div>
+            <div class="bilanci-item-actions">
+                <button class="bilanci-action-btn" onclick="openMediaModal('${doc.url}', '${doc.type}')" title="Visualizza">
+                    <i class="ph ph-eye"></i>
+                </button>
+                <a class="bilanci-action-btn" href="${doc.url}" download="${doc.name}" target="_blank" title="Download">
+                    <i class="ph ph-download-simple"></i>
+                </a>
+                ${isAdmin ? `
+                <button class="bilanci-action-btn" onclick="renameBilanciDoc('${company}', '${doc.id}')" title="Rinomina">
+                    <i class="ph ph-pencil-simple"></i>
+                </button>
+                <button class="bilanci-action-btn delete" onclick="deleteBilanciDoc('${company}', '${doc.id}')" title="Elimina">
+                    <i class="ph ph-trash"></i>
+                </button>
+                <div class="bilanci-action-btn drag-handle" title="Trascina per riordinare" style="cursor: grab;">
+                    <i class="ph ph-arrows-out-line-vertical"></i>
+                </div>
+                ` : ''}
+            </div>
+        </div>`;
+    });
+    
+    container.innerHTML = html;
+
+    if (isAdmin && typeof Sortable !== 'undefined') {
+        Sortable.create(container, {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: async function (evt) {
+                const newIndex = evt.newIndex;
+                const oldIndex = evt.oldIndex;
+                
+                const movedItem = docs.splice(oldIndex, 1)[0];
+                docs.splice(newIndex, 0, movedItem);
+                bilanciDB[company] = docs;
+                await window.saveBilanciToGitHub();
+            }
+        });
+    }
+};
+
+window.openMediaModal = function(url, type) {
+    const modal = document.getElementById('media-modal');
+    const body = document.getElementById('media-modal-body');
+    
+    body.innerHTML = '';
+    
+    if (type === 'pdf') {
+        body.innerHTML = `<iframe src="https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true" style="width:100%; min-width: 600px; height:80vh; border:none; border-radius: 8px;"></iframe>`;
+    } else if (type === 'video') {
+        body.innerHTML = `<video src="${url}" controls autoplay style="max-width:100%; max-height:80vh; border-radius: 8px;"></video>`;
+    } else if (type === 'image') {
+        body.innerHTML = `<img src="${url}" style="max-width:100%; max-height:80vh; border-radius: 8px; object-fit: contain;">`;
+    } else {
+        body.innerHTML = `<div style="padding: 2rem; text-align:center;">Anteprima non disponibile per questo tipo di file.</div>`;
+    }
+    
+    modal.style.display = 'flex';
+};
+
+window.closeMediaModal = function() {
+    const modal = document.getElementById('media-modal');
+    const body = document.getElementById('media-modal-body');
+    if (modal) modal.style.display = 'none';
+    if (body) body.innerHTML = ''; 
+};
+
+setTimeout(window.fetchBilanciFromGitHub, 1500);
+
+const oldUpdateRoleUI_Bilanci = window.updateRoleUI;
+window.updateRoleUI = function() {
+    if(typeof oldUpdateRoleUI_Bilanci === 'function') oldUpdateRoleUI_Bilanci();
+    window.renderBilanciList('watergarden');
+    window.renderBilanciList('arcoiris');
+};
+window.renameBilanciDoc = async function(company, id) {
+    const doc = bilanciDB[company].find(d => d.id === id);
+    if (!doc) return;
+    const newName = prompt('Inserisci il nuovo nome per il documento:', doc.name);
+    if (newName && newName.trim() !== '' && newName !== doc.name) {
+        doc.name = newName.trim();
+        window.renderBilanciList(company);
+        await window.saveBilanciToGitHub();
+    }
+};
