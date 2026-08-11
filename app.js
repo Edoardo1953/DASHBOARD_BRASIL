@@ -324,11 +324,7 @@ window.undoLastAction = function() {
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    // Import Excel
-    document.getElementById('excelFileInput').addEventListener('change', handleExcelUpload);
-    
-    // Export JSON
-    document.getElementById('exportBtn').addEventListener('click', exportData);
+
 
     // Ripristina Anni Nascosti
     const restoreHandler = () => {

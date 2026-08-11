@@ -1,4 +1,4 @@
-let monthlyChartInstance = null;
+﻿let monthlyChartInstance = null;
 let yearlyChartInstance = null;
 let yearlyTrendChartInstance = null;
 let yearlyCompositionChartInstance = null;
@@ -40,7 +40,7 @@ function saveRoleSpecificSettings() {
 const MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Auth Config
-// UTENTI DI DEFAULT — questi sono visibili su TUTTI i dispositivi.
+// UTENTI DI DEFAULT â€” questi sono visibili su TUTTI i dispositivi.
 // Questo blocco viene aggiornato automaticamente dall'app tramite GitHub API
 // ogni volta che aggiungi/modifichi/elimini un utente dalla sezione "Gestione Utenti".
 const DEFAULT_USERS = {
@@ -92,7 +92,7 @@ function saveUsers(usersObj) {
     syncToGitHub(usersObj);
 }
 
-// ─── GITHUB AUTO-SYNC ────────────────────────────────────────────────────────
+// â”€â”€â”€ GITHUB AUTO-SYNC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function generateDefaultUsersBlock(usersObj) {
     const lines = Object.entries(usersObj).map(([uname, data]) => {
@@ -133,9 +133,9 @@ async function syncToGitHub(usersObj) {
         const newContent = currentContent.replace(/const DEFAULT_USERS = \{[\s\S]*?\};/, newBlock);
 
         if (newContent === currentContent) {
-            // Se il contenuto è lo stesso, significa che GitHub è già aggiornato con questa lista!
+            // Se il contenuto Ã¨ lo stesso, significa che GitHub Ã¨ giÃ  aggiornato con questa lista!
             // Nessun bisogno di fare una richiesta PUT.
-            showSyncStatus('success', '✅ Utenti già sincronizzati su GitHub!');
+            showSyncStatus('success', 'âœ… Utenti giÃ  sincronizzati su GitHub!');
             return;
         }
 
@@ -161,13 +161,13 @@ async function syncToGitHub(usersObj) {
         }
 
         // Successo!
-        showSyncStatus('success', '✅ Utenti sincronizzati su GitHub! Tutti potranno accedere entro 1-2 minuti.');
+        showSyncStatus('success', 'âœ… Utenti sincronizzati su GitHub! Tutti potranno accedere entro 1-2 minuti.');
 
     } catch (err) {
         console.error('GitHub sync error:', err);
         const isAuthError = err.message.includes('Token non valido');
         if (isAuthError) localStorage.removeItem('sombra_github_token');
-        showSyncStatus('error', '❌ ' + err.message + (isAuthError ? ' Usa il pulsante "Configura Token".' : ''));
+        showSyncStatus('error', 'âŒ ' + err.message + (isAuthError ? ' Usa il pulsante "Configura Token".' : ''));
     }
 }
 
@@ -207,7 +207,7 @@ window.saveGithubToken = function() {
     if (!token) return alert('Inserisci un token valido.');
     localStorage.setItem('sombra_github_token', token);
     closeGithubTokenModal();
-    showSyncStatus('success', '✅ Token salvato! Ora ri-salva un utente per sincronizzare.');
+    showSyncStatus('success', 'âœ… Token salvato! Ora ri-salva un utente per sincronizzare.');
     renderUsersTable();
 };
 
@@ -484,7 +484,7 @@ function fallbackLoadDB() {
         updateDashboard();
         if(document.getElementById('dataTableBody')) updateTable();
     } else {
-        alert("Benvenuto! Non è stato possibile caricare i dati dal server. Assicurati che il file DB Arcoiris Dashboard.xlsx esista sul repository GitHub.");
+        alert("Benvenuto! Non Ã¨ stato possibile caricare i dati dal server. Assicurati che il file DB Arcoiris Dashboard.xlsx esista sul repository GitHub.");
     }
 }
 
@@ -551,7 +551,7 @@ window.publishDatabaseToGitHub = async function() {
     
     const dbData = localStorage.getItem(DB_KEY);
     if (!dbData || dbData === '[]') {
-        alert('Il database è vuoto. Carica prima il file Excel!');
+        alert('Il database Ã¨ vuoto. Carica prima il file Excel!');
         return;
     }
 
@@ -587,7 +587,7 @@ window.publishDatabaseToGitHub = async function() {
                 fileSha = fileData.sha;
             }
         } catch(e) {
-            console.warn('Il file db.json non esiste ancora, verrà creato.');
+            console.warn('Il file db.json non esiste ancora, verrÃ  creato.');
         }
 
         // 2. Scrivi il file aggiornato su GitHub
@@ -633,11 +633,11 @@ window.publishDatabaseToGitHub = async function() {
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    // Import Excel
-    document.getElementById('excelFileInput').addEventListener('change', handleExcelUpload);
+
+
     
-    // Export JSON
-    document.getElementById('exportBtn').addEventListener('click', exportData);
+
+
 
     // Ripristina Anni Nascosti
     const restoreHandler = () => {
@@ -664,8 +664,8 @@ function setupEventListeners() {
         isMultiSelect = e.target.classList.contains('active');
         saveRoleSpecificSettings();
         
-        // Se disabilitiamo la selezione multipla, e abbiamo più anni selezionati,
-        // teniamo solo l'anno più recente
+        // Se disabilitiamo la selezione multipla, e abbiamo piÃ¹ anni selezionati,
+        // teniamo solo l'anno piÃ¹ recente
         if(!isMultiSelect && selectedYears.size > 1) {
             const maxYear = Math.max(...Array.from(selectedYears));
             selectedYears.clear();
@@ -702,7 +702,7 @@ function setupEventListeners() {
 
         let db = getDB();
         
-        // Controlla se esiste già questo mese/anno e aggiornalo, altrimenti aggiungi
+        // Controlla se esiste giÃ  questo mese/anno e aggiornalo, altrimenti aggiungi
         const existingIndex = db.findIndex(item => item["ANNO"] == newEntry["ANNO"] && item["MESE"] == newEntry["MESE"]);
         if(existingIndex >= 0) {
             db[existingIndex] = {...db[existingIndex], ...newEntry};
@@ -719,7 +719,7 @@ function setupEventListeners() {
     });
 }
 
-// --- Funzionalità Importazione/Esportazione ---
+// --- FunzionalitÃ  Importazione/Esportazione ---
 function handleExcelUpload(e) {
     const file = e.target.files[0];
     if(!file) return;
@@ -786,7 +786,7 @@ function populateYearSelector(db) {
     
     let years = [...new Set(db.map(item => item["ANNO"]).filter(y => y))].sort((a,b) => b-a);
     
-    // Se primo avvio/default, nascondiamo automaticamente gli anni più vecchi dei primi 6
+    // Se primo avvio/default, nascondiamo automaticamente gli anni piÃ¹ vecchi dei primi 6
     if (selectedYears === null) {
         hiddenYears = [];
         if (years.length > 6) {
@@ -802,7 +802,7 @@ function populateYearSelector(db) {
     
     container.innerHTML = '';
     
-    // Se default, seleziona solo l'anno più recente (il primo essendo decrescenti)
+    // Se default, seleziona solo l'anno piÃ¹ recente (il primo essendo decrescenti)
     if(selectedYears === null) {
         if(years.length > 0) {
             selectedYears = new Set([years[0]]);
@@ -815,7 +815,7 @@ function populateYearSelector(db) {
         saveRoleSpecificSettings();
     }
     
-    // Se l'anno selezionato è stato nascosto e non c'è altro, rimpiazziamo
+    // Se l'anno selezionato Ã¨ stato nascosto e non c'Ã¨ altro, rimpiazziamo
     if(years.length > 0) {
         let hasActive = false;
         years.forEach(y => { if(selectedYears.has(y)) hasActive = true; });
@@ -854,7 +854,7 @@ function populateYearSelector(db) {
             }
 
             if(isMultiSelect) {
-                // Modalità Multipla
+                // ModalitÃ  Multipla
                 if(selectedYears.has(year)) {
                     if(selectedYears.size > 1) {
                         selectedYears.delete(year);
@@ -865,7 +865,7 @@ function populateYearSelector(db) {
                     btn.classList.add('active');
                 }
             } else {
-                // Modalità Singola
+                // ModalitÃ  Singola
                 if(!selectedYears.has(year)) {
                     selectedYears.clear();
                     selectedYears.add(year);
@@ -886,14 +886,14 @@ function populateYearSelector(db) {
     });
 }
 
-// --- Funzionalità Dashboard ---
+// --- FunzionalitÃ  Dashboard ---
 
 const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 };
 
 const formatPercent = (value) => {
-    // Se il valore nel DB è es. 0.80 per l'80% o direttamente 80
+    // Se il valore nel DB Ã¨ es. 0.80 per l'80% o direttamente 80
     let val = parseFloat(value || 0);
     if(val < 1 && val > 0) val = val * 100;
     return val.toFixed(2) + '%';
@@ -930,12 +930,12 @@ function updateDashboard() {
     
     // Media Occupazione
     const validOccupancy = currentYearData.filter(item => {
-        const occ = parseFloat(item["% occup."] || item["Ocupação %"]) || 0;
+        const occ = parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0;
         const net = parseFloat(item["Total (Net sales)"]) || parseFloat(item["Diarias"]) || 0;
         return occ > 0 || net > 0;
     });
     const avgOccupancy = validOccupancy.length > 0 ? 
-        validOccupancy.reduce((sum, item) => sum + (parseFloat(item["% occup."] || item["Ocupação %"]) || 0), 0) / validOccupancy.length : 0;
+        validOccupancy.reduce((sum, item) => sum + (parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0), 0) / validOccupancy.length : 0;
     
     // Calcola Totale Anno Precedente per il Trend (solo sugli stessi mesi disponibili nell'anno corrente)
     let prevTotalNetSales = 0;
@@ -1158,10 +1158,10 @@ window.updateYearlyHistory = function() {
         
         yearlyData[y].diariaMediaSum += parseFloat(item["Diaria media"]) || 0;
         yearlyData[y].nDiarie += parseFloat(item["n. diarie"]) || 0;
-        yearlyData[y].occupazioneSum += parseFloat(item["% occup."] || item["Ocupação %"]) || 0;
+        yearlyData[y].occupazioneSum += parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0;
         yearlyData[y].count += 1;
         
-        if (parseFloat(item["Diaria media"]) > 0 || parseFloat(item["% occup."] || item["Ocupação %"]) > 0 || parseFloat(item["Diarias"]) > 0 || parseFloat(item["Total (Net sales)"]) > 0) {
+        if (parseFloat(item["Diaria media"]) > 0 || parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) > 0 || parseFloat(item["Diarias"]) > 0 || parseFloat(item["Total (Net sales)"]) > 0) {
             yearlyData[y].dataCount += 1;
         }
     });
@@ -1511,7 +1511,7 @@ if(document.getElementById('snipping-overlay')) {
                 
                 pdf.addImage(imgData, 'JPEG', 0, 0, w, h);
                 
-                // Aggiungiamo un timestamp per evitare che Acrobat blocchi il file se è già aperto
+                // Aggiungiamo un timestamp per evitare che Acrobat blocchi il file se Ã¨ giÃ  aperto
                 const timestamp = new Date().getTime();
                 pdf.save(`Sombra_Spa_Ritagliato_${timestamp}.pdf`);
                 
@@ -1649,7 +1649,7 @@ function drawYearlyChart(db) {
             datasets: [{
                 label: 'Fatturato Totale (R$)',
                 data: data,
-                backgroundColor: 'rgba(99, 102, 241, 0.8)', // Più solido e visibile
+                backgroundColor: 'rgba(99, 102, 241, 0.8)', // PiÃ¹ solido e visibile
                 borderColor: 'rgba(99, 102, 241, 1)',
                 borderWidth: 1,
                 borderRadius: 6
@@ -1748,11 +1748,11 @@ window.openEditModal = function(anno, mese) {
         document.getElementById('edit-ndiarie').value = parseValue(record["n. diarie"]);
         document.getElementById('edit-diariamedia').value = parseValue(record["Diaria media"]);
         document.getElementById('edit-revpar').value = parseValue(record["RevPar"]);
-        document.getElementById('edit-occupazione').value = parseValue(record["% occup."] || record["Ocupação %"]);
+        document.getElementById('edit-occupazione').value = parseValue(record["% occup."] || record["OcupaÃ§Ã£o %"]);
         
         document.getElementById('edit-modal').style.display = 'flex';
     } catch (error) {
-        alert("Si è verificato un errore durante l'apertura del modulo: " + error.message);
+        alert("Si Ã¨ verificato un errore durante l'apertura del modulo: " + error.message);
         console.error(error);
     }
 };
@@ -1905,7 +1905,7 @@ window.renderUsersTable = function() {
     const statusBadge = document.getElementById('github-token-status');
     if (statusBadge) {
         const hasToken = !!localStorage.getItem('sombra_github_token');
-        statusBadge.textContent = hasToken ? '✅ Attivo' : 'Non configurato';
+        statusBadge.textContent = hasToken ? 'âœ… Attivo' : 'Non configurato';
         statusBadge.style.background = hasToken ? '#10b981' : '#ef4444';
     }
 };
@@ -1976,7 +1976,7 @@ window.submitChangePassword = function() {
     const usersObj = getUsers();
     if (usersObj[currentUsername]) {
         if (usersObj[currentUsername].password !== oldPwd) {
-            alert("La vecchia password è errata!");
+            alert("La vecchia password Ã¨ errata!");
             return;
         }
 
@@ -1999,7 +1999,7 @@ window.saveUserData = function() {
     
     const usersObj = getUsers();
     
-    // Se è un utente esistente ma non ha inserito password, manteniamo la vecchia
+    // Se Ã¨ un utente esistente ma non ha inserito password, manteniamo la vecchia
     if (usersObj[uname] && !p) {
         usersObj[uname].role = r;
     } else {
@@ -2305,7 +2305,7 @@ window.updateAnalisiDati = function() {
     const db = getDB();
     if(db.length === 0) return;
 
-    // Determina quale toggle è selezionato
+    // Determina quale toggle Ã¨ selezionato
     const toggleRadios = document.getElementsByName('analisi-toggle');
     let mode = 'diarie'; // 'diarie' o 'diaria_media'
     for (const radio of toggleRadios) {
@@ -2360,7 +2360,7 @@ window.updateAnalisiDati = function() {
                 if (mode === 'diarie') {
                     val = parseInt(item["n. diarie"]) || 0;
                 } else if (mode === 'occupazione') {
-                    val = parseFloat(item["% occup."] || item["Ocupação %"]) || 0;
+                    val = parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0;
                 } else {
                     val = parseFloat(item["Diaria media"]) || 0;
                 }
@@ -3017,7 +3017,7 @@ const azionariatoData = [
     { partner: 'TUBIA Edoardo', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
     { partner: 'TUBIA Enrico', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
     { partner: 'GLENELG SA', type: 'A', shares: 302933, det: 0.13951559420076268, cap: 605866 },
-    { partner: 'ALIX Marylène', type: 'B', shares: 67701, det: 0.031179651087817548, cap: 135402 },
+    { partner: 'ALIX MarylÃ¨ne', type: 'B', shares: 67701, det: 0.031179651087817548, cap: 135402 },
     { partner: 'STERZI Adonella', type: 'B', shares: 40402, det: 0.018607114566254628, cap: 80804 },
     { partner: 'STERZI Marco', type: 'B', shares: 40401, det: 0.018606654016911372, cap: 80802 },
     { partner: 'TUBIA Enrico', type: 'B', shares: 73805, det: 0.033990844279056055, cap: 147610 },
@@ -3265,7 +3265,7 @@ function updateWelcomeView() {
             idNum = parseInt(parts[0], 10);
             name = parts.slice(1).join(" ");
         } else {
-            // Se l'username è "user" o "visitor", manteniamo il nome senza cercare azioni
+            // Se l'username Ã¨ "user" o "visitor", manteniamo il nome senza cercare azioni
             name = currentUsername;
         }
         
@@ -3314,7 +3314,7 @@ function updateWelcomeView() {
                 if(percEl) percEl.innerHTML = percHtml;
             }
         } else {
-            // Per "user", "visitor", o se non c'è corrispondenza
+            // Per "user", "visitor", o se non c'Ã¨ corrispondenza
             if(subtitleEl) subtitleEl.style.display = "none";
             if(sharesEl) sharesEl.innerHTML = "N/D";
             if(classEl) classEl.innerHTML = "N/D";
@@ -3453,7 +3453,7 @@ window.handleBilanciUpload = async function(event, company) {
 
     const MAX_SIZE = 25 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-        alert(`Il file � troppo grande (${(file.size/1024/1024).toFixed(1)}MB). Il limite massimo � 25MB.`);
+        alert(`Il file è troppo grande (${(file.size/1024/1024).toFixed(1)}MB). Il limite massimo è 25MB.`);
         event.target.value = '';
         return;
     }
