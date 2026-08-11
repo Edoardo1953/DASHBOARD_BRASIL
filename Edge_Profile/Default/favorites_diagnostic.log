@@ -1,0 +1,59 @@
+2026-08-11 07:12:21.169: [INFO] CurrentProfilePath: C:\Users\Utilisateur\Desktop\Documents\GitHub\DASHBOARD_BRASIL\Edge_Profile\Default
+2026-08-11 07:12:21.169: [INFO] Profiles total count: 1
+2026-08-11 07:12:21.169: [INFO] Profile: name=Profilo 1 path=C:\Users\Utilisateur\Desktop\Documents\GitHub\DASHBOARD_BRASIL\Edge_Profile\Default lastActive=null
+2026-08-11 07:12:21.169: [INFO] LastUsedProfileDir: C:\Users\Utilisateur\Desktop\Documents\GitHub\DASHBOARD_BRASIL\Edge_Profile\Default
+2026-08-11 07:12:21.169: [INFO] VisibilityChanged: 0
+2026-08-11 07:12:21.302: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.305: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.308: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.311: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.313: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.315: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.317: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.320: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.322: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.324: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:21.411: [INFO] OnDoneLoading sync enabled: 0
+2026-08-11 07:12:21.411: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-11 07:12:21.411: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-11 07:12:21.411: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-11 07:12:21.425: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:33.211: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-08-11 07:12:33.239: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:33.262: [INFO] Primary account changed.
+2026-08-11 07:12:33.262: [INFO] OnPrimaryAccountChanged PrimaryAccountChangeEvent::Type::kSet
+2026-08-11 07:12:35.654: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:36.315: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:36.319: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:36.324: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:36.329: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:36.340: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:36.351: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:12:36.361: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 5
+2026-08-11 07:12:36.367: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 5
+2026-08-11 07:12:37.129: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 5
+2026-08-11 07:12:37.149: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 5
+2026-08-11 07:12:40.061: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 5
+2026-08-11 07:12:40.312: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 5
+2026-08-11 07:12:40.316: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 6
+2026-08-11 07:12:40.321: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 6
+2026-08-11 07:12:40.912: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 6
+2026-08-11 07:12:40.926: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 6
+2026-08-11 07:12:41.142: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 6
+2026-08-11 07:12:47.198: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 6
+2026-08-11 07:13:16.425: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-11 07:21:15.035: [INFO] CurrentProfilePath: C:\Users\Utilisateur\Desktop\Documents\GitHub\DASHBOARD_BRASIL\Edge_Profile\Default
+2026-08-11 07:21:15.035: [INFO] Profiles total count: 1
+2026-08-11 07:21:15.035: [INFO] Profile: name=Personale path=C:\Users\Utilisateur\Desktop\Documents\GitHub\DASHBOARD_BRASIL\Edge_Profile\Default lastActive=2026-08-11T07:12:40.066Z
+2026-08-11 07:21:15.035: [INFO] LastUsedProfileDir: C:\Users\Utilisateur\Desktop\Documents\GitHub\DASHBOARD_BRASIL\Edge_Profile\Default
+2026-08-11 07:21:15.035: [INFO] MostRecentlyActiveProfile: name=Personale path=C:\Users\Utilisateur\Desktop\Documents\GitHub\DASHBOARD_BRASIL\Edge_Profile\Default lastActive=2026-08-11T07:12:40.066Z
+2026-08-11 07:21:15.035: [INFO] VisibilityChanged: 0
+2026-08-11 07:21:15.099: [INFO] OnDoneLoading sync enabled: 0
+2026-08-11 07:21:15.099: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-11 07:21:15.099: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-11 07:21:15.099: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-11 07:21:20.605: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-08-11 07:21:21.626: [INFO] BookmarkBarPrefChanged showBar=0 showBarNTP=0
+2026-08-11 07:21:21.696: [INFO] VisibilityChanged: 1
+2026-08-11 07:21:21.931: [INFO] Sync initialization duration: 1319ms
+2026-08-11 07:35:36.632: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=1 showBarNTP=0
