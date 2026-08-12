@@ -973,7 +973,16 @@ p {
     }
     
     .header-actions {
+        flex: none !important;
         width: 100%;
+    }
+    
+    .header-title {
+        flex: none !important;
+        min-width: auto !important;
+        gap: 10px !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
     }
     
     .year-selector-container {
