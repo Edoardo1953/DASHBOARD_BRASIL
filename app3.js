@@ -355,6 +355,11 @@ function applyRoleRestrictions() {
         const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
         if(dashBtn) setTimeout(() => dashBtn.click(), 50);
     }
+
+    if (typeof window.renderBilanciList === 'function') {
+        window.renderBilanciList('watergarden');
+        window.renderBilanciList('arcoiris');
+    }
 }
 
 // --- Navigazione ---
@@ -394,6 +399,11 @@ function initNavigation() {
                 renderAzionariato();
             } else if (targetView === 'users-view') {
                 renderUsersTable();
+            } else if (targetView === 'bilanci-view') {
+                if (typeof window.renderBilanciList === 'function') {
+                    window.renderBilanciList('watergarden');
+                    window.renderBilanciList('arcoiris');
+                }
             }
             
             // Chiudi la sidebar su mobile dopo aver cliccato una voce
