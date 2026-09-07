@@ -364,13 +364,16 @@ function applyRoleRestrictions() {
 
 // --- Navigazione ---
 function initNavigation() {
-    const navItems = document.querySelectorAll('.nav-item');
+    const navItems = document.querySelectorAll('.nav-item[data-view]');
     const views = document.querySelectorAll('.view-section');
 
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const targetView = item.getAttribute('data-view');
+            if (!targetView) return;
+            const targetElement = document.getElementById(targetView);
+            if (!targetElement) return;
             
             // Rimuovi active da tutti
             navItems.forEach(nav => nav.classList.remove('active'));
@@ -378,7 +381,7 @@ function initNavigation() {
             
             // Aggiungi active al selezionato
             item.classList.add('active');
-            document.getElementById(targetView).classList.add('active');
+            targetElement.classList.add('active');
             
             // Se andiamo in dashboard, aggiorniamo i dati
             if(targetView === 'welcome-view') {
@@ -2838,13 +2841,12 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
     isLayoutEditMode = !isLayoutEditMode;
     const toggleBtn = document.getElementById('nav-layout-toggle');
     const saveContainer = document.getElementById('saveLayoutContainer');
-    const saveBtn = document.getElementById('saveLayoutBtn');
     
     if (isLayoutEditMode) {
         body.classList.add('layout-edit-mode');
         if(toggleBtn) {
-            toggleBtn.innerHTML = '<i class="ph ph-x"></i> <span class="hide-mobile">Annulla Modifica</span>';
-            toggleBtn.classList.replace('btn-outline', 'btn-secondary');
+            toggleBtn.innerHTML = '<i class="ph ph-x"></i> <span class="hide-mobile">Esci da Modifica</span>';
+            toggleBtn.classList.add('active');
             toggleBtn.style.color = 'var(--accent-red)';
         }
         if(saveContainer) saveContainer.style.display = 'flex';
@@ -2856,8 +2858,8 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
     } else {
         body.classList.remove('layout-edit-mode');
         if(toggleBtn) {
-            toggleBtn.innerHTML = '<i class="ph ph-layout"></i> <span class="hide-mobile">Modifica Layout</span>';
-            toggleBtn.classList.replace('btn-secondary', 'btn-outline');
+            toggleBtn.innerHTML = '<i class="ph ph-layout"></i> <span class="hide-mobile" data-i18n="nav.editLayout">Modifica Layout</span>';
+            toggleBtn.classList.remove('active');
             toggleBtn.style.color = '';
         }
         if(saveContainer) saveContainer.style.display = 'none';

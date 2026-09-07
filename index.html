@@ -1025,7 +1025,7 @@
 
     <!-- Salva Layout Floating Button -->
     <div id="saveLayoutContainer" style="display: none; position: fixed; bottom: 30px; right: 30px; z-index: 10000; gap: 10px;">
-        <button onclick="location.reload()" class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 50px; background: #ef4444; color: white; border: none; cursor: pointer;">
+        <button onclick="toggleLayoutEditMode()" class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 50px; background: #ef4444; color: white; border: none; cursor: pointer;">
             <i class="ph ph-x"></i> <span style="margin-left: 0.5rem;">Annulla</span>
         </button>
         <button id="saveLayoutBtn" onclick="publishLayoutToGitHub()" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 50px; background: linear-gradient(135deg, #10b981, #059669); border: none; cursor: pointer;">
@@ -1045,7 +1045,7 @@
         </div>
     </div>
 
-    <script src="app3.js?v=28"></script>
+    <script src="app3.js?v=29"></script>
     <script>
         function goToAnalisiOccupazione() {
             // Seleziona il radio button dell'occupazione
