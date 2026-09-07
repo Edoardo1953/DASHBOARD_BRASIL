@@ -1,4 +1,4 @@
-﻿let monthlyChartInstance = null;
+let monthlyChartInstance = null;
 let yearlyChartInstance = null;
 let yearlyTrendChartInstance = null;
 let yearlyCompositionChartInstance = null;
@@ -3395,7 +3395,10 @@ window.fetchBilanciFromGitHub = async function() {
 
 window.saveBilanciToGitHub = async function() {
     const token = localStorage.getItem('sombra_github_token');
-    if (!token) return;
+    if (!token) {
+        alert("Attenzione: Token GitHub mancante. Le modifiche non sono state salvate su GitHub e andranno perse al prossimo avvio.");
+        return false;
+    }
 
     try {
         let sha = null;
@@ -3430,10 +3433,16 @@ window.saveBilanciToGitHub = async function() {
         });
 
         if (!putRes.ok) {
-            console.error("Failed to save Bilanci DB");
+            const errData = await putRes.json().catch(() => ({ message: putRes.statusText }));
+            alert("Errore salvataggio GitHub: " + (errData.message || "Permesso negato o token non valido."));
+            console.error("Failed to save Bilanci DB", errData);
+            return false;
         }
+        return true;
     } catch (e) {
         console.error("Error saving Bilanci DB:", e);
+        alert("Errore di rete durante il salvataggio su GitHub.");
+        return false;
     }
 };
 
@@ -3522,9 +3531,14 @@ window.handleBilanciUpload = async function(event, company) {
 
 window.deleteBilanciDoc = async function(company, id) {
     if (!confirm("Sei sicuro di voler eliminare questo documento?")) return;
+    const backup = [...(bilanciDB[company] || [])];
     bilanciDB[company] = bilanciDB[company].filter(doc => doc.id !== id);
     window.renderBilanciList(company);
-    await window.saveBilanciToGitHub();
+    const ok = await window.saveBilanciToGitHub();
+    if (ok === false) {
+        bilanciDB[company] = backup;
+        window.renderBilanciList(company);
+    }
 };
 
 window.switchBilanciTab = function(company) {
@@ -3656,10 +3670,15 @@ window.updateRoleUI = function() {
 window.renameBilanciDoc = async function(company, id) {
     const doc = bilanciDB[company].find(d => d.id === id);
     if (!doc) return;
+    const oldName = doc.name;
     const newName = prompt('Inserisci il nuovo nome per il documento:', doc.name);
     if (newName && newName.trim() !== '' && newName !== doc.name) {
         doc.name = newName.trim();
         window.renderBilanciList(company);
-        await window.saveBilanciToGitHub();
+        const ok = await window.saveBilanciToGitHub();
+        if (ok === false) {
+            doc.name = oldName;
+            window.renderBilanciList(company);
+        }
     }
 };
