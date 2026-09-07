@@ -1,13 +1,13 @@
 {
   "widget-monthly-revenue": {
     "width": "auto",
-    "height": "auto",
+    "height": "457px",
     "tx": 0,
     "ty": 0
   },
   "widget-yearly-revenue": {
     "width": "auto",
-    "height": "auto",
+    "height": "454px",
     "tx": 0,
     "ty": 0
   },
