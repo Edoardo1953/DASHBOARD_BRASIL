@@ -3711,9 +3711,11 @@ window.currentCostiYear = 2025;
 window.fetchCostiData = async function() {
     try {
         const timestamp = new Date().getTime();
-        const response = await fetch(`uploads/SPA_Database_Spese_2025_2026 (1).xlsx?t=${timestamp}`);
+        const fileUrl = encodeURI("uploads/SPA_Database_Spese_2025_2026 (1).xlsx") + "?t=" + timestamp;
+        const response = await fetch(fileUrl);
         if (!response.ok) {
-            console.warn("Impossibile caricare il file dei costi. Verifica che esista in uploads/SPA_Database_Spese_2025_2026 (1).xlsx");
+            console.warn("Impossibile caricare il file dei costi.", response.status);
+            document.getElementById("costiTableBody").innerHTML = `<tr><td colspan="15" style="text-align: center; color: red;">Errore nel caricamento del file Excel (Codice: ${response.status}). Assicurati che il file esista in uploads.</td></tr>`;
             return;
         }
         
@@ -3740,10 +3742,17 @@ window.fetchCostiData = async function() {
             });
         }
         
+        if (window.costiData.length === 0) {
+            document.getElementById("costiTableBody").innerHTML = `<tr><td colspan="15" style="text-align: center; color: orange;">File caricato, ma non sono stati trovati dati validi nei fogli.</td></tr>`;
+            return;
+        }
+        
         window.renderCostiTable(window.currentCostiYear);
         
     } catch (e) {
         console.error("Errore nel caricamento o parsing dei costi:", e);
+        const tbody = document.getElementById("costiTableBody");
+        if (tbody) tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: red;">Errore di sistema nel parsing: ${e.message}</td></tr>`;
     }
 };
 
