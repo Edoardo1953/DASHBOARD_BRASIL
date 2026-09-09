@@ -1,5 +1,4 @@
-let monthlyChartInstance = null;
-
+let monthlyChartInstance = nu
 let yearlyChartInstance = null;
 let yearlyTrendChartInstance = null;
 let yearlyCompositionChartInstance = null;
