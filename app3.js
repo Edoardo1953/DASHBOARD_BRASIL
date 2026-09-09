@@ -1,5 +1,4 @@
 let monthlyChartInstance = null;
-
 let yearlyChartInstance = null;
 let yearlyTrendChartInstance = null;
 let yearlyCompositionChartInstance = null;
@@ -7,9 +6,3777 @@ let comparatorChartInstance = null;
 let analisiDatiChartInstance = null;
 let analisiAreaChartInstance = null;
 const DB_KEY = 'sombra_spa_db';
-try { /* Chart.register(ChartDataLabels); */ } catch (e) {
+try { /* Chart.register(ChartDataLabels); */ } catch (e) { console.warn("Chart.js non caricato:", e); }
+let selectedYears = new Set();
+let isMultiSelect = false;
+let hiddenYears = [];
+
+function loadRoleSpecificSettings() {
+    if (!currentUsername) return;
+    const userKey = currentUsername;
+    
+    hiddenYears = JSON.parse(localStorage.getItem(`sombra_spa_hidden_years_${userKey}`) || '[]').map(Number);
+    
+    // Rimosso il caricamento inziale da localStorage per forzare sempre il default desiderato
+    selectedYears = null; // Segnaposto per far scattare la logica di default
+    
+    isMultiSelect = false; // Disabilita la selezione multipla per default
+    
+    const toggleMultiSelectBtn = document.getElementById('toggle-multi-select');
+    if (toggleMultiSelectBtn) {
+        toggleMultiSelectBtn.classList.remove('active');
+    }
+}
+
+function saveRoleSpecificSettings() {
+    if (!currentUsername) return;
+    const userKey = currentUsername;
+    localStorage.setItem(`sombra_spa_hidden_years_${userKey}`, JSON.stringify(hiddenYears));
+    localStorage.setItem(`sombra_spa_selected_years_${userKey}`, JSON.stringify(selectedYears ? Array.from(selectedYears) : []));
+    localStorage.setItem(`sombra_spa_is_multi_select_${userKey}`, JSON.stringify(isMultiSelect));
+}
+
+// Mesi ordinati
+const MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Auth Config
+// UTENTI DI DEFAULT â€” questi sono visibili su TUTTI i dispositivi.
+// Questo blocco viene aggiornato automaticamente dall'app tramite GitHub API
+// ogni volta che aggiungi/modifichi/elimini un utente dalla sezione "Gestione Utenti".
+const DEFAULT_USERS = {
+    'admin': { password: 'admin123', role: 'ADMIN' },
+    'user': { password: 'user123', role: 'USER' },
+    'visitor': { password: 'visitor123', role: 'USER' },
+    '01 alfonso': { password: 'alfonso', role: 'USER' },
+    '02 sergio': { password: 'sergio', role: 'USER' },
+    '03 jean-pierre': { password: 'jean-pierre', role: 'USER' },
+    '04 stefano': { password: 'stefano', role: 'USER' },
+    '05 marco': { password: 'marco', role: 'USER' },
+    '06 susik': { password: 'susik', role: 'USER' },
+    '07 giorgio': { password: 'giorgio', role: 'USER' },
+    '08 marco': { password: 'marco', role: 'USER' },
+    '09 edoardo': { password: 'edoardo', role: 'USER' },
+    '10 enrico': { password: 'enrico', role: 'USER' },
+    '11 glenelg': { password: 'glenelg', role: 'USER' },
+    '12 marylene': { password: 'marylene', role: 'USER' },
+    '13 adonella': { password: 'adonella', role: 'USER' },
+    '16 salvatore': { password: 'salvatore', role: 'USER' },
+    '17 mmm': { password: 'mmm', role: 'USER' }
+};
+
+const GITHUB_REPO = 'Edoardo1953/DASHBOARD_BRASIL';
+const GITHUB_FILE = 'app3.js';
+
+function getUsers() {
+    try {
+        const stored = localStorage.getItem('sombra_spa_users');
+        if (stored) {
+            const localUsers = JSON.parse(stored);
+            const mergedUsers = { ...localUsers };
+            for(let k in DEFAULT_USERS) {
+                if(!mergedUsers.hasOwnProperty(k)) {
+                    mergedUsers[k] = DEFAULT_USERS[k];
+                }
+            }
+            return mergedUsers;
+        }
+    } catch (e) {
+        console.error("Error parsing users from local storage", e);
+    }
+    return Object.assign({}, DEFAULT_USERS);
+}
+
+function saveUsers(usersObj) {
+    localStorage.setItem('sombra_spa_users', JSON.stringify(usersObj));
+    // Sincronizza automaticamente su GitHub
+    syncToGitHub(usersObj);
+}
+
+// â”€â”€â”€ GITHUB AUTO-SYNC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+function generateDefaultUsersBlock(usersObj) {
+    const lines = Object.entries(usersObj).map(([uname, data]) => {
+        return `    '${uname}': { password: '${data.password}', role: '${data.role}' }`;
+    });
+    return `const DEFAULT_USERS = {\n${lines.join(',\n')}\n};`;
+}
+
+async function syncToGitHub(usersObj) {
+    const token = localStorage.getItem('sombra_github_token');
+
+    if (!token) {
+        // Nessun token configurato: mostra il pannello di configurazione
+        showGithubTokenSetup();
+        return;
+    }
+
+    showSyncStatus('loading', 'Sincronizzazione in corso...');
+
+    try {
+        // 1. Leggi il file attuale da GitHub
+        const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json'
+            }
+        });
+
+        if (getRes.status === 401) throw new Error('Token non valido o scaduto. Riconfiguralo.');
+        if (!getRes.ok) throw new Error(`Impossibile leggere ${GITHUB_FILE} da GitHub (${getRes.status})`);
+
+        const fileData = await getRes.json();
+        const currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))));
+        const sha = fileData.sha;
+
+        // 2. Sostituisci il blocco DEFAULT_USERS
+        const newBlock = generateDefaultUsersBlock(usersObj);
+        const newContent = currentContent.replace(/const DEFAULT_USERS = \{[\s\S]*?\};/, newBlock);
+
+        if (newContent === currentContent) {
+            // Se il contenuto Ã¨ lo stesso, significa che GitHub Ã¨ giÃ  aggiornato con questa lista!
+            // Nessun bisogno di fare una richiesta PUT.
+            showSyncStatus('success', 'âœ… Utenti giÃ  sincronizzati su GitHub!');
+            return;
+        }
+
+        // 3. Scrivi il file aggiornato su GitHub
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: 'sync: aggiorna utenti da Gestione Utenti',
+                content: btoa(unescape(encodeURIComponent(newContent))),
+                sha: sha
+            })
+        });
+
+        if (putRes.status === 401) throw new Error('Token non valido o scaduto. Riconfiguralo.');
+        if (!putRes.ok) {
+            const errData = await putRes.json().catch(() => ({}));
+            throw new Error(errData.message || `Errore GitHub (${putRes.status})`);
+        }
+
+        // Successo!
+        showSyncStatus('success', 'âœ… Utenti sincronizzati su GitHub! Tutti potranno accedere entro 1-2 minuti.');
+
+    } catch (err) {
+        console.error('GitHub sync error:', err);
+        const isAuthError = err.message.includes('Token non valido');
+        if (isAuthError) localStorage.removeItem('sombra_github_token');
+        showSyncStatus('error', 'âŒ ' + err.message + (isAuthError ? ' Usa il pulsante "Configura Token".' : ''));
+    }
+}
+
+function showSyncStatus(type, message) {
+    let bar = document.getElementById('github-sync-bar');
+    if (!bar) return;
+    bar.textContent = message;
+    bar.style.display = 'block';
+    bar.className = 'github-sync-bar';
+    if (type === 'loading') {
+        bar.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+        bar.style.color = 'white';
+    } else if (type === 'success') {
+        bar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        bar.style.color = 'white';
+        setTimeout(() => { bar.style.display = 'none'; }, 5000);
+    } else {
+        bar.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        bar.style.color = 'white';
+    }
+}
+
+function showGithubTokenSetup() {
+    const modal = document.getElementById('github-token-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+window.closeGithubTokenModal = function() {
+    const modal = document.getElementById('github-token-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.saveGithubToken = function() {
+    const input = document.getElementById('github-token-input');
+    if (!input) return;
+    const token = input.value.trim();
+    if (!token) return alert('Inserisci un token valido.');
+    localStorage.setItem('sombra_github_token', token);
+    closeGithubTokenModal();
+    showSyncStatus('success', 'âœ… Token salvato! Ora ri-salva un utente per sincronizzare.');
+    renderUsersTable();
+};
+
+window.removeGithubToken = function() {
+    localStorage.removeItem('sombra_github_token');
+    renderUsersTable();
+    showSyncStatus('loading', 'Token rimosso. Configura un nuovo token per la sincronizzazione automatica.');
+};
+
+window.openGithubTokenSetup = showGithubTokenSetup;
+
+
+let currentUserRole = null;
+let currentUsername = null;
+
+function bootApp() {
+    try { initAuth(); } catch(e) { alert("Errore in initAuth: " + e.message); }
+    try { setupAuthListeners(); } catch(e) { alert("Errore in setupAuthListeners: " + e.message); }
+    try { initNavigation(); } catch(e) { alert("Errore in initNavigation: " + e.message); }
+    try { initDB(); } catch(e) { alert("Errore in initDB: " + e.message); }
+    try { setupEventListeners(); } catch(e) { alert("Errore in setupEventListeners: " + e.message); }
+    try { fetchLayoutFromGitHub(); } catch(e) { console.error("Errore fetch layout:", e); }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+    bootApp();
+}
+
+// --- Auth & Roles ---
+function initAuth() {
+    let role = currentUserRole;
+    let uname = currentUsername;
+    try {
+        if (!role) role = sessionStorage.getItem('sombra_user_role');
+        if (!uname) uname = sessionStorage.getItem('sombra_username');
+    } catch(e) {}
+    
+    const overlay = document.getElementById('login-overlay');
+    if(role && uname) {
+        currentUserRole = role;
+        currentUsername = uname;
+        if(overlay) overlay.style.display = 'none';
+        loadRoleSpecificSettings();
+        applyRoleRestrictions();
+    } else {
+        if(overlay) overlay.style.display = 'flex';
+    }
+}
+
+function setupAuthListeners() {
+    const loginForm = document.getElementById('loginForm');
+    if(loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value.trim().toLowerCase();
+            const p = document.getElementById('login-password').value.trim();
+            const errorEl = document.getElementById('login-error');
+            
+            const usersObj = getUsers();
+            if(usersObj[u] && usersObj[u].password === p) {
+                currentUserRole = usersObj[u].role;
+                currentUsername = u;
+                try { sessionStorage.setItem('sombra_user_role', usersObj[u].role); } catch(err) {}
+                try { sessionStorage.setItem('sombra_username', u); } catch(err) {}
+                
+                errorEl.style.display = 'none';
+                const overlay = document.getElementById('login-overlay');
+                if(overlay) overlay.style.display = 'none';
+                
+                try {
+                    initAuth(); // Carica le impostazioni specifiche del ruolo
+                } catch (err) {
+                    console.error("Error in initAuth:", err);
+                    alert("Errore in initAuth: " + err.message);
+                }
+                try {
+                    initDB(); // Re-inizializza la UI
+                } catch (err) {
+                    console.error("Error in initDB:", err);
+                    alert("Errore in initDB: " + err.message);
+                }
+                if (currentUserRole === 'USER') {
+                    const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+                    if (welcomeBtn) welcomeBtn.click();
+                } else {
+                    const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
+                    if (dashBtn) dashBtn.click();
+                }
+            } else {
+                errorEl.style.display = 'block';
+            }
+        });
+    }
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    if(logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('sombra_user_role');
+            sessionStorage.removeItem('sombra_username');
+            currentUserRole = null;
+            currentUsername = null;
+            location.reload();
+        });
+    }
+}
+
+function applyRoleRestrictions() {
+    const navInput = document.getElementById('nav-input');
+    const navSettings = document.getElementById('nav-settings');
+    const navTable = document.getElementById('nav-table');
+    const navUsers = document.getElementById('nav-users');
+    const navWelcome = document.getElementById('nav-welcome');
+    
+    // Nascondiamo per tutti l'inserimento manuale
+    if(navInput) navInput.style.display = 'none';
+    
+    // Il menu Importa/Esporta e Modifica Layout sono visibili solo all'Admin
+    if(currentUserRole === 'ADMIN') {
+        if(navSettings) navSettings.style.display = 'flex';
+        const navLayout = document.getElementById('nav-layout-toggle');
+        if(navLayout) navLayout.style.display = 'flex';
+    } else {
+        if(navSettings) navSettings.style.display = 'none';
+        const navLayout = document.getElementById('nav-layout-toggle');
+        if(navLayout) navLayout.style.display = 'none';
+    }
+
+    if(currentUserRole === 'USER') {
+        if(navUsers) navUsers.style.display = 'none';
+        if(navWelcome) navWelcome.style.display = 'flex';
+        
+        // Forza la visualizzazione della Home (welcome-view) per lo USER
+        const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+        if(welcomeBtn) setTimeout(() => welcomeBtn.click(), 50);
+    } else {
+        if(navUsers) navUsers.style.display = 'flex';
+        if(navWelcome) navWelcome.style.display = 'none';
+        
+        // Forza la visualizzazione della Dashboard per l'ADMIN
+        const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
+        if(dashBtn) setTimeout(() => dashBtn.click(), 50);
+    }
+
+    if (typeof window.renderBilanciList === 'function') {
+        window.renderBilanciList('watergarden');
+        window.renderBilanciList('arcoiris');
+    }
+}
+
+// --- Navigazione ---
+function initNavigation() {
+    const navItems = document.querySelectorAll('.nav-item[data-view]');
+    const views = document.querySelectorAll('.view-section');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetView = item.getAttribute('data-view');
+            if (!targetView) return;
+            const targetElement = document.getElementById(targetView);
+            if (!targetElement) return;
+            
+            // Rimuovi active da tutti
+            navItems.forEach(nav => nav.classList.remove('active'));
+            views.forEach(view => view.classList.remove('active'));
+            
+            // Aggiungi active al selezionato
+            item.classList.add('active');
+            targetElement.classList.add('active');
+            
+            // Se andiamo in dashboard, aggiorniamo i dati
+            if(targetView === 'welcome-view') {
+                if (typeof updateWelcomeView === 'function') updateWelcomeView();
+            } else if(targetView === 'dashboard-view') {
+                updateDashboard();
+            } else if (targetView === 'table-view') {
+                updateTable();
+            } else if (targetView === 'yearly-history-view') {
+                updateYearlyHistory();
+            } else if (targetView === 'comparator-view') {
+                updateComparator();
+            } else if (targetView === 'analisi-dati-view') {
+                updateAnalisiDati();
+            } else if (targetView === 'analisi-area-view') {
+                updateAnalisiArea();
+            } else if (targetView === 'azionariato-view') {
+                renderAzionariato();
+            } else if (targetView === 'users-view') {
+                renderUsersTable();
+            } else if (targetView === 'bilanci-view') {
+                if (typeof window.renderBilanciList === 'function') {
+                    window.renderBilanciList('watergarden');
+                    window.renderBilanciList('arcoiris');
+                }
+            }
+            
+            // Chiudi la sidebar su mobile dopo aver cliccato una voce
+            if (window.innerWidth <= 768 && targetView) {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.getElementById('mobile-sidebar-overlay');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    if (overlay) overlay.classList.remove('active');
+                }
+            }
+        });
+    });
+}
+
+// --- Mobile UI ---
+window.toggleSidebar = function() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('mobile-sidebar-overlay');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active');
+};
+
+// --- Database & Local Storage ---
+function initDB() {
+    // 1. Prova a scaricare il db.json pubblicato tramite il bottone
+    fetch('sombra_spa_db.json?t=' + new Date().getTime())
+        .then(response => {
+            if(!response.ok) throw new Error("JSON not found");
+            return response.json();
+        })
+        .then(json => {
+            if(json && json.length > 0) {
+                saveDB(json);
+            }
+            populateYearSelector(getDB());
+            updateDashboard();
+            if(document.getElementById('dataTableBody')) updateTable();
+            if(document.getElementById('yearlyTableBody')) updateYearlyHistory();
+            if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+            if(document.getElementById('analisi-area-tbody')) {
+                if(typeof updateAnalisiArea === "function") updateAnalisiArea();
+            }
+        })
+        .catch(err => {
+            console.log("File JSON non trovato, fallback su Excel:", err);
+            // 2. Fallback: Scarica automaticamente il file excel dal server GitHub Pages
+            fetch('DB Arcoiris Dashboard.xlsx?t=' + new Date().getTime())
+                .then(response => {
+                    if(!response.ok) throw new Error("Network response was not ok");
+                    return response.arrayBuffer();
+                })
+                .then(data => {
+                    try {
+                        const workbook = XLSX.read(new Uint8Array(data), {type: 'array'});
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const excelJson = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        if(excelJson.length > 0) {
+                            saveDB(excelJson); // Aggiorna il localStorage con i nuovi dati centrali
+                        }
+                    } catch(e) {
+                        console.error("Errore parsing excel online", e);
+                    }
+                })
+                .catch(err2 => {
+                    console.log("Nessun excel aggiornato trovato, o errore di rete:", err2);
+                    // Uso i dati locali
+                })
+                .finally(() => {
+                    populateYearSelector(getDB());
+                    updateDashboard();
+                    if(document.getElementById('dataTableBody')) updateTable();
+                    if(document.getElementById('yearlyTableBody')) updateYearlyHistory();
+                    if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+                    if(document.getElementById('analisi-area-tbody')) {
+                        if(typeof updateAnalisiArea === "function") updateAnalisiArea();
+                    }
+                });
+        });
+}
+
+function fallbackLoadDB() {
+    const data = getDB();
+    if(data.length > 0) {
+        populateYearSelector(data);
+        updateDashboard();
+        if(document.getElementById('dataTableBody')) updateTable();
+    } else {
+        alert("Benvenuto! Non Ã¨ stato possibile caricare i dati dal server. Assicurati che il file DB Arcoiris Dashboard.xlsx esista sul repository GitHub.");
+    }
+}
+
+function getDB() {
+    const data = localStorage.getItem(DB_KEY);
+    let parsed = data ? JSON.parse(data) : [];
+    
+    // Normalizza i mesi e gli anni se arrivano come stringhe (es. dall'Excel)
+    let needsSave = false;
+    parsed = parsed.map(item => {
+        if (item["ANNO"] !== undefined) {
+            const y = parseInt(item["ANNO"]);
+            if (!isNaN(y) && item["ANNO"] !== y) {
+                item["ANNO"] = y;
+                needsSave = true;
+            }
+        }
+        let mese = item["MESE"];
+        if (mese !== undefined && !isNaN(mese)) {
+            const m = parseInt(mese);
+            if (m >= 1 && m <= 12) {
+                item["MESE"] = MONTHS_ORDER[m - 1];
+                needsSave = true;
+            }
+        }
+        return item;
+    });
+    
+    if (needsSave) saveDB(parsed);
+    return parsed;
+}
+
+let dbHistoryStack = [];
+function saveDB(dataArray, isUndo = false) {
+    if(!isUndo) {
+        const currentData = localStorage.getItem(DB_KEY);
+        if(currentData) dbHistoryStack.push(currentData);
+        if(dbHistoryStack.length > 5) dbHistoryStack.shift();
+    }
+    localStorage.setItem(DB_KEY, JSON.stringify(dataArray));
+}
+
+window.undoLastAction = function() {
+    if (dbHistoryStack.length > 0) {
+        const prevState = dbHistoryStack.pop();
+        localStorage.setItem(DB_KEY, prevState);
+        updateDashboard();
+        if(document.getElementById('dataTableBody')) updateTable();
+        if(document.getElementById('yearlyTableBody')) updateYearlyHistory();
+        if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+        if(document.getElementById('analisi-area-tbody')) updateAnalisiArea();
+        alert('Azione annullata con successo!');
+    } else {
+        alert('Nessuna azione da annullare.');
+    }
+}
+
+window.publishDatabaseToGitHub = async function() {
+    const token = localStorage.getItem('sombra_github_token');
+    if (!token) {
+        alert('Devi prima configurare il Token GitHub (nella Gestione Utenti) per poter pubblicare.');
+        return;
+    }
+    
+    const dbData = localStorage.getItem(DB_KEY);
+    if (!dbData || dbData === '[]') {
+        alert('Il database Ã¨ vuoto. Carica prima il file Excel!');
+        return;
+    }
+
+    const btn = document.getElementById('publishDbBtn');
+    const statusMsg = document.getElementById('import-status');
+    const originalText = btn ? btn.innerHTML : 'Pubblica Database su Internet';
+    
+    if(btn) {
+        btn.innerHTML = 'Pubblicazione in corso...';
+        btn.disabled = true;
+    }
+    if(statusMsg) {
+        statusMsg.className = 'status-msg';
+        statusMsg.textContent = 'Caricamento su GitHub in corso...';
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#3b82f6';
+    }
+
+    try {
+        const DB_FILE = 'sombra_spa_db.json';
+        
+        // 1. Leggi il file attuale da GitHub per ottenere il SHA
+        let fileSha = null;
+        try {
+            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${DB_FILE}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json'
+                }
+            });
+            if (getRes.ok) {
+                const fileData = await getRes.json();
+                fileSha = fileData.sha;
+            }
+        } catch(e) {
+            console.warn('Il file db.json non esiste ancora, verrÃ  creato.');
+        }
+
+        // 2. Scrivi il file aggiornato su GitHub
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${DB_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: 'sync: aggiorna database da app web',
+                content: btoa(unescape(encodeURIComponent(dbData))),
+                ...(fileSha && { sha: fileSha })
+            })
+        });
+
+        if (putRes.status === 401) throw new Error('Token non valido o scaduto.');
+        if (!putRes.ok) {
+            const errData = await putRes.json().catch(() => ({}));
+            throw new Error(errData.message || `Errore GitHub (${putRes.status})`);
+        }
+
+        if(statusMsg) {
+            statusMsg.className = 'status-msg success';
+            statusMsg.textContent = 'Database pubblicato con successo! Tutti gli utenti vedranno i nuovi dati ricaricando la pagina entro 1-2 minuti.';
+            statusMsg.style.color = '#10b981';
+        }
+    } catch (err) {
+        console.error('GitHub sync error:', err);
+        if(statusMsg) {
+            statusMsg.className = 'status-msg error';
+            statusMsg.textContent = 'Errore: ' + err.message;
+            statusMsg.style.color = '#ef4444';
+        }
+    } finally {
+        if(btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+};
+
+// --- Event Listeners ---
+function setupEventListeners() {
+
+
+    
+
+
+
+    // Ripristina Anni Nascosti
+    const restoreHandler = () => {
+        hiddenYears = [];
+        saveRoleSpecificSettings();
+        alert("Tutti gli anni nascosti sono stati ripristinati!");
+        populateYearSelector(getDB());
+        updateDashboard();
+        updateTable();
+        updateYearlyHistory();
+        if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+        if(document.getElementById('analisi-area-tbody')) updateAnalisiArea();
+    };
+    const restoreBtn1 = document.getElementById('restoreYearsBtn');
+    if (restoreBtn1) restoreBtn1.addEventListener('click', restoreHandler);
+    const restoreBtn2 = document.getElementById('restoreYearsBtnTop');
+    if (restoreBtn2) restoreBtn2.addEventListener('click', restoreHandler);
+
+    // Cambio Anno gestito nei pill
+
+    // Toggle Selezione Multipla
+    document.getElementById('toggle-multi-select').addEventListener('click', (e) => {
+        e.target.classList.toggle('active');
+        isMultiSelect = e.target.classList.contains('active');
+        saveRoleSpecificSettings();
+        
+        // Se disabilitiamo la selezione multipla, e abbiamo piÃ¹ anni selezionati,
+        // teniamo solo l'anno piÃ¹ recente
+        if(!isMultiSelect && selectedYears.size > 1) {
+            const maxYear = Math.max(...Array.from(selectedYears));
+            selectedYears.clear();
+            selectedYears.add(maxYear);
+            saveRoleSpecificSettings();
+            populateYearSelector(getDB());
+            updateDashboard();
+            updateTable();
+            updateYearlyHistory();
+            if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+            if(document.getElementById('analisi-area-tbody')) updateAnalisiArea();
+        }
+    });
+
+    // Form Inserimento Dati
+    document.getElementById('dataInputForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const newEntry = {
+            "ANNO": parseInt(document.getElementById('input-anno').value),
+            "MESE": document.getElementById('input-mese').value,
+            "Diarias": parseFloat(document.getElementById('input-diarias').value || 0),
+            "A&B": parseFloat(document.getElementById('input-ab').value || 0),
+            "Spa": parseFloat(document.getElementById('input-spa').value || 0),
+            "Outros": parseFloat(document.getElementById('input-outros').value || 0),
+            "Taxas (ISS, servicos)": parseFloat(document.getElementById('input-taxas').value || 0),
+            "% occup.": parseFloat(document.getElementById('input-occup').value || 0),
+            "Diaria media": parseFloat(document.getElementById('input-diaria-media').value || 0),
+            "n. diarie": parseFloat(document.getElementById('input-n-diarie').value || 0)
+        };
+        
+        // Calcolo Net Sales
+        newEntry["Total (Net sales)"] = newEntry["Diarias"] + newEntry["A&B"] + newEntry["Spa"] + newEntry["Outros"];
+
+        let db = getDB();
+        
+        // Controlla se esiste giÃ  questo mese/anno e aggiornalo, altrimenti aggiungi
+        const existingIndex = db.findIndex(item => item["ANNO"] == newEntry["ANNO"] && item["MESE"] == newEntry["MESE"]);
+        if(existingIndex >= 0) {
+            db[existingIndex] = {...db[existingIndex], ...newEntry};
+        } else {
+            db.push(newEntry);
+        }
+        
+        saveDB(db);
+        alert("Dati salvati con successo!");
+        document.getElementById('dataInputForm').reset();
+        
+        populateYearSelector(db);
+        updateDashboard();
+    });
+}
+
+// --- FunzionalitÃ  Importazione/Esportazione ---
+function handleExcelUpload(e) {
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const statusEl = document.getElementById('import-status');
+    statusEl.textContent = "Lettura file in corso...";
+    statusEl.className = "status-msg";
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            
+            // Prendiamo il primo foglio
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Convertiamo in JSON
+            const json = XLSX.utils.sheet_to_json(worksheet);
+            
+            if(json.length > 0) {
+                // Sostituiamo il DB
+                saveDB(json);
+                statusEl.textContent = `Importazione completata: trovati ${json.length} record!`;
+                statusEl.className = "status-msg success";
+                
+                populateYearSelector(json);
+                
+                setTimeout(() => {
+                    document.querySelector('.nav-item[data-view="dashboard-view"]').click();
+                }, 1500);
+            } else {
+                statusEl.textContent = "Errore: il file sembra vuoto.";
+                statusEl.className = "status-msg error";
+            }
+        } catch (error) {
+            console.error(error);
+            statusEl.textContent = "Errore durante la lettura del file Excel.";
+            statusEl.className = "status-msg error";
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function exportData() {
+    const db = getDB();
+    if(db.length === 0) {
+        alert("Nessun dato da esportare.");
+        return;
+    }
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href",     dataStr);
+    downloadAnchorNode.setAttribute("download", "sombra_spa_backup_" + new Date().toISOString().split('T')[0] + ".json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+function populateYearSelector(db) {
+    if(!db || db.length === 0) return;
+    
+    let years = [...new Set(db.map(item => item["ANNO"]).filter(y => y))].sort((a,b) => b-a);
+    
+    // Se primo avvio/default, nascondiamo automaticamente gli anni piÃ¹ vecchi dei primi 6
+    if (selectedYears === null) {
+        hiddenYears = [];
+        if (years.length > 6) {
+            hiddenYears = years.slice(6);
+        }
+    }
+
+    // Filtra gli anni nascosti
+    years = years.filter(y => !hiddenYears.includes(y));
+
+    const container = document.getElementById('year-filters');
+    if(!container) return;
+    
+    container.innerHTML = '';
+    
+    // Se default, seleziona solo l'anno piÃ¹ recente (il primo essendo decrescenti)
+    if(selectedYears === null) {
+        if(years.length > 0) {
+            selectedYears = new Set([years[0]]);
+        } else {
+            selectedYears = new Set();
+        }
+        saveRoleSpecificSettings();
+    } else if(selectedYears.size === 0 && years.length > 0) {
+        selectedYears.add(years[0]);
+        saveRoleSpecificSettings();
+    }
+    
+    // Se l'anno selezionato Ã¨ stato nascosto e non c'Ã¨ altro, rimpiazziamo
+    if(years.length > 0) {
+        let hasActive = false;
+        years.forEach(y => { if(selectedYears.has(y)) hasActive = true; });
+        if(!hasActive) {
+            selectedYears.clear();
+            selectedYears.add(years[0]);
+            saveRoleSpecificSettings();
+        }
+    }
+    
+    years.forEach(year => {
+        const btn = document.createElement('button');
+        btn.className = 'year-pill';
+        if(selectedYears.has(year)) {
+            btn.classList.add('active');
+        }
+        
+        btn.innerHTML = `${year} <span class="hide-year" title="Nascondi ${year} dal cruscotto" style="color:var(--accent-red); margin-left:6px; font-size:1.1rem; opacity:0.6; padding:0 4px;">&times;</span>`;
+        
+        btn.addEventListener('click', (e) => {
+            // Se clicca sulla X rossa
+            if(e.target.classList.contains('hide-year')) {
+                e.stopPropagation();
+                if(confirm(`Sei sicuro di voler nascondere l'anno ${year}? I dati non verranno cancellati dal database.`)) {
+                    hiddenYears.push(year);
+                    selectedYears.delete(year);
+                    saveRoleSpecificSettings();
+                    populateYearSelector(db);
+                    updateDashboard();
+                    updateTable();
+                    updateYearlyHistory();
+                    if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+                    if(document.getElementById('analisi-area-tbody')) updateAnalisiArea();
+                }
+                return;
+            }
+
+            if(isMultiSelect) {
+                // ModalitÃ  Multipla
+                if(selectedYears.has(year)) {
+                    if(selectedYears.size > 1) {
+                        selectedYears.delete(year);
+                        btn.classList.remove('active');
+                    }
+                } else {
+                    selectedYears.add(year);
+                    btn.classList.add('active');
+                }
+            } else {
+                // ModalitÃ  Singola
+                if(!selectedYears.has(year)) {
+                    selectedYears.clear();
+                    selectedYears.add(year);
+                    // Aggiorniamo visivamente tutti i bottoni
+                    container.querySelectorAll('.year-pill').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+            }
+            saveRoleSpecificSettings();
+            updateDashboard();
+            updateTable();
+            updateYearlyHistory();
+            if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+            if(document.getElementById('analisi-area-tbody')) updateAnalisiArea();
+        });
+        
+        container.appendChild(btn);
+    });
+}
+
+// --- FunzionalitÃ  Dashboard ---
+
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+};
+
+const formatPercent = (value) => {
+    // Se il valore nel DB Ã¨ es. 0.80 per l'80% o direttamente 80
+    let val = parseFloat(value || 0);
+    if(val < 1 && val > 0) val = val * 100;
+    return val.toFixed(2) + '%';
+};
+
+function updateDashboard() {
+    const db = getDB();
+    if(db.length === 0) return;
+    
+    const currentYearData = db.filter(item => selectedYears.has(item["ANNO"]));
+    
+    // Calcola Totali Anno Corrente
+    const totalNetSales = currentYearData.reduce((sum, item) => sum + (parseFloat(item["Total (Net sales)"]) || 0), 0);
+    const totalDiarias = currentYearData.reduce((sum, item) => sum + (parseFloat(item["Diarias"]) || 0), 0);
+    let totalTaxes = 0;
+    let totalGross = 0;
+    currentYearData.forEach(item => {
+        const net = parseFloat(item["Total (Net sales)"]) || 0;
+        let tax = parseFloat(item["Taxas (ISS, servicos)"]) || 0;
+        let gross = parseFloat(item["Total Bruto"]) || 0;
+        const altCol = parseFloat(item["Total (gross taxes)"]) || 0;
+        
+        if (tax === 0 && altCol > 0) {
+            if (altCol >= net && net > 0) {
+                gross = gross || altCol;
+                tax = gross - net;
+            } else {
+                tax = altCol;
+            }
+        }
+        totalTaxes += tax;
+        totalGross += gross || (net + tax);
+    });
+    
+    // Media Occupazione
+    const validOccupancy = currentYearData.filter(item => {
+        const occ = parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0;
+        const net = parseFloat(item["Total (Net sales)"]) || parseFloat(item["Diarias"]) || 0;
+        return occ > 0 || net > 0;
+    });
+    const avgOccupancy = validOccupancy.length > 0 ? 
+        validOccupancy.reduce((sum, item) => sum + (parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0), 0) / validOccupancy.length : 0;
+    
+    // Calcola Totale Anno Precedente per il Trend (solo sugli stessi mesi disponibili nell'anno corrente)
+    let prevTotalNetSales = 0;
+    selectedYears.forEach(year => {
+        const yNum = parseInt(year, 10);
+        
+        // Troviamo i mesi effettivamente presenti (con fatturato > 0) per questo anno selezionato
+        const currentYearMonths = currentYearData
+            .filter(item => parseInt(item["ANNO"], 10) === yNum && (parseFloat(item["Total (Net sales)"]) > 0 || parseFloat(item["Diarias"]) > 0))
+            .map(item => item["MESE"]);
+
+        const prevYearData = db.filter(item => 
+            parseInt(item["ANNO"], 10) === (yNum - 1) && 
+            currentYearMonths.includes(item["MESE"])
+        );
+        prevTotalNetSales += prevYearData.reduce((sum, item) => sum + (parseFloat(item["Total (Net sales)"]) || 0), 0);
+    });
+    
+    // Aggiorna UI KPIs
+    document.getElementById('kpi-total-revenue').textContent = formatCurrency(totalNetSales);
+    document.getElementById('kpi-diarias').textContent = formatCurrency(totalDiarias);
+    
+    const diariasPercEl = document.getElementById('kpi-diarias-perc');
+    if(diariasPercEl) {
+        if(totalNetSales > 0) {
+            const diariasPct = (totalDiarias / totalNetSales) * 100;
+            diariasPercEl.textContent = `(${diariasPct.toFixed(1)}%)`;
+        } else {
+            diariasPercEl.textContent = `(0%)`;
+        }
+    }
+
+    document.getElementById('kpi-occupancy').textContent = formatPercent(avgOccupancy);
+    
+    const kpiGrossEl = document.getElementById('kpi-gross-sales');
+    if (kpiGrossEl) kpiGrossEl.textContent = formatCurrency(totalGross);
+    else document.getElementById('kpi-taxes').textContent = formatCurrency(totalTaxes);
+
+    // Aggiorna Titolo Grafico Mensile
+    const chartTitleEl = document.getElementById('monthlyChartTitle');
+    if(chartTitleEl) {
+        if(isMultiSelect && selectedYears.size > 0) {
+            chartTitleEl.textContent = `${typeof t === "function" ? t("chart.monthlyRevenue") : "Andamento Mensile Fatturato"} (${Array.from(selectedYears).sort().join(", ")})`;
+        } else if(selectedYears.size > 0) {
+            chartTitleEl.textContent = `${typeof t === "function" ? t("chart.monthlyRevenue") : "Andamento Mensile Fatturato"} (${Array.from(selectedYears)[0]})`;
+        } else {
+            chartTitleEl.textContent = `${typeof t === "function" ? t("chart.monthlyRevenue") : "Andamento Mensile Fatturato"}`;
+        }
+    }
+    
+    // Trend UI
+    const trendEl = document.getElementById('kpi-revenue-trend');
+    if(prevTotalNetSales > 0) {
+        const trendPct = ((totalNetSales - prevTotalNetSales) / prevTotalNetSales) * 100;
+        if(trendPct >= 0) {
+            trendEl.className = 'trend positive';
+            trendEl.innerHTML = `<i class="ph ph-trend-up"></i> ${trendPct.toFixed(2)}% vs anno prec. (stessi mesi)`;
+        } else {
+            trendEl.className = 'trend negative';
+            trendEl.innerHTML = `<i class="ph ph-trend-down"></i> ${Math.abs(trendPct).toFixed(2)}% vs anno prec. (stessi mesi)`;
+        }
+    } else {
+        trendEl.innerHTML = `Nessun dato anno prec.`;
+        trendEl.className = 'trend';
+    }
+
+    // Disegna Grafici
+    drawMonthlyChart(db);
+    drawYearlyChart(db);
+}
+
+function updateTable() {
+    const db = getDB();
+    const tableBody = document.getElementById('dataTableBody');
+    tableBody.innerHTML = '';
+    
+    // Filtriamo in base agli anni selezionati
+    let filteredDb = db.filter(item => selectedYears.has(item["ANNO"]));
+    
+    // Ordina per Anno decrescente e poi per Mese decrescente
+    const sortedDb = [...filteredDb].sort((a, b) => {
+        if(a["ANNO"] !== b["ANNO"]) return b["ANNO"] - a["ANNO"];
+        return MONTHS_ORDER.indexOf(b["MESE"]) - MONTHS_ORDER.indexOf(a["MESE"]);
+    });
+
+    let sumDiarias = 0;
+    let sumAB = 0;
+    let sumSpa = 0;
+    let sumOutros = 0;
+    let sumNetSales = 0;
+    let sumTaxas = 0;
+    let sumBrutSales = 0;
+    let sumNDiarie = 0;
+
+    sortedDb.forEach(item => {
+        const netSales = parseFloat(item["Total (Net sales)"]) || 0;
+        let taxas = parseFloat(item["Taxas (ISS, servicos)"]) || 0;
+        let brutSales = parseFloat(item["Total Bruto"]) || 0;
+        const altCol = parseFloat(item["Total (gross taxes)"]) || 0;
+        
+        if (taxas === 0 && altCol > 0) {
+            if (altCol >= netSales && netSales > 0) {
+                brutSales = brutSales || altCol;
+                taxas = brutSales - netSales;
+            } else {
+                taxas = altCol;
+            }
+        }
+        brutSales = brutSales || (netSales + taxas);
+        const diariaMedia = parseFloat(item["Diaria media"]) || 0;
+        const nDiarie = parseFloat(item["n. diarie"]) || 0;
+        
+        sumDiarias += parseFloat(item["Diarias"]) || 0;
+        sumAB += parseFloat(item["A&B"]) || 0;
+        sumSpa += parseFloat(item["Spa"]) || 0;
+        sumOutros += parseFloat(item["Outros"]) || 0;
+        sumNetSales += netSales;
+        sumTaxas += taxas;
+        sumBrutSales += brutSales;
+        sumNDiarie += nDiarie;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${item["MESE"] || '-'} ${item["ANNO"] || ''}</strong></td>
+            <td>${formatCurrency(item["Diarias"])}</td>
+            <td>${formatCurrency(item["A&B"])}</td>
+            <td>${formatCurrency(item["Spa"])}</td>
+            <td>${formatCurrency(item["Outros"])}</td>
+            <td><strong>${formatCurrency(netSales)}</strong></td>
+            <td>${formatCurrency(taxas)}</td>
+            <td><strong>${formatCurrency(brutSales)}</strong></td>
+            <td>${formatCurrency(diariaMedia)}</td>
+            <td>${nDiarie}</td>
+            <td>${formatPercent(item["% occup."])}</td>
+            <td>${formatCurrency(item["RevPar"])}</td>
+            <td>
+                ${currentUserRole === 'ADMIN' ? `
+                <button class="btn-action edit-btn" onclick="openEditModal(${item["ANNO"]}, '${item["MESE"]}')"><i class="ph ph-pencil-simple"></i></button>
+                <button class="btn-action delete-btn" onclick="deleteRow(${item["ANNO"]}, '${item["MESE"]}')"><i class="ph ph-trash"></i></button>
+                ` : `<span style="color: #cbd5e1; font-size: 0.8rem;">Solo Lettura</span>`}
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    if(sortedDb.length > 0) {
+        const trTotal = document.createElement('tr');
+        trTotal.style.backgroundColor = 'rgba(59, 130, 246, 0.08)';
+        trTotal.innerHTML = `
+            <td><strong>TOTALE SELEZIONE</strong></td>
+            <td><strong>${formatCurrency(sumDiarias)}</strong></td>
+            <td><strong>${formatCurrency(sumAB)}</strong></td>
+            <td><strong>${formatCurrency(sumSpa)}</strong></td>
+            <td><strong>${formatCurrency(sumOutros)}</strong></td>
+            <td><strong>${formatCurrency(sumNetSales)}</strong></td>
+            <td><strong>${formatCurrency(sumTaxas)}</strong></td>
+            <td><strong>${formatCurrency(sumBrutSales)}</strong></td>
+            <td></td>
+            <td><strong>${sumNDiarie}</strong></td>
+            <td></td>
+            <td></td>
+        `;
+        tableBody.appendChild(trTotal);
+    }
+}
+
+// ==========================================
+// YEARLY HISTORY LOGIC
+// ==========================================
+
+window.updateYearlyHistory = function() {
+    let db = getDB();
+    
+    // Filtra per anni selezionati/nascosti
+    if(isMultiSelect && selectedYears.size > 0) {
+        db = db.filter(item => selectedYears.has(item["ANNO"]));
+    } else {
+        db = db.filter(item => !hiddenYears.includes(item["ANNO"]));
+    }
+
+    const yearlyData = {};
+
+    db.forEach(item => {
+        const y = parseInt(item["ANNO"], 10);
+        if(!y || isNaN(y)) return;
+
+        if(!yearlyData[y]) {
+            yearlyData[y] = {
+                anno: y,
+                diarias: 0, ab: 0, spa: 0, outros: 0,
+                netSales: 0, taxas: 0, brutSales: 0,
+                diariaMediaSum: 0, nDiarie: 0, occupazioneSum: 0,
+                count: 0,
+                dataCount: 0
+            };
+        }
+        
+        yearlyData[y].diarias += parseFloat(item["Diarias"]) || 0;
+        yearlyData[y].ab += parseFloat(item["A&B"]) || 0;
+        yearlyData[y].spa += parseFloat(item["Spa"]) || 0;
+        yearlyData[y].outros += parseFloat(item["Outros"]) || 0;
+        
+        const localNetSales = parseFloat(item["Total (Net sales)"]) || 0;
+        let tax = parseFloat(item["Taxas (ISS, servicos)"]) || 0;
+        let gross = parseFloat(item["Total Bruto"]) || 0;
+        const altCol = parseFloat(item["Total (gross taxes)"]) || 0;
+        
+        if(tax === 0 && altCol > 0) {
+            if(altCol >= localNetSales && localNetSales > 0) {
+                gross = gross || altCol;
+                tax = gross - localNetSales;
+            } else {
+                tax = altCol;
+            }
+        }
+        
+        yearlyData[y].netSales += localNetSales;
+        yearlyData[y].taxas += tax;
+        yearlyData[y].brutSales += gross || (localNetSales + tax);
+        
+        yearlyData[y].diariaMediaSum += parseFloat(item["Diaria media"]) || 0;
+        yearlyData[y].nDiarie += parseFloat(item["n. diarie"]) || 0;
+        yearlyData[y].occupazioneSum += parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0;
+        yearlyData[y].count += 1;
+        
+        if (parseFloat(item["Diaria media"]) > 0 || parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) > 0 || parseFloat(item["Diarias"]) > 0 || parseFloat(item["Total (Net sales)"]) > 0) {
+            yearlyData[y].dataCount += 1;
+        }
+    });
+
+    const years = Object.keys(yearlyData).sort((a,b) => a-b);
+    
+    // 1. Populate Table
+    const tbody = document.getElementById('yearlyTableBody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        
+        const tableYears = [...years].reverse();
+        tableYears.forEach(y => {
+            const d = yearlyData[y];
+            const activeMonths = d.dataCount > 0 ? d.dataCount : d.count;
+            const avgDiaria = activeMonths > 0 ? d.diariaMediaSum / activeMonths : 0;
+            const avgOccup = activeMonths > 0 ? d.occupazioneSum / activeMonths : 0;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${y}</strong></td>
+                <td>${formatCurrency(d.diarias)}</td>
+                <td>${formatCurrency(d.ab)}</td>
+                <td>${formatCurrency(d.spa)}</td>
+                <td>${formatCurrency(d.outros)}</td>
+                <td><strong>${formatCurrency(d.netSales)}</strong></td>
+                <td>${formatCurrency(d.taxas)}</td>
+                <td><strong>${formatCurrency(d.brutSales)}</strong></td>
+                <td>${formatCurrency(avgDiaria)}</td>
+                <td>${d.nDiarie}</td>
+                <td>${formatPercent(avgOccup)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 2. Charts
+    drawYearlyTrendChart(years, yearlyData);
+    drawYearlyCompositionChart(years, yearlyData);
+};
+
+function drawYearlyTrendChart(years, dataObj) {
+    const canvas = document.getElementById('yearlyTrendChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    let activeYears = years.filter(y => selectedYears.has(parseInt(y, 10)));
+    if(activeYears.length === 0 && selectedYears.size > 0) {
+        activeYears = Array.from(selectedYears).map(String);
+    }
+    if(activeYears.length === 0) return;
+    
+    let chartLabels = [];
+    let chartData = [];
+    
+    if (activeYears.length === 1) {
+        const singleYear = activeYears[0];
+        chartLabels = [...MONTHS_ORDER];
+        const db = getDB();
+        const yearData = db.filter(item => item["ANNO"] == singleYear);
+        chartData = MONTHS_ORDER.map(month => {
+            const item = yearData.find(x => x["MESE"] === month);
+            if (!item) return null;
+            let val = parseFloat(item["Total (Net sales)"]);
+            if (isNaN(val) || val === 0) return null;
+            return val;
+        });
+    } else {
+        chartLabels = activeYears;
+        chartData = activeYears.map(y => dataObj[y].netSales === 0 ? null : dataObj[y].netSales);
+    }
+    
+    const titleEl = document.getElementById('yearlyTrendChartTitle');
+    if (titleEl) {
+        titleEl.textContent = `Andamento Fatturato Annuo (NET) - ${activeYears.join(', ')}`;
+    }
+    
+    const selectEl = document.querySelector('select[onchange*="yearlyTrendChart"]');
+    const currentType = selectEl ? selectEl.value : 'line';
+    const bgColor = currentType === 'bar' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.1)';
+    
+    if(yearlyTrendChartInstance) {
+        yearlyTrendChartInstance.destroy();
+    }
+
+    yearlyTrendChartInstance = new Chart(ctx, {
+        type: currentType,
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'Net Sales (R$)',
+                data: chartData,
+                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: bgColor,
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                fill: true,
+                tension: 0.4,
+                maxBarThickness: 40,
+                barPercentage: 0.8
+            }]
+        },
+        options: {
+            layout: { padding: { left: 50, right: 50, top: 30, bottom: 10 } },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                datalabels: {
+                    align: 'top',
+                    anchor: 'end',
+                    formatter: function(value) {
+                        if (!value) return '';
+                        if (value >= 1000) {
+                            return 'R$ ' + (value / 1000).toFixed(1) + 'k';
+                        }
+                        return 'R$ ' + value.toFixed(0);
+                    },
+                    font: { weight: 'bold', size: 10 },
+                    color: '#475569'
+                },
+                tooltip: {
+                    callbacks: { label: c => formatCurrency(c.raw) }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, grace: '15%', grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { offset: true }
+            }
+        }
+    });
+}
+
+function drawYearlyCompositionChart(years, dataObj) {
+    const canvas = document.getElementById('yearlyCompositionChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if(years.length === 0) return;
+    
+    const activeYears = years.filter(y => selectedYears.has(parseInt(y, 10)));
+    if(activeYears.length === 0) return;
+    
+    let totalDiarias = 0, totalAb = 0, totalSpa = 0, totalOutros = 0;
+    activeYears.forEach(y => {
+        const d = dataObj[y];
+        if(d) {
+            totalDiarias += d.diarias || 0;
+            totalAb += d.ab || 0;
+            totalSpa += d.spa || 0;
+            totalOutros += d.outros || 0;
+        }
+    });
+    
+    const titleEl = document.getElementById('yearlyCompositionChartTitle');
+    if(titleEl) {
+        titleEl.textContent = `${typeof t === "function" ? t("chart.revenueComposition") : "Composizione Ricavi"} (${activeYears.join(", ")})`;
+    }
+    
+    if(yearlyCompositionChartInstance) {
+        yearlyCompositionChartInstance.destroy();
+    }
+
+    yearlyCompositionChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Diarias', 'A&B', 'Spa', 'Outros'],
+            datasets: [{
+                data: [totalDiarias, totalAb, totalSpa, totalOutros],
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(139, 92, 246, 0.8)'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 14 },
+                    formatter: (value, ctx) => {
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => { sum += data; });
+                        if (!sum) return '';
+                        if (!value) return '';
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        return percentage;
+                    }
+                },
+                tooltip: {
+                    callbacks: { label: c => c.label + ': ' + formatCurrency(c.raw) }
+                }
+            }
+        }
+    });
+}
+
+
+// ==========================================
+// PDF EXPORT & SNIPPING TOOL LOGIC
+// ==========================================
+
+// Toggle Dropdown
+const pdfBtn = document.getElementById('pdf-export-btn');
+const pdfMenu = document.getElementById('pdf-export-menu');
+
+if (pdfBtn && pdfMenu) {
+    pdfBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        pdfMenu.classList.toggle('show');
+    });
+    document.addEventListener('click', () => {
+        pdfMenu.classList.remove('show');
+    });
+}
+
+// Native Print with Orientation
+window.exportNativePDF = function(orientation) {
+    pdfMenu.classList.remove('show');
+    
+    // Inject @page CSS
+    let style = document.getElementById('print-orientation');
+    if(!style) {
+        style = document.createElement('style');
+        style.id = 'print-orientation';
+        document.head.appendChild(style);
+    }
+    style.innerHTML = `@media print { @page { size: ${orientation}; } }`;
+    
+    // Slight delay to allow CSS to apply before opening dialog
+    setTimeout(() => {
+        window.print();
+    }, 100);
+};
+
+// Snipping Tool Logic
+let snippingOverlay, snippingBox;
+let isSnipping = false;
+let startX, startY;
+
+window.startSnippingTool = function() {
+    pdfMenu.classList.remove('show');
+    snippingOverlay = document.getElementById('snipping-overlay');
+    snippingBox = document.getElementById('snipping-box');
+    
+    if(!snippingOverlay || !snippingBox) return;
+    
+    snippingOverlay.style.display = 'block';
+    document.body.style.userSelect = 'none'; // Prevent text selection
+};
+
+// Esc to cancel
+document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && snippingOverlay && snippingOverlay.style.display === 'block') {
+        snippingOverlay.style.display = 'none';
+        snippingBox.style.display = 'none';
+        document.body.style.userSelect = 'auto';
+    }
+});
+
+if(document.getElementById('snipping-overlay')) {
+    const overlay = document.getElementById('snipping-overlay');
+    const box = document.getElementById('snipping-box');
+    
+    overlay.addEventListener('mousedown', (e) => {
+        isSnipping = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        box.style.left = startX + 'px';
+        box.style.top = startY + 'px';
+        box.style.width = '0px';
+        box.style.height = '0px';
+        box.style.display = 'block';
+    });
+    
+    overlay.addEventListener('mousemove', (e) => {
+        if(!isSnipping) return;
+        
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+        
+        const width = Math.abs(currentX - startX);
+        const height = Math.abs(currentY - startY);
+        
+        box.style.width = width + 'px';
+        box.style.height = height + 'px';
+        box.style.left = (currentX < startX ? currentX : startX) + 'px';
+        box.style.top = (currentY < startY ? currentY : startY) + 'px';
+    });
+    
+    overlay.addEventListener('mouseup', async (e) => {
+        if(!isSnipping) return;
+        isSnipping = false;
+        
+        // Get final coordinates
+        const rect = box.getBoundingClientRect();
+        
+        // Hide overlay immediately so it's not in the screenshot
+        overlay.style.display = 'none';
+        box.style.display = 'none';
+        document.body.style.userSelect = 'auto';
+        
+        if(rect.width < 50 || rect.height < 50) {
+            alert("Area troppo piccola. Riprova.");
+            return;
+        }
+        
+        // Small delay to ensure overlay is gone from DOM render
+        setTimeout(async () => {
+            try {
+                const w = Math.round(rect.width);
+                const h = Math.round(rect.height);
+                const x = Math.round(rect.left + window.scrollX);
+                const y = Math.round(rect.top + window.scrollY);
+
+                // html2canvas capture
+                const canvas = await html2canvas(document.body, {
+                    x: x,
+                    y: y,
+                    width: w,
+                    height: h,
+                    scale: 2, // High quality
+                    allowTaint: true,
+                    useCORS: true,
+                    backgroundColor: '#ffffff', // Prevent transparent to black/washed out issues in JPEG
+                    logging: false
+                });
+                
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                
+                // Determine orientation based on aspect ratio
+                const orientation = w > h ? 'l' : 'p';
+                
+                // Create PDF matching the exact pixel dimensions of the snippet
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: orientation,
+                    unit: 'px',
+                    format: [w, h]
+                });
+                
+                pdf.addImage(imgData, 'JPEG', 0, 0, w, h);
+                
+                // Aggiungiamo un timestamp per evitare che Acrobat blocchi il file se Ã¨ giÃ  aperto
+                const timestamp = new Date().getTime();
+                pdf.save(`Sombra_Spa_Ritagliato_${timestamp}.pdf`);
+                
+            } catch (error) {
+                console.error("Errore durante il ritaglio:", error);
+                alert("Errore durante la creazione del PDF. Se stai aprendo il file in locale, il browser potrebbe bloccare la lettura delle immagini. Errore: " + error.message);
+            }
+        }, 150);
+    });
+}
+
+// --- Grafici Chart.js ---
+function drawMonthlyChart(db) {
+    const ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
+    
+    if(monthlyChartInstance) {
+        monthlyChartInstance.destroy();
+    }
+
+    const datasets = [];
+    const colors = [
+        ['rgba(59, 130, 246, 0.8)', 'rgba(99, 102, 241, 0.4)'], // Blue
+        ['rgba(20, 184, 166, 0.8)', 'rgba(13, 148, 136, 0.4)'], // Teal
+        ['rgba(245, 158, 11, 0.8)', 'rgba(217, 119, 6, 0.4)'], // Orange
+        ['rgba(239, 68, 68, 0.8)', 'rgba(220, 38, 38, 0.4)'] // Red
+    ];
+    
+    let colorIndex = 0;
+    
+    // Ordiniamo gli anni in modo crescente per il grafico (es. 2024 a sinistra di 2025)
+    const sortedSelectedYears = Array.from(selectedYears).sort((a,b) => a-b);
+
+    sortedSelectedYears.forEach(year => {
+        const yearData = db.filter(item => item["ANNO"] === year);
+        const monthlySales = Array(12).fill(null);
+        
+        yearData.forEach(item => {
+            const monthIndex = MONTHS_ORDER.indexOf(item["MESE"]);
+            if(monthIndex !== -1) {
+                let val = parseFloat(item["Total (Net sales)"] || item["Diarias"]) || 0;
+                monthlySales[monthIndex] = val === 0 ? null : val;
+            }
+        });
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        const c = colors[colorIndex % colors.length];
+        gradient.addColorStop(0, c[0]);
+        gradient.addColorStop(1, c[1]);
+        
+        datasets.push({
+            label: `Fatturato ${year} (R$)`,
+            data: monthlySales,
+            backgroundColor: gradient,
+            borderRadius: 6,
+            borderWidth: 0,
+        });
+        
+        colorIndex++;
+    });
+
+    monthlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: MONTHS_ORDER,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: datasets.length > 1 },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'end',
+                    formatter: function(value) {
+                        if (!value) return '';
+                        if (value >= 1000) {
+                            return 'R$ ' + (value / 1000).toFixed(1) + 'k';
+                        }
+                        return 'R$ ' + value.toFixed(0);
+                    },
+                    font: { weight: 'bold', size: 10 },
+                    color: '#475569'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + formatCurrency(context.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grace: '15%',
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }
+                },
+                x: {
+                    grid: { display: false, drawBorder: false }
+                }
+            }
+        }
+    });
+}
+
+function drawYearlyChart(db) {
+    const ctx = document.getElementById('yearlyRevenueChart').getContext('2d');
+    
+    // Raggruppa per anno
+    const yearlyTotals = {};
+    const currentYear = new Date().getFullYear(); // Es. 2026
+    
+    db.forEach(item => {
+        const y = parseInt(item["ANNO"], 10);
+        // Escludi l'anno in corso (parziale)
+        if(y && !isNaN(y) && y < currentYear) {
+            if(!yearlyTotals[y]) yearlyTotals[y] = 0;
+            yearlyTotals[y] += parseFloat(item["Total (Net sales)"] || item["Diarias"]) || 0;
+        }
+    });
+
+    // Prendi solo gli ultimi 5 anni disponibili
+    const labels = Object.keys(yearlyTotals).sort((a,b) => a-b).slice(-5);
+    const data = labels.map(y => yearlyTotals[y] === 0 ? null : yearlyTotals[y]);
+
+    if(yearlyChartInstance) {
+        yearlyChartInstance.destroy();
+    }
+
+    yearlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Fatturato Totale (R$)',
+                data: data,
+                backgroundColor: 'rgba(99, 102, 241, 0.8)', // PiÃ¹ solido e visibile
+                borderColor: 'rgba(99, 102, 241, 1)',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            layout: { padding: { left: 50, right: 50, top: 30, bottom: 10 } },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'end',
+                    formatter: function(value) {
+                        if (!value) return '';
+                        if (value >= 1000) {
+                            return 'R$ ' + (value / 1000).toFixed(1) + 'k';
+                        }
+                        return 'R$ ' + value.toFixed(0);
+                    },
+                    font: { weight: 'bold', size: 10 },
+                    color: '#475569'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return formatCurrency(context.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grace: '15%',
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }
+                },
+                x: {
+                    grid: { display: false, drawBorder: false }
+                }
+            }
+        }
+    });
+}
+
+// ==========================================
+// EDIT MODAL LOGIC
+// ==========================================
+
+window.calcEditSales = function() {
+    const getVal = id => parseFloat(document.getElementById(id).value) || 0;
+    const diarias = getVal('edit-diarias-val');
+    const ab = getVal('edit-ab');
+    const spa = getVal('edit-spa');
+    const outros = getVal('edit-outros');
+    const taxas = getVal('edit-taxas');
+    
+    const netSales = diarias + ab + spa + outros;
+    const brutSales = netSales + taxas;
+    
+    // Mostriamo fino a 2 decimali nei campi auto-calcolati
+    document.getElementById('edit-netsales').value = netSales.toFixed(2);
+    document.getElementById('edit-bruto').value = brutSales.toFixed(2);
+};
+
+window.openEditModal = function(anno, mese) {
+    try {
+        const db = getDB();
+        const record = db.find(r => r["ANNO"] == anno && r["MESE"] == mese);
+        if(!record) {
+            alert("Errore: Impossibile trovare i dati per " + mese + " " + anno);
+            return;
+        }
+        
+        document.getElementById('edit-anno').value = record["ANNO"];
+        document.getElementById('edit-mese').value = record["MESE"];
+        
+        const parseValue = (val) => {
+            if (val === undefined || val === null || val === '') return 0;
+            if (typeof val === 'number') return val;
+            return parseFloat(String(val).replace(/[^0-9.-]+/g, '')) || 0;
+        };
+
+        // Ricavi e tasse
+        document.getElementById('edit-diarias-val').value = parseValue(record["Diarias"]);
+        document.getElementById('edit-ab').value = parseValue(record["A&B"]);
+        document.getElementById('edit-spa').value = parseValue(record["Spa"]);
+        document.getElementById('edit-outros').value = parseValue(record["Outros"]);
+        document.getElementById('edit-taxas').value = parseValue(record["Taxas (ISS, servicos)"] || record["Total (gross taxes)"]);
+        
+        // Calcola automaticamente i totali in base ai ricavi
+        calcEditSales();
+        
+        // Performance
+        document.getElementById('edit-ndiarie').value = parseValue(record["n. diarie"]);
+        document.getElementById('edit-diariamedia').value = parseValue(record["Diaria media"]);
+        document.getElementById('edit-revpar').value = parseValue(record["RevPar"]);
+        document.getElementById('edit-occupazione').value = parseValue(record["% occup."] || record["OcupaÃ§Ã£o %"]);
+        
+        document.getElementById('edit-modal').style.display = 'flex';
+    } catch (error) {
+        alert("Si Ã¨ verificato un errore durante l'apertura del modulo: " + error.message);
+        console.error(error);
+    }
+};
+
+window.closeEditModal = function() {
+    document.getElementById('edit-modal').style.display = 'none';
+};
+
+window.saveEditData = function() {
+    const anno = document.getElementById('edit-anno').value;
+    const mese = document.getElementById('edit-mese').value;
+    
+    const db = getDB();
+    const index = db.findIndex(r => r["ANNO"] == anno && r["MESE"] == mese);
+    
+    if(index !== -1) {
+        // Ricavi e Tasse
+        db[index]["Diarias"] = parseFloat(document.getElementById('edit-diarias-val').value) || 0;
+        db[index]["A&B"] = parseFloat(document.getElementById('edit-ab').value) || 0;
+        db[index]["Spa"] = parseFloat(document.getElementById('edit-spa').value) || 0;
+        db[index]["Outros"] = parseFloat(document.getElementById('edit-outros').value) || 0;
+        db[index]["Taxas (ISS, servicos)"] = parseFloat(document.getElementById('edit-taxas').value) || 0;
+        
+        // Totali (letti dai campi auto-calcolati)
+        db[index]["Total (Net sales)"] = parseFloat(document.getElementById('edit-netsales').value) || 0;
+        db[index]["Total Bruto"] = parseFloat(document.getElementById('edit-bruto').value) || 0;
+        
+        // Performance
+        db[index]["n. diarie"] = parseInt(document.getElementById('edit-ndiarie').value) || 0;
+        db[index]["Diaria media"] = parseFloat(document.getElementById('edit-diariamedia').value) || 0;
+        db[index]["RevPar"] = parseFloat(document.getElementById('edit-revpar').value) || 0;
+        db[index]["% occup."] = parseFloat(document.getElementById('edit-occupazione').value) || 0;
+        
+        saveDB(db);
+        
+        closeEditModal();
+        updateDashboard();
+        updateTable(); // Aggiorna anche la tabella stessa
+        updateYearlyHistory();
+        if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+        if(document.getElementById('analisi-area-tbody')) updateAnalisiArea();
+    }
+};
+
+window.deleteRow = function(anno, mese) {
+    if(confirm(`Sei sicuro di voler azzerare i dati per ${mese} ${anno}?`)) {
+        const db = getDB();
+        const index = db.findIndex(r => r["ANNO"] == anno && r["MESE"] == mese);
+        if(index !== -1) {
+            db[index]["Diarias"] = 0;
+            db[index]["A&B"] = 0;
+            db[index]["Spa"] = 0;
+            db[index]["Outros"] = 0;
+            db[index]["Taxas (ISS, servicos)"] = 0;
+            db[index]["Total (Net sales)"] = 0;
+            db[index]["Total Bruto"] = 0;
+            db[index]["n. diarie"] = 0;
+            db[index]["Diaria media"] = 0;
+            db[index]["RevPar"] = 0;
+            db[index]["% occup."] = 0;
+            saveDB(db);
+            updateDashboard();
+            updateTable();
+            updateYearlyHistory();
+            if(document.getElementById('analisi-dati-tbody')) updateAnalisiDati();
+            if(document.getElementById('analisi-area-tbody')) updateAnalisiArea();
+        }
+    }
+};
+
+// ==========================================
+// USER MANAGEMENT LOGIC
+// ==========================================
+
+window.renderUsersTable = function() {
+    const usersObj = getUsers();
+    const tbody = document.getElementById('usersTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    Object.keys(usersObj).forEach(uname => {
+        const user = usersObj[uname];
+        const tr = document.createElement('tr');
+        
+        // Setup Drag & Drop
+        tr.draggable = true;
+        tr.dataset.uname = uname;
+        
+        tr.innerHTML = `
+            <td style="width: 40px; text-align: center; cursor: grab;" class="row-drag-handle" title="Trascina per riordinare">
+                <i class="ph ph-list" style="font-size: 1.2rem; color: #94a3b8;"></i>
+            </td>
+            <td style="text-align: left;"><strong>${uname}</strong></td>
+            <td>${user.password || ''}</td>
+            <td>${user.role}</td>
+            <td>
+                <button class="btn-action edit-btn" onclick="openEditUserModal('${uname}', '${user.role}')"><i class="ph ph-pencil-simple"></i></button>
+                ${uname !== currentUsername ? `<button class="btn-action delete-btn" onclick="deleteUser('${uname}')"><i class="ph ph-trash"></i></button>` : ''}
+            </td>
+        `;
+        
+        // Eventi Drag & Drop
+        tr.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', uname);
+            e.dataTransfer.effectAllowed = 'move';
+            tr.classList.add('dragging');
+        });
+        
+        tr.addEventListener('dragend', () => {
+            tr.classList.remove('dragging');
+            document.querySelectorAll('#usersTableBody tr').forEach(row => {
+                row.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+        });
+        
+        tr.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const rect = tr.getBoundingClientRect();
+            const relY = e.clientY - rect.top;
+            if(relY < rect.height / 2) {
+                tr.classList.add('drag-over-top');
+                tr.classList.remove('drag-over-bottom');
+            } else {
+                tr.classList.add('drag-over-bottom');
+                tr.classList.remove('drag-over-top');
+            }
+        });
+        
+        tr.addEventListener('dragleave', () => {
+            tr.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+        
+        tr.addEventListener('drop', (e) => {
+            e.preventDefault();
+            tr.classList.remove('drag-over-top', 'drag-over-bottom');
+            const draggedUname = e.dataTransfer.getData('text/plain');
+            if (draggedUname && draggedUname !== uname) {
+                const rect = tr.getBoundingClientRect();
+                const position = (e.clientY - rect.top < rect.height / 2) ? 'before' : 'after';
+                reorderUser(draggedUname, uname, position);
+            }
+        });
+        
+        tbody.appendChild(tr);
+    });
+
+    // Aggiorna il badge di stato del token GitHub
+    const statusBadge = document.getElementById('github-token-status');
+    if (statusBadge) {
+        const hasToken = !!localStorage.getItem('sombra_github_token');
+        statusBadge.textContent = hasToken ? 'âœ… Attivo' : 'Non configurato';
+        statusBadge.style.background = hasToken ? '#10b981' : '#ef4444';
+    }
+};
+
+window.reorderUser = function(draggedUname, targetUname, position) {
+    const usersObj = getUsers();
+    const keys = Object.keys(usersObj);
+    
+    const draggedIndex = keys.indexOf(draggedUname);
+    if(draggedIndex === -1) return;
+    keys.splice(draggedIndex, 1);
+    
+    let targetIndex = keys.indexOf(targetUname);
+    if(position === 'after') targetIndex++;
+    
+    keys.splice(targetIndex, 0, draggedUname);
+    
+    const newUsersObj = {};
+    keys.forEach(k => {
+        newUsersObj[k] = usersObj[k];
+    });
+    
+    saveUsers(newUsersObj);
+    renderUsersTable();
+};
+
+window.openAddUserModal = function() {
+    document.getElementById('user-modal-title').textContent = 'Nuovo Utente';
+    document.getElementById('user-input-username').value = '';
+    document.getElementById('user-input-username').disabled = false;
+    document.getElementById('user-input-password').value = '';
+    document.getElementById('user-input-role').value = 'USER';
+    document.getElementById('user-modal').style.display = 'flex';
+};
+
+window.openEditUserModal = function(username, role) {
+    document.getElementById('user-modal-title').textContent = 'Modifica Utente';
+    document.getElementById('user-input-username').value = username;
+    document.getElementById('user-input-username').disabled = true;
+    document.getElementById('user-input-password').value = ''; // Leave blank to keep current
+    document.getElementById('user-input-role').value = role;
+    document.getElementById('user-modal').style.display = 'flex';
+};
+
+window.closeUserModal = function() {
+    document.getElementById('user-modal').style.display = 'none';
+};
+
+window.openChangePasswordModal = function() {
+    document.getElementById('change-pwd-old').value = '';
+    document.getElementById('change-pwd-new').value = '';
+    document.getElementById('change-pwd-modal').style.display = 'flex';
+};
+
+window.closeChangePasswordModal = function() {
+    document.getElementById('change-pwd-modal').style.display = 'none';
+};
+
+window.submitChangePassword = function() {
+    const oldPwd = document.getElementById('change-pwd-old').value.trim();
+    const newPwd = document.getElementById('change-pwd-new').value.trim();
+
+    if(!newPwd) {
+        alert("Inserisci una nuova password.");
+        return;
+    }
+
+    const usersObj = getUsers();
+    if (usersObj[currentUsername]) {
+        if (usersObj[currentUsername].password !== oldPwd) {
+            alert("La vecchia password Ã¨ errata!");
+            return;
+        }
+
+        usersObj[currentUsername].password = newPwd;
+        saveUsers(usersObj);
+        syncToGitHub(usersObj);
+        closeChangePasswordModal();
+        alert("Password modificata con successo!");
+    } else {
+        alert("Utente non trovato.");
+    }
+};
+
+window.saveUserData = function() {
+    const uname = document.getElementById('user-input-username').value.trim().toLowerCase();
+    const p = document.getElementById('user-input-password').value.trim();
+    const r = document.getElementById('user-input-role').value;
+    
+    if(!uname) return alert('Username obbligatorio');
+    
+    const usersObj = getUsers();
+    
+    // Se Ã¨ un utente esistente ma non ha inserito password, manteniamo la vecchia
+    if (usersObj[uname] && !p) {
+        usersObj[uname].role = r;
+    } else {
+        if(!p) return alert('Password obbligatoria per nuovo utente');
+        usersObj[uname] = { password: p, role: r };
+    }
+    
+    saveUsers(usersObj);
+    closeUserModal();
+    renderUsersTable();
+    alert('Utente salvato con successo!');
+};
+
+window.deleteUser = function(uname) {
+    if (uname === currentUsername) {
+        return alert('Non puoi eliminare il tuo stesso account.');
+    }
+    
+    if(confirm(`Sei sicuro di voler eliminare l'utente ${uname}?`)) {
+        const usersObj = getUsers();
+        delete usersObj[uname];
+        saveUsers(usersObj);
+        renderUsersTable();
+    }
+};
+
+window.changeChartType = function(chartId, newType) {
+    let instance = null;
+    if (chartId === 'monthlyRevenueChart') instance = monthlyChartInstance;
+    else if (chartId === 'yearlyRevenueChart') instance = yearlyChartInstance;
+    else if (chartId === 'yearlyTrendChart') instance = yearlyTrendChartInstance;
+    else if (chartId === 'yearlyCompositionChart') instance = yearlyCompositionChartInstance;
+
+    if (instance) {
+        instance.config.type = newType;
+        
+        // Applicare stili specifici se cambiamo a linea
+        if (newType === 'line' && (chartId === 'monthlyRevenueChart' || chartId === 'yearlyRevenueChart')) {
+            const fallbackColors = ['rgba(59, 130, 246, 1)', 'rgba(20, 184, 166, 1)', 'rgba(245, 158, 11, 1)', 'rgba(239, 68, 68, 1)'];
+            instance.data.datasets.forEach((ds, i) => {
+                ds.fill = false;
+                ds.tension = 0.4;
+                ds.borderWidth = 2;
+                ds.borderColor = typeof ds.backgroundColor === 'string' ? ds.backgroundColor : fallbackColors[i % fallbackColors.length];
+            });
+        } else if (newType === 'bar' && (chartId === 'monthlyRevenueChart' || chartId === 'yearlyRevenueChart')) {
+            // Revert per grafici mensili/annuali standard
+            instance.data.datasets.forEach(ds => {
+                ds.fill = true;
+                ds.borderWidth = 0;
+            });
+        } else if (newType === 'bar' && chartId === 'yearlyTrendChart') {
+            instance.data.datasets.forEach(ds => {
+                ds.backgroundColor = 'rgba(59, 130, 246, 0.8)';
+            });
+        } else if (newType === 'line' && chartId === 'yearlyTrendChart') {
+            instance.data.datasets.forEach(ds => {
+                ds.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                ds.fill = true;
+                ds.tension = 0.4;
+            });
+        }
+        const ctx = instance.canvas.getContext('2d');
+        const config = instance.config;
+        instance.destroy();
+        const newInstance = new Chart(ctx, config);
+        
+        if (chartId === 'monthlyRevenueChart') monthlyChartInstance = newInstance;
+        else if (chartId === 'yearlyRevenueChart') yearlyChartInstance = newInstance;
+        else if (chartId === 'yearlyTrendChart') yearlyTrendChartInstance = newInstance;
+        else if (chartId === 'yearlyCompositionChart') yearlyCompositionChartInstance = newInstance;
+    }
+};
+
+// ==========================================
+// COMPARATOR LOGIC
+// ==========================================
+
+window.updateComparator = function() {
+    const db = getDB();
+    if(db.length === 0) return;
+
+    const availableYears = [...new Set(db.map(item => item["ANNO"]))].sort((a, b) => b - a);
+    
+    const selectY1 = document.getElementById('comp-year1');
+    const selectY2 = document.getElementById('comp-year2');
+    
+    if (selectY1.options.length === 0) {
+        availableYears.forEach(year => {
+            selectY1.add(new Option(year, year));
+            selectY2.add(new Option(year, year));
+        });
+        if(availableYears.length > 1) {
+            selectY1.value = availableYears[1];
+            selectY2.value = availableYears[0];
+        } else if (availableYears.length > 0) {
+            selectY1.value = availableYears[0];
+            selectY2.value = availableYears[0];
+        }
+        
+        selectY1.addEventListener('change', updateComparator);
+        selectY2.addEventListener('change', updateComparator);
+    }
+    
+    const year1 = parseInt(selectY1.value);
+    const year2 = parseInt(selectY2.value);
+    
+    const ytdTitle = document.getElementById('comp-ytd-title');
+    if(ytdTitle) {
+        ytdTitle.textContent = `YTD (${year1} VS ${year2})`;
+    }
+    
+    document.getElementById('comp-th-y1').textContent = year1;
+    document.getElementById('comp-th-y2').textContent = year2;
+    document.getElementById('comp-ytd-th-y1').textContent = year1;
+    document.getElementById('comp-ytd-th-y2').textContent = year2;
+    
+    const y1Data = db.filter(item => item["ANNO"] === year1);
+    const y2Data = db.filter(item => item["ANNO"] === year2);
+    
+    const tbody = document.getElementById('comp-table-body');
+    tbody.innerHTML = '';
+    
+    let y1Total = 0;
+    let y2Total = 0;
+    let y1YtdTotal = 0;
+    let y2YtdTotal = 0;
+    
+    let mostRecentYearData = year1 > year2 ? y1Data : y2Data;
+    if (year1 === year2) mostRecentYearData = y1Data; // stesso anno
+    
+    let lastValidMonthIndex = -1;
+    for(let i=0; i<12; i++) {
+        const item = mostRecentYearData.find(x => x["MESE"] === MONTHS_ORDER[i]);
+        if(item && (parseFloat(item["Total (Net sales)"]) > 0 || parseFloat(item["Diarias"]) > 0)) {
+            lastValidMonthIndex = i;
+        }
+    }
+    if(lastValidMonthIndex === -1) lastValidMonthIndex = 11;
+    
+    const chartDataY1 = Array(12).fill(null);
+    const chartDataY2 = Array(12).fill(null);
+    
+    for(let i=0; i<12; i++) {
+        const monthName = MONTHS_ORDER[i];
+        const itemY1 = y1Data.find(x => x["MESE"] === monthName);
+        const itemY2 = y2Data.find(x => x["MESE"] === monthName);
+        
+        let val1 = itemY1 ? (parseFloat(itemY1["Total (Net sales)"] || itemY1["Diarias"]) || 0) : 0;
+        let val2 = itemY2 ? (parseFloat(itemY2["Total (Net sales)"] || itemY2["Diarias"]) || 0) : 0;
+        
+        chartDataY1[i] = val1 === 0 ? null : val1;
+        chartDataY2[i] = val2 === 0 ? null : val2;
+        
+        y1Total += val1;
+        y2Total += val2;
+        
+        if (i <= lastValidMonthIndex) {
+            y1YtdTotal += val1;
+            y2YtdTotal += val2;
+        }
+        
+        let diffPerc = 0;
+        let percColor = '';
+        let percText = '';
+        if (val1 > 0 && val2 > 0) {
+            diffPerc = ((val2 - val1) / val1) * 100;
+            percColor = diffPerc >= 0 ? '#16a34a' : '#dc2626';
+            percText = diffPerc >= 0 ? '+' + diffPerc.toFixed(2) + '%' : diffPerc.toFixed(2) + '%';
+        } else if (val1 === 0 && val2 === 0) {
+            percColor = '#64748b';
+            percText = '0.00%';
+        } else {
+            percColor = '#64748b';
+            percText = '-';
+        }
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align:center;"><strong>${i+1}</strong></td>
+            <td>${formatCurrency(val1)}</td>
+            <td>${formatCurrency(val2)}</td>
+            <td style="color:${percColor}; font-weight:bold;">${percText}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    // Total Foot
+    let diffTotal = 0;
+    let colorTotal = '';
+    let textTotal = '';
+    if(y1Total > 0 && y2Total > 0) {
+        diffTotal = ((y2Total - y1Total) / y1Total) * 100;
+        colorTotal = diffTotal >= 0 ? '#16a34a' : '#dc2626';
+        textTotal = diffTotal >= 0 ? '+' + diffTotal.toFixed(2) + '%' : diffTotal.toFixed(2) + '%';
+    } else if (y1Total === 0 && y2Total === 0) {
+        colorTotal = '#64748b';
+        textTotal = '0.00%';
+    } else {
+        colorTotal = '#64748b';
+        textTotal = '-';
+    }
+    
+    document.getElementById('comp-table-foot').innerHTML = `
+        <tr>
+            <td style="text-align:center;">TOTAL</td>
+            <td>${formatCurrency(y1Total)}</td>
+            <td>${formatCurrency(y2Total)}</td>
+            <td style="color:${colorTotal}; font-weight:bold;">${textTotal}</td>
+        </tr>
+    `;
+    
+    // YTD Foot
+    let diffYtd = 0;
+    let colorYtd = '';
+    let textYtd = '';
+    if(y1YtdTotal > 0 && y2YtdTotal > 0) {
+        diffYtd = ((y2YtdTotal - y1YtdTotal) / y1YtdTotal) * 100;
+        colorYtd = diffYtd >= 0 ? '#16a34a' : '#dc2626';
+        textYtd = diffYtd >= 0 ? '+' + diffYtd.toFixed(2) + '%' : diffYtd.toFixed(2) + '%';
+    } else if (y1YtdTotal === 0 && y2YtdTotal === 0) {
+        colorYtd = '#64748b';
+        textYtd = '0.00%';
+    } else {
+        colorYtd = '#64748b';
+        textYtd = '-';
+    }
+    
+    document.getElementById('comp-ytd-body').innerHTML = `
+        <tr style="background-color: #f1f5f9;">
+            <td style="text-align: right;"><strong>${formatCurrency(y1YtdTotal)}</strong></td>
+            <td><strong>${formatCurrency(y2YtdTotal)}</strong></td>
+            <td style="color:${colorYtd}; font-weight:bold;">${textYtd}</td>
+        </tr>
+    `;
+    
+    drawComparatorChart(chartDataY1, chartDataY2, year1, year2);
+};
+
+function drawComparatorChart(dataY1, dataY2, year1, year2) {
+    const canvas = document.getElementById('comparatorChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    const chartTypeSelect = document.getElementById('comp-chart-type');
+    const chartType = chartTypeSelect ? chartTypeSelect.value : 'bar';
+    
+    if(comparatorChartInstance) {
+        comparatorChartInstance.destroy();
+    }
+
+    comparatorChartInstance = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: MONTHS_ORDER.map(m => m.substring(0,3)),
+            datasets: [
+                {
+                    label: `Fatturato ${year1}`,
+                    data: dataY1,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: `Fatturato ${year2}`,
+                    data: dataY2,
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            layout: { padding: { left: 10, right: 10, top: 20 } },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', align: 'end' },
+                datalabels: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: { label: c => formatCurrency(c.raw) }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// ==========================================
+// ANALISI DATI LOGIC
+// ==========================================
+
+
+
+window.updateAnalisiDati = function() {
+    const db = getDB();
+    if(db.length === 0) return;
+
+    // Determina quale toggle Ã¨ selezionato
+    const toggleRadios = document.getElementsByName('analisi-toggle');
+    let mode = 'diarie'; // 'diarie' o 'diaria_media'
+    for (const radio of toggleRadios) {
+        if (radio.checked) {
+            mode = radio.value;
+            break;
+        }
+    }
+
+    // Aggiorna titoli
+    document.getElementById('analisi-table-title').textContent = mode === 'diarie' ? 'NR DIARIE' : (mode === 'occupazione' ? 'OCCUPAZIONE MEDIA' : 'DIARIA MEDIA');
+    document.getElementById('analisi-summary-col2').textContent = mode === 'diarie' ? 'Totale Diarie' : (mode === 'occupazione' ? 'Occupazione %' : 'Diaria Media');
+
+    let filteredDb = db;
+    if(isMultiSelect && selectedYears.size > 0) {
+        filteredDb = db.filter(item => selectedYears.has(item["ANNO"]));
+    } else {
+        filteredDb = db.filter(item => !hiddenYears.includes(item["ANNO"]));
+    }
+
+    const availableYears = [...new Set(filteredDb.map(item => item["ANNO"]))].sort((a, b) => a - b);
+    
+    // Header tabella
+    const thead = document.getElementById('analisi-dati-thead');
+    let thHtml = `<th style="text-align: center;" data-i18n="comparator.months">Mesi</th>`;
+    availableYears.forEach(year => {
+        thHtml += `<th>${year}</th>`;
+    });
+    thead.innerHTML = thHtml;
+
+    // Body tabella principale
+    const tbody = document.getElementById('analisi-dati-tbody');
+    tbody.innerHTML = '';
+    
+    // Array per i totali/medie annuali e grafici
+    const yearlySums = {};
+    const yearlyCounts = {};
+    availableYears.forEach(y => {
+        yearlySums[y] = 0;
+        yearlyCounts[y] = 0;
+    });
+
+    for(let i=0; i<12; i++) {
+        const monthName = MONTHS_ORDER[i];
+        const tr = document.createElement('tr');
+        let trHtml = `<td style="text-align:center;"><strong>${i+1}</strong></td>`;
+        
+        availableYears.forEach(year => {
+            const item = filteredDb.find(x => x["ANNO"] === year && x["MESE"] === monthName);
+            let val = 0;
+            if (item) {
+                if (mode === 'diarie') {
+                    val = parseInt(item["n. diarie"]) || 0;
+                } else if (mode === 'occupazione') {
+                    val = parseFloat(item["% occup."] || item["OcupaÃ§Ã£o %"]) || 0;
+                } else {
+                    val = parseFloat(item["Diaria media"]) || 0;
+                }
+            }
+            
+            if (val > 0) {
+                yearlySums[year] += val;
+                yearlyCounts[year] += 1;
+                trHtml += `<td>${mode === 'diarie' ? val : (mode === 'occupazione' ? formatPercent(val) : formatCurrency(val))}</td>`;
+            } else {
+                trHtml += `<td>-</td>`;
+            }
+        });
+        
+        tr.innerHTML = trHtml;
+        tbody.appendChild(tr);
+    }
+
+    // Tfoot tabella principale
+    const tfoot = document.getElementById('analisi-dati-tfoot');
+    const trFoot = document.createElement('tr');
+    let tfootHtml = `<td style="text-align:center;"><strong>Totale / Media</strong></td>`;
+    
+    const chartData = [];
+    
+    availableYears.forEach(year => {
+        let finalVal = 0;
+        if (mode === 'diarie') {
+            finalVal = yearlySums[year];
+            tfootHtml += `<td>${finalVal}</td>`;
+        } else {
+            finalVal = yearlyCounts[year] > 0 ? (yearlySums[year] / yearlyCounts[year]) : 0;
+            tfootHtml += `<td>${mode === 'occupazione' ? formatPercent(finalVal) : formatCurrency(finalVal)}</td>`;
+        }
+        chartData.push(finalVal);
+    });
+    trFoot.innerHTML = tfootHtml;
+    tfoot.innerHTML = '';
+    tfoot.appendChild(trFoot);
+
+    // Tabella Riepilogativa
+    const summaryBody = document.getElementById('analisi-summary-tbody');
+    summaryBody.innerHTML = '';
+    
+    for (let i = 0; i < availableYears.length; i++) {
+        const year = availableYears[i];
+        let val = chartData[i];
+        let prevVal = i > 0 ? chartData[i-1] : 0;
+        
+        let diffPerc = 0;
+        let percColor = '';
+        let percText = '';
+        
+        if (prevVal > 0) {
+            diffPerc = ((val - prevVal) / prevVal) * 100;
+            percColor = diffPerc >= 0 ? '#16a34a' : '#dc2626';
+            percText = diffPerc >= 0 ? '+' + diffPerc.toFixed(2) + '%' : diffPerc.toFixed(2) + '%';
+        } else if (val > 0 && i > 0) {
+            diffPerc = 100;
+            percColor = '#16a34a';
+            percText = '+100.00%';
+        } else {
+            percColor = '#64748b';
+            percText = '-';
+        }
+
+        const trSum = document.createElement('tr');
+        trSum.innerHTML = `
+            <td><strong>${year}</strong></td>
+            <td>${mode === 'diarie' ? val : (mode === 'occupazione' ? formatPercent(val) : formatCurrency(val))}</td>
+            <td style="color:${percColor}; font-weight:bold;">${percText}</td>
+        `;
+        summaryBody.appendChild(trSum);
+    }
+
+    // Grafico
+    drawAnalisiDatiChart(availableYears, chartData, mode);
+};
+
+function drawAnalisiDatiChart(labels, data, mode) {
+    const canvas = document.getElementById('analisiDatiChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if(analisiDatiChartInstance) {
+        analisiDatiChartInstance.destroy();
+    }
+
+    const labelTesto = mode === 'diarie' ? 'Nr. Diarie' : (mode === 'occupazione' ? 'Occupazione %' : 'Diaria Media (R$)');
+    
+    analisiDatiChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: labelTesto,
+                    data: data,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'Trend',
+                    data: data,
+                    type: 'line',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                    tension: 0,
+                    order: 1,
+                    datalabels: {
+                        display: false
+                    }
+                }
+            ]
+        },
+        options: {
+            layout: { padding: { left: 10, right: 10, top: 30 } },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', align: 'end' },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: function(value) {
+                        if (!value) return '';
+                        return mode === 'diarie' ? value : (mode === 'occupazione' ? formatPercent(value) : formatCurrency(value));
+                    },
+                    font: { weight: 'bold', size: 10 },
+                    color: '#475569'
+                },
+                tooltip: {
+                    callbacks: { label: c => mode === 'diarie' ? c.raw : (mode === 'occupazione' ? formatPercent(c.raw) : formatCurrency(c.raw)) }
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    grace: '15%', 
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: {
+                        callback: function(value) {
+                            if (mode === 'occupazione') {
+                                return (value * 100).toFixed(0) + '%';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+window.updateAnalisiArea = function() {
+    const db = getDB();
+    if(db.length === 0) return;
+
+    const useDiarias = document.getElementById('area-chk-diarias')?.checked ?? true;
+    const useAB = document.getElementById('area-chk-ab')?.checked ?? true;
+    const useSpa = document.getElementById('area-chk-spa')?.checked ?? true;
+    
+    const chartType = document.getElementById('analisi-area-chart-type')?.value || 'stacked'; // 'stacked' o 'grouped'
+
+    // Dati filtrati per anni selezionati
+    let yearsToProcess;
+    if (isMultiSelect && selectedYears && selectedYears.size > 0) {
+        yearsToProcess = Array.from(selectedYears).sort((a,b) => a-b);
+    } else {
+        yearsToProcess = [...new Set(db.map(item => item["ANNO"]).filter(y => y))].filter(y => !hiddenYears.includes(y)).sort((a,b) => a-b);
+    }
+
+    const tbody = document.getElementById('analisi-area-tbody');
+    const tfoot = document.getElementById('analisi-area-tfoot');
+    if(!tbody || !tfoot) return;
+
+    tbody.innerHTML = '';
+    
+    let totalAllDiarias = 0;
+    let totalAllAB = 0;
+    let totalAllSpa = 0;
+    let grandTotal = 0;
+
+    const chartLabels = yearsToProcess.map(y => y.toString());
+    const chartDataDiarias = [];
+    const chartDataAB = [];
+    const chartDataSpa = [];
+
+    yearsToProcess.forEach(year => {
+        const yearData = db.filter(item => item["ANNO"] === year);
+        
+        let sumDiarias = 0;
+        let sumAB = 0;
+        let sumSpa = 0; // Spa + Outros
+
+        yearData.forEach(m => {
+            if(useDiarias) sumDiarias += (m["Diarias"] || 0);
+            if(useAB) sumAB += (m["A&B"] || 0);
+            if(useSpa) sumSpa += ((m["Spa"] || 0) + (m["Outros"] || 0));
+        });
+
+        const rowTotal = sumDiarias + sumAB + sumSpa;
+
+        totalAllDiarias += sumDiarias;
+        totalAllAB += sumAB;
+        totalAllSpa += sumSpa;
+        grandTotal += rowTotal;
+
+        chartDataDiarias.push(sumDiarias);
+        chartDataAB.push(sumAB);
+        chartDataSpa.push(sumSpa);
+
+        const pctDiarias = rowTotal > 0 ? ((sumDiarias / rowTotal) * 100).toFixed(1) + '%' : '0%';
+        const pctAB = rowTotal > 0 ? ((sumAB / rowTotal) * 100).toFixed(1) + '%' : '0%';
+        const pctSpa = rowTotal > 0 ? ((sumSpa / rowTotal) * 100).toFixed(1) + '%' : '0%';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight: 600;">${year}</td>
+            <td style="${!useDiarias ? 'color:#cbd5e1;' : ''}">${formatCurrency(sumDiarias)} <span style="font-size: 0.85em; color: #64748b; margin-left: 8px;">(${pctDiarias})</span></td>
+            <td style="${!useAB ? 'color:#cbd5e1;' : ''}">${formatCurrency(sumAB)} <span style="font-size: 0.85em; color: #64748b; margin-left: 8px;">(${pctAB})</span></td>
+            <td style="${!useSpa ? 'color:#cbd5e1;' : ''}">${formatCurrency(sumSpa)} <span style="font-size: 0.85em; color: #64748b; margin-left: 8px;">(${pctSpa})</span></td>
+            <td style="font-weight: bold; color: var(--accent-blue); background-color: #f8fafc;">${formatCurrency(rowTotal)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    const pctTotDiarias = grandTotal > 0 ? ((totalAllDiarias / grandTotal) * 100).toFixed(1) + '%' : '0%';
+    const pctTotAB = grandTotal > 0 ? ((totalAllAB / grandTotal) * 100).toFixed(1) + '%' : '0%';
+    const pctTotSpa = grandTotal > 0 ? ((totalAllSpa / grandTotal) * 100).toFixed(1) + '%' : '0%';
+
+    tfoot.innerHTML = `
+        <tr>
+            <td style="color: var(--accent-blue);">TOTALE</td>
+            <td style="${!useDiarias ? 'color:#cbd5e1;' : 'color: var(--accent-blue);'}">${formatCurrency(totalAllDiarias)} <span style="font-size: 0.85em; color: #64748b; margin-left: 8px;">(${pctTotDiarias})</span></td>
+            <td style="${!useAB ? 'color:#cbd5e1;' : 'color: var(--accent-blue);'}">${formatCurrency(totalAllAB)} <span style="font-size: 0.85em; color: #64748b; margin-left: 8px;">(${pctTotAB})</span></td>
+            <td style="${!useSpa ? 'color:#cbd5e1;' : 'color: var(--accent-blue);'}">${formatCurrency(totalAllSpa)} <span style="font-size: 0.85em; color: #64748b; margin-left: 8px;">(${pctTotSpa})</span></td>
+            <td style="color: var(--primary-color); font-size: 1.1rem;">${formatCurrency(grandTotal)}</td>
+        </tr>
+    `;
+
+    // Aggiorna Chart
+    const ctx = document.getElementById('analisiAreaChart');
+    if(!ctx) return;
+    
+    if(analisiAreaChartInstance) {
+        analisiAreaChartInstance.destroy();
+    }
+    
+    const datasets = [];
+    if(useDiarias) {
+        datasets.push({
+            label: 'Diarias',
+            data: chartDataDiarias,
+            backgroundColor: '#3b82f6',
+            borderRadius: chartType === 'grouped' ? 6 : 0
+        });
+    }
+    if(useAB) {
+        datasets.push({
+            label: 'A & B',
+            data: chartDataAB,
+            backgroundColor: '#f59e0b',
+            borderRadius: chartType === 'grouped' ? 6 : 0
+        });
+    }
+    if(useSpa) {
+        datasets.push({
+            label: 'Spa (+ Outros)',
+            data: chartDataSpa,
+            backgroundColor: '#10b981',
+            borderRadius: chartType === 'grouped' ? 6 : 0
+        });
+    }
+
+    analisiAreaChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                datalabels: {
+                    display: chartType === 'grouped',
+                    align: 'end',
+                    anchor: 'end',
+                    color: '#475569',
+                    font: { weight: 'bold', size: 10 },
+                    formatter: function(value) {
+                        if (!value) return '';
+                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                        if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                        return value.toFixed(0);
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                },
+                legend: { position: 'top' }
+            },
+            scales: {
+                x: {
+                    stacked: chartType === 'stacked',
+                    grid: { display: false }
+                },
+                y: {
+                    stacked: chartType === 'stacked',
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return 'R$ ' + (value / 1000).toFixed(0) + 'k';
+                            return 'R$ ' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+
+document.addEventListener('languageChanged', (e) => {
+    console.log('Language changed to', e.detail.language);
+    if (document.getElementById('monthlyChart')) { if(typeof updateMonthlyDashboard === 'function') updateMonthlyDashboard(); }
+    if (document.getElementById('yearlyTableBody')) { if(typeof updateYearlyHistory === 'function') updateYearlyHistory(); }
+    if (document.getElementById('analisi-dati-tbody')) { if(typeof updateAnalisiDati === 'function') updateAnalisiDati(); }
+    if (document.getElementById('analisi-area-tbody')) { if(typeof updateAnalisiArea === 'function') updateAnalisiArea(); }
+});
+
+
+
+// --- LAYOUT EDIT MODE ---
+let isLayoutEditMode = false;
+const LAYOUT_FILE = 'sombra_layout.json';
+
+function initCustomResizers(widget) {
+    if(widget.dataset.resizersInitialized) return;
+    
+    // Add Drag Handle
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '<i class="ph ph-arrows-out-cardinal"></i>'; // Use arrows icon to indicate free movement
+    widget.appendChild(dragHandle);
+
+    // Freeform Dragging Logic
+    dragHandle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        
+        let currentX = 0;
+        let currentY = 0;
+        const transform = widget.style.transform;
+        if (transform && transform.includes('translate')) {
+            const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+            if (match) {
+                currentX = parseFloat(match[1]);
+                currentY = parseFloat(match[2]);
+            }
+        }
+        
+        widget.style.zIndex = '9999';
+
+        function onMouseMove(e) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            widget.style.transform = `translate(${currentX + dx}px, ${currentY + dy}px)`;
+        }
+
+        function onMouseUp() {
+            widget.style.zIndex = '';
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
+    // Add Resizers
+    const sides = ['left', 'right', 'bottom'];
+    sides.forEach(side => {
+        const resizer = document.createElement('div');
+        resizer.className = `custom-resizer resizer-${side}`;
+        widget.appendChild(resizer);
+        
+        resizer.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startWidth = parseFloat(window.getComputedStyle(widget).width);
+            const startHeight = parseFloat(window.getComputedStyle(widget).height);
+            
+            resizer.classList.add('resizing');
+            
+            function onMouseMove(e) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                if (side === 'right') {
+                    widget.style.marginLeft = '0';
+                    widget.style.marginRight = 'auto';
+                    widget.style.width = `${startWidth + dx}px`;
+                } else if (side === 'left') {
+                    widget.style.marginRight = '0';
+                    widget.style.marginLeft = 'auto';
+                    widget.style.width = `${startWidth - dx}px`;
+                } else if (side === 'bottom') {
+                    widget.style.height = `${startHeight + dy}px`;
+                }
+            }
+            
+            function onMouseUp() {
+                resizer.classList.remove('resizing');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Resize charts
+                if(typeof window.monthlyChart !== 'undefined' && window.monthlyChart) window.monthlyChart.resize();
+                if(typeof window.yearlyChart !== 'undefined' && window.yearlyChart) window.yearlyChart.resize();
+                if(typeof window.yearlyTrendChart !== 'undefined' && window.yearlyTrendChart) window.yearlyTrendChart.resize();
+                if(typeof window.yearlyCompositionChart !== 'undefined' && window.yearlyCompositionChart) window.yearlyCompositionChart.resize();
+                if(typeof window.comparatorChart !== 'undefined' && window.comparatorChart) window.comparatorChart.resize();
+                if(typeof window.analisiChart !== 'undefined' && window.analisiChart) window.analisiChart.resize();
+                if(typeof window.areaChart !== 'undefined' && window.areaChart) window.areaChart.resize();
+            }
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    });
+    
+    widget.dataset.resizersInitialized = 'true';
+}
+
+window.toggleLayoutEditMode = function(skipFetch = false) {
+    const body = document.body;
+    isLayoutEditMode = !isLayoutEditMode;
+    const toggleBtn = document.getElementById('nav-layout-toggle');
+    const saveContainer = document.getElementById('saveLayoutContainer');
+    
+    if (isLayoutEditMode) {
+        body.classList.add('layout-edit-mode');
+        if(toggleBtn) {
+            toggleBtn.innerHTML = '<i class="ph ph-x"></i> <span class="hide-mobile">Esci da Modifica</span>';
+            toggleBtn.classList.add('active');
+            toggleBtn.style.color = 'var(--accent-red)';
+        }
+        if(saveContainer) saveContainer.style.display = 'flex';
+        
+        document.querySelectorAll('.layout-widget').forEach(el => {
+            el.classList.add('resizable-widget');
+            initCustomResizers(el);
+        });
+    } else {
+        body.classList.remove('layout-edit-mode');
+        if(toggleBtn) {
+            toggleBtn.innerHTML = '<i class="ph ph-layout"></i> <span class="hide-mobile" data-i18n="nav.editLayout">Modifica Layout</span>';
+            toggleBtn.classList.remove('active');
+            toggleBtn.style.color = '';
+        }
+        if(saveContainer) saveContainer.style.display = 'none';
+        
+        document.querySelectorAll('.layout-widget').forEach(el => {
+            el.classList.remove('resizable-widget');
+        });
+        
+        if (!skipFetch) {
+            fetchLayoutFromGitHub();
+        }
+    }
+};
+
+window.publishLayoutToGitHub = async function(silent = false) {
+    const saveBtn = document.getElementById('saveLayoutBtn');
+    const originalText = saveBtn ? saveBtn.innerHTML : 'Salva Layout';
+    if(saveBtn && !silent) {
+        saveBtn.innerHTML = 'Salvataggio...';
+        saveBtn.disabled = true;
+    }
+    
+    try {
+        const layoutConfig = { visibility: window.pageVisibility || {} };
+        document.querySelectorAll('.layout-widget').forEach(el => {
+            if(el.id) {
+                const width = el.style.width || window.getComputedStyle(el).width;
+                const height = el.style.height || window.getComputedStyle(el).height;
+                
+                let tx = 0, ty = 0;
+                const transform = el.style.transform;
+                if (transform && transform.includes('translate')) {
+                    const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+                    if (match) {
+                        tx = parseFloat(match[1]);
+                        ty = parseFloat(match[2]);
+                    }
+                }
+                
+                layoutConfig[el.id] = { width, height, tx, ty };
+            }
+        });
+        
+        const jsonContent = JSON.stringify(layoutConfig, null, 2);
+        localStorage.setItem('local_layout_config', jsonContent);
+        
+        const token = localStorage.getItem('sombra_github_token');
+        if (!token) {
+            if (!silent) {
+                alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
+                toggleLayoutEditMode(true);
+            }
+            return;
+        }
+        
+        let sha = null;
+        try {
+            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}?t=${new Date().getTime()}`, { cache: 'no-store',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if(getRes.ok) {
+                const data = await getRes.json();
+                sha = data.sha;
+            }
+        } catch(e) {}
+        
+        const bodyData = {
+            message: 'Update layout config (Freeform Drag)',
+            content: btoa(unescape(encodeURIComponent(jsonContent)))
+        };
+        if(sha) bodyData.sha = sha;
+        
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${LAYOUT_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bodyData)
+        });
+        
+        if (putRes.ok) {
+            if (!silent) {
+                alert('Layout salvato!');
+                toggleLayoutEditMode(true);
+            }
+        } else {
+            const errorData = await putRes.json();
+            throw new Error(`Errore GitHub (${putRes.status}): ${errorData.message}`);
+        }
+        
+    } catch(err) {
+        if (!silent) {
+            alert('Errore: ' + err.message);
+        } else {
+            console.error('Errore in publishLayoutToGitHub:', err.message);
+        }
+    } finally {
+        if(saveBtn && !silent) {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+};
+
+window.applyLayoutConfig = function(config) {
+    if(!config) return;
+    
+    if (config.visibility) {
+        window.pageVisibility = config.visibility;
+        if (typeof window.updateSidebarVisibilityUI === 'function') {
+            window.updateSidebarVisibilityUI();
+        }
+    }
+    
+    let applied = false;
+    
+    for(const id in config) {
+        if (id === 'visibility') continue;
+        const el = document.getElementById(id);
+        if(el) {
+            if(config[id].width) el.style.width = config[id].width;
+            if(config[id].height) el.style.height = config[id].height;
+            if(config[id].tx !== undefined && config[id].ty !== undefined) {
+                el.style.transform = `translate(${config[id].tx}px, ${config[id].ty}px)`;
+            }
+            applied = true;
+        }
+    }
+    
+    if(applied) {
+        if(typeof window.monthlyChart !== 'undefined' && window.monthlyChart) window.monthlyChart.resize();
+        if(typeof window.yearlyChart !== 'undefined' && window.yearlyChart) window.yearlyChart.resize();
+        if(typeof window.yearlyTrendChart !== 'undefined' && window.yearlyTrendChart) window.yearlyTrendChart.resize();
+        if(typeof window.yearlyCompositionChart !== 'undefined' && window.yearlyCompositionChart) window.yearlyCompositionChart.resize();
+        if(typeof window.comparatorChart !== 'undefined' && window.comparatorChart) window.comparatorChart.resize();
+        if(typeof window.analisiChart !== 'undefined' && window.analisiChart) window.analisiChart.resize();
+        if(typeof window.areaChart !== 'undefined' && window.areaChart) window.areaChart.resize();
+    }
+};
+
+window.fetchLayoutFromGitHub = function() {
+    const localConfig = localStorage.getItem('local_layout_config');
+    
+    fetch(LAYOUT_FILE + '?t=' + new Date().getTime())
+        .then(response => {
+            if(!response.ok) throw new Error("Layout JSON not found");
+            return response.json();
+        })
+        .then(config => {
+            if (localConfig) {
+                try {
+                    const parsedLocal = JSON.parse(localConfig);
+                    applyLayoutConfig(Object.assign({}, config, parsedLocal));
+                } catch(e) {
+                    applyLayoutConfig(config);
+                }
+            } else {
+                applyLayoutConfig(config);
+            }
+        })
+        .catch(err => {
+            console.log("Layout non personalizzato su server.");
+            if (localConfig) {
+                try {
+                    applyLayoutConfig(JSON.parse(localConfig));
+                } catch(e) {}
+            }
+        });
+};
+
+
+// --- AZIONARIATO LOGIC ---
+
+const azionariatoData = [
+    { partner: 'BELARDI Alfonso', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
+    { partner: 'VANDI Sergio', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
+    { partner: 'MURGIA Jean-Pierre', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
+    { partner: 'BOSI Giannino Stefano', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
+    { partner: 'CANTON Marco', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
+    { partner: 'HEMAWITI Susik', type: 'A', shares: 147915, det: 0.06812215610780539, cap: 295830 },
+    { partner: 'VIGNOLLE Giorgio', type: 'A', shares: 75733, det: 0.03487878341285485, cap: 151466 },
+    { partner: 'STERZI Marco', type: 'A', shares: 75733, det: 0.03487878341285485, cap: 151466 },
+    { partner: 'TUBIA Edoardo', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
+    { partner: 'TUBIA Enrico', type: 'A', shares: 151461, det: 0.06975526407899342, cap: 302922 },
+    { partner: 'GLENELG SA', type: 'A', shares: 302933, det: 0.13951559420076268, cap: 605866 },
+    { partner: 'ALIX MarylÃ¨ne', type: 'B', shares: 67701, det: 0.031179651087817548, cap: 135402 },
+    { partner: 'STERZI Adonella', type: 'B', shares: 40402, det: 0.018607114566254628, cap: 80804 },
+    { partner: 'STERZI Marco', type: 'B', shares: 40401, det: 0.018606654016911372, cap: 80802 },
+    { partner: 'TUBIA Enrico', type: 'B', shares: 73805, det: 0.033990844279056055, cap: 147610 },
+    { partner: 'DESIDERIO Salvatore', type: 'B', shares: 180220, det: 0.08300020264171103, cap: 360440 },
+    { partner: 'M.M.M FINANCE SARL.', type: 'B', shares: 106250, det: 0.04893336772101763, cap: 212500 }
+];
+
+let azionariatoChartInstance = null;
+
+function renderAzionariato() {
+    const tbody = document.getElementById('partners-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    let subTotDetA = 0;
+    let subTotSottA = 0;
+    let subTotVersA = 0;
+    
+    let subTotDetB = 0;
+    let subTotSottB = 0;
+    let subTotVersB = 0;
+    
+    const colors = [
+        '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', 
+        '#06b6d4', '#14b8a6', '#f43f5e', '#84cc16', '#6366f1', 
+        '#d946ef', '#0ea5e9', '#f97316', '#22c55e', '#a855f7',
+        '#eab308', '#ef4444'
+    ];
+    
+    const labels = [];
+    const values = [];
+    const bgColors = [];
+    
+    let currentClass = "A";
+    
+    const formatCurrency = (val) => {
+        return "&euro; " + val.toLocaleString("it-IT", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    };
+    
+    azionariatoData.forEach((item, index) => {
+        if (item.type !== currentClass && index > 0) {
+            const subTr = document.createElement("tr");
+            subTr.style.backgroundColor = "rgba(59,130,246,0.05)";
+            subTr.innerHTML = `
+                <td></td>
+                <td style="font-weight: bold; color: #3b82f6; text-align: right;" data-i18n="azionariato.subtotalA">Subtotale Classe A</td>
+                <td></td>
+                <td style="font-weight: bold; color: #3b82f6;">${(subTotDetA * 100).toFixed(2)}%</td>
+                <td style="font-weight: bold; color: #3b82f6;">${formatCurrency(subTotSottA)}</td>
+                <td style="font-weight: bold; color: #3b82f6;">${formatCurrency(subTotVersA)}</td>
+            `;
+            tbody.appendChild(subTr);
+            currentClass = item.type;
+        }
+        
+        const idStr = String(index + 1).padStart(2, "0");
+        let displayName = currentUserRole === "ADMIN" ? item.partner : (typeof t === "function" ? t("azionariato.shareholder") : "Azionista") + " " + idStr;
+        let displayNameWithId = currentUserRole === "ADMIN" ? idStr + " - " + item.partner : displayName;
+        
+        labels.push(displayNameWithId);
+        values.push(item.det * 100);
+        bgColors.push(colors[index % colors.length]);
+        
+        if (item.type === "A") {
+            subTotDetA += item.det;
+            subTotSottA += item.cap;
+            subTotVersA += item.cap;
+        } else {
+            subTotDetB += item.det;
+            subTotSottB += item.cap;
+            subTotVersB += item.cap;
+        }
+        
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><div style="width: 12px; height: 12px; border-radius: 3px; background-color: ${bgColors[index]};"></div></td>
+            <td style="font-weight: 600; color: var(--text-primary);">${displayNameWithId}</td>
+            <td><span style="padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; background: ${item.type === "A" ? "rgba(59,130,246,0.2)" : "rgba(16,185,129,0.2)"}; color: ${item.type === "A" ? "#3b82f6" : "#10b981"};"><span data-i18n="azionariato.class${item.type}">Class ${item.type}</span></span></td>
+            <td style="font-weight: bold;">${(item.det * 100).toFixed(2)}%</td>
+            <td>${formatCurrency(item.cap)}</td>
+            <td style="color: #10b981;">${formatCurrency(item.cap)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    const subTrB = document.createElement("tr");
+    subTrB.style.backgroundColor = "rgba(16,185,129,0.05)";
+    subTrB.innerHTML = `
+        <td></td>
+        <td style="font-weight: bold; color: #10b981; text-align: right;" data-i18n="azionariato.subtotalB">Subtotale Classe B</td>
+        <td></td>
+        <td style="font-weight: bold; color: #10b981;">${(subTotDetB * 100).toFixed(2)}%</td>
+        <td style="font-weight: bold; color: #10b981;">${formatCurrency(subTotSottB)}</td>
+        <td style="font-weight: bold; color: #10b981;">${formatCurrency(subTotVersB)}</td>
+    `;
+    tbody.appendChild(subTrB);
+    
+    const totDet = subTotDetA + subTotDetB;
+    const totSott = subTotSottA + subTotSottB;
+    const totVers = subTotVersA + subTotVersB;
+    
+    const tfoot = document.getElementById("partners-table-foot");
+    if (tfoot) {
+        tfoot.innerHTML = `
+            <tr>
+                <td></td>
+                <td style="font-size: 1.1rem; text-align: right;" data-i18n="azionariato.grandTotal">TOTALE GENERALE</td>
+                <td></td>
+                <td style="color: #f59e0b; font-size: 1.1rem;">${(totDet * 100).toFixed(0)}%</td>
+                <td style="font-size: 1.1rem;">${formatCurrency(totSott)}</td>
+                <td style="color: #10b981; font-size: 1.1rem;">${formatCurrency(totVers)}</td>
+            </tr>
+        `;
+    }
+    
+    updateAzionariatoChartData(labels, values, bgColors);
+    if (typeof translatePage === 'function') translatePage();
+}
+
+function updateAzionariatoChartData(labels, values, bgColors) {
+    const ctx = document.getElementById("azionariatoChart");
+    if (!ctx) return;
+    
+    const type = document.getElementById("chartType").value;
+    
+    if (azionariatoChartInstance) {
+        azionariatoChartInstance.destroy();
+    }
+    
+    const chartConfig = {
+        type: type,
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: bgColors,
+                borderWidth: type === "pie" ? 0 : 1,
+                borderColor: type === "bar" ? bgColors : undefined
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: type === "pie",
+                    position: "right",
+                    labels: { color: getComputedStyle(document.body).getPropertyValue("--text-primary") || "#fff" }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ": " + context.raw.toFixed(2) + "%";
+                        }
+                    }
+                },
+                datalabels: {
+                    color: "#fff",
+                    font: { weight: "bold", size: 12 },
+                    formatter: function(value, context) {
+                        return value > 3 ? context.chart.data.labels[context.dataIndex] : "";
+                    },
+                    display: type === "pie"
+                }
+            }
+        }
+    };
+    
+    if (type === "bar") {
+        chartConfig.options.scales = {
+            y: {
+                beginAtZero: true,
+                ticks: { color: getComputedStyle(document.body).getPropertyValue("--text-secondary") || "#ccc" },
+                grid: { color: "rgba(255,255,255,0.1)" }
+            },
+            x: {
+                ticks: { color: getComputedStyle(document.body).getPropertyValue("--text-secondary") || "#ccc", maxRotation: 45, minRotation: 45 },
+                grid: { display: false }
+            }
+        };
+        chartConfig.options.plugins.legend.display = false;
+    }
+    
+    if (typeof ChartDataLabels !== "undefined") {
+        chartConfig.plugins = [ChartDataLabels];
+    }
+    
+    azionariatoChartInstance = new Chart(ctx, chartConfig);
+}
+
+function updateAzionariatoChart() {
+    renderAzionariato();
+}
+
+function openSchemaModal() {
+    document.getElementById("schema-modal").style.display = "flex";
+}
+
+function closeSchemaModal() {
+    document.getElementById("schema-modal").style.display = "none";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("schema-modal");
+    if(modal) {
+        modal.addEventListener("click", (e) => {
+            if(e.target === modal) {
+                closeSchemaModal();
+            }
+        });
+    }
+});
+
+// --- WELCOME VIEW LOGIC ---
+function saveAdminVideoSelection() {
+    const sel = document.getElementById("admin-video-select");
+    if (sel) {
+        localStorage.setItem("sombra_welcome_video", sel.value);
+    }
+}
+
+function updateWelcomeView() {
+    const titleEl = document.getElementById("welcome-title");
+    const sharesEl = document.getElementById("welcome-shares");
+    const classEl = document.getElementById("welcome-class");
+    const percEl = document.getElementById("welcome-percentage");
+    const videoEl = document.getElementById("welcome-video");
+
+    if(videoEl) {
+        const adminVideo = localStorage.getItem("sombra_welcome_video") || "Sombra Floresta.mp4";
+        const source = videoEl.querySelector("source");
+        if(source && source.src.indexOf(adminVideo) === -1) {
+            source.src = adminVideo;
+            videoEl.load();
+            videoEl.play().catch(e => console.log("Autoplay prevented", e));
+        }
+    }
+
+    if(currentUsername && titleEl) {
+        const parts = currentUsername.split(" ");
+        let name = currentUsername;
+        let idNum = null;
+        if(parts.length > 1 && !isNaN(parts[0])) {
+            idNum = parseInt(parts[0], 10);
+            name = parts.slice(1).join(" ");
+        } else {
+            // Se l'username Ã¨ "user" o "visitor", manteniamo il nome senza cercare azioni
+            name = currentUsername;
+        }
+        
+        // Capitalize nome (prima lettera maiuscola)
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        titleEl.textContent = "Benvenuto " + name;
+
+        const subtitleEl = document.getElementById("welcome-subtitle");
+
+        // Se abbiamo un ID valido, cerchiamo in azionariatoData (che usa indici 0, 1, 2... per ID 01, 02, 03...)
+        if (idNum !== null && idNum > 0 && idNum <= azionariatoData.length) {
+            const targetPartner = azionariatoData[idNum - 1].partner;
+            
+            // Trova tutte le quote di questo partner
+            const partnerShares = azionariatoData.filter(d => d.partner === targetPartner);
+            
+            // Imposta il sottotitolo con gli ID dell'azionista
+            if (subtitleEl) {
+                const partnerIds = partnerShares.map(d => {
+                    const idx = azionariatoData.indexOf(d);
+                    return String(idx + 1).padStart(2, '0');
+                });
+                subtitleEl.textContent = partnerIds.map(id => "Azionista " + id).join(" - ");
+                subtitleEl.style.display = "block";
+            }
+            
+            if (partnerShares.length === 1) {
+                const data = partnerShares[0];
+                if(sharesEl) sharesEl.innerHTML = data.shares.toLocaleString('it-IT');
+                if(classEl) classEl.innerHTML = "Classe " + data.type;
+                if(percEl) percEl.innerHTML = (data.det * 100).toFixed(2) + "%";
+            } else {
+                // Multipli valori (es. Classe A e Classe B)
+                let sharesHtml = "";
+                let classHtml = "";
+                let percHtml = "";
+                
+                partnerShares.forEach((data, idx) => {
+                    sharesHtml += `<span style="font-size: 1.1rem">${data.shares.toLocaleString('it-IT')} (Cl. ${data.type})</span>${idx < partnerShares.length - 1 ? '<br>' : ''}`;
+                    classHtml += `<span style="font-size: 1.1rem">Classe ${data.type}</span>${idx < partnerShares.length - 1 ? '<br>' : ''}`;
+                    percHtml += `<span style="font-size: 1.1rem">${(data.det * 100).toFixed(2)}% (Cl. ${data.type})</span>${idx < partnerShares.length - 1 ? '<br>' : ''}`;
+                });
+                
+                if(sharesEl) sharesEl.innerHTML = sharesHtml;
+                if(classEl) classEl.innerHTML = classHtml;
+                if(percEl) percEl.innerHTML = percHtml;
+            }
+        } else {
+            // Per "user", "visitor", o se non c'Ã¨ corrispondenza
+            if(subtitleEl) subtitleEl.style.display = "none";
+            if(sharesEl) sharesEl.innerHTML = "N/D";
+            if(classEl) classEl.innerHTML = "N/D";
+            if(percEl) percEl.innerHTML = "N/D";
+        }
+    }
+}
+
+function goToAzionariato() {
+    const azBtn = document.querySelector('.nav-item[data-view="azionariato-view"]');
+    if(azBtn) azBtn.click();
+}
+
+function goToWelcomeView() {
+    const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+    if(welcomeBtn) welcomeBtn.click();
+}
+
+function saveAdminSchemaZoom() {
+    const slider = document.getElementById("admin-schema-zoom");
+    if(slider) {
+        localStorage.setItem("sombra_schema_zoom", slider.value);
+        applySchemaZoom();
+    }
+}
+function applySchemaZoom() {
+    const zoom = localStorage.getItem("sombra_schema_zoom") || "100";
+    const img = document.getElementById("schema-img");
+    if(img) {
+        const actualZoom = parseFloat(zoom) * 0.6;
+        img.style.setProperty("--schema-zoom", actualZoom + "%");
+    }
+    const slider = document.getElementById("admin-schema-zoom");
+    if(slider) {
+        slider.value = zoom;
+        const display = document.getElementById("zoom-val-display");
+        if(display) display.innerText = zoom + "%";
+    }
+}
+
+// Applica al caricamento della pagina
+document.addEventListener("DOMContentLoaded", () => {
+    applySchemaZoom();
+});
+
+
+
+// ==========================================
+// BILANCI E DOCUMENTAZIONE
+// ==========================================
+
+let bilanciDB = {
+    watergarden: [],
+    arcoiris: []
+};
+
+const BILANCI_FILE = 'bilanci_db.json';
+
+window.fetchBilanciFromGitHub = async function() {
+    try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BILANCI_FILE}?t=${new Date().getTime()}`, {
+            headers: { 'Accept': 'application/vnd.github+json' },
+            cache: 'no-store'
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const content = decodeURIComponent(escape(atob(data.content)));
+            bilanciDB = JSON.parse(content);
+        } else if (res.status === 404) {
+            console.log("bilanci_db.json not found, using empty db.");
+        }
+    } catch (e) {
+        console.error("Error fetching Bilanci DB:", e);
+    }
+    window.renderBilanciList('watergarden');
+    window.renderBilanciList('arcoiris');
+};
+
+window.saveBilanciToGitHub = async function() {
+    const token = localStorage.getItem('sombra_github_token');
+    if (!token) {
+        alert("Attenzione: Token GitHub mancante. Le modifiche non sono state salvate su GitHub e andranno perse al prossimo avvio.");
+        return false;
+    }
+
+    try {
+        let sha = null;
+        try {
+            const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BILANCI_FILE}?t=${new Date().getTime()}`, {
+                headers: { 'Accept': 'application/vnd.github+json', 'Authorization': `Bearer ${token}` },
+                cache: 'no-store'
+            });
+            if (getRes.ok) {
+                const data = await getRes.json();
+                sha = data.sha;
+            }
+        } catch(e) {}
+
+        const contentStr = JSON.stringify(bilanciDB, null, 2);
+        const base64Content = btoa(unescape(encodeURIComponent(contentStr)));
+
+        const body = {
+            message: "Update bilanci_db.json",
+            content: base64Content
+        };
+        if (sha) body.sha = sha;
+
+        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${BILANCI_FILE}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!putRes.ok) {
+            const errData = await putRes.json().catch(() => ({ message: putRes.statusText }));
+            alert("Errore salvataggio GitHub: " + (errData.message || "Permesso negato o token non valido."));
+            console.error("Failed to save Bilanci DB", errData);
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.error("Error saving Bilanci DB:", e);
+        alert("Errore di rete durante il salvataggio su GitHub.");
+        return false;
+    }
+};
+
+window.triggerBilanciUpload = function(company) {
+    document.getElementById(`bilanci-upload-${company}`).click();
+};
+
+window.handleBilanciUpload = async function(event, company) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const token = localStorage.getItem('sombra_github_token');
+    if (!token) {
+        alert("Errore: Token GitHub mancante. Non puoi caricare file.");
+        return;
+    }
+
+    const MAX_SIZE = 25 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+        alert(`Il file è troppo grande (${(file.size/1024/1024).toFixed(1)}MB). Il limite massimo è 25MB.`);
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const fileContent = e.target.result; 
+        const base64Data = fileContent.split(',')[1];
+        
+        const safeFileName = file.name.replace(/\s+/g, '_');
+        const githubPath = `Bilanci_Docs/${new Date().getTime()}_${safeFileName}`;
+
+        const uploadBtn = event.target.previousElementSibling;
+        const origHtml = uploadBtn.innerHTML;
+        uploadBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> <span>Caricamento in corso...</span>';
+        uploadBtn.disabled = true;
+
+        try {
+            const body = {
+                message: `Upload ${safeFileName}`,
+                content: base64Data
+            };
+
+            const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${githubPath}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (putRes.ok) {
+                const data = await putRes.json();
+                const fileUrl = data.content.download_url;
+                
+                const docObj = {
+                    id: Date.now().toString(),
+                    name: file.name,
+                    url: fileUrl,
+                    type: file.type.startsWith('video') ? 'video' : (file.type.startsWith('image') ? 'image' : 'pdf'),
+                    date: new Date().toLocaleDateString()
+                };
+
+                if(!bilanciDB[company]) bilanciDB[company] = [];
+                bilanciDB[company].push(docObj);
+                
+                await window.saveBilanciToGitHub();
+                window.renderBilanciList(company);
+            } else {
+                const errData = await putRes.json();
+                alert("Errore durante il caricamento del file: " + errData.message);
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Errore di rete durante il caricamento.");
+        } finally {
+            uploadBtn.innerHTML = origHtml;
+            uploadBtn.disabled = false;
+            event.target.value = '';
+        }
+    };
+    reader.readAsDataURL(file);
+};
+
+window.deleteBilanciDoc = async function(company, id) {
+    if (!confirm("Sei sicuro di voler eliminare questo documento?")) return;
+    const backup = [...(bilanciDB[company] || [])];
+    bilanciDB[company] = bilanciDB[company].filter(doc => doc.id !== id);
+    window.renderBilanciList(company);
+    const ok = await window.saveBilanciToGitHub();
+    if (ok === false) {
+        bilanciDB[company] = backup;
+        window.renderBilanciList(company);
+    }
+};
+
+window.switchBilanciTab = function(company) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.color = 'var(--text-secondary)';
+    });
+    document.querySelectorAll('.bilanci-tab-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+    
+    event.currentTarget.classList.add('active');
+    event.currentTarget.style.color = 'var(--text-primary)';
+    const container = document.getElementById(`bilanci-${company}-container`);
+    if (container) {
+        container.classList.add('active');
+        container.style.display = 'block';
+    }
+};
+
+window.renderBilanciList = function(company) {
+    const container = document.getElementById(`bilanci-list-${company}`);
+    if (!container) return;
+    
+    const docs = bilanciDB[company] || [];
+    const isAdmin = currentUserRole === 'ADMIN';
+    
+    const adminUploadDiv = document.querySelector(`#bilanci-${company}-container .admin-only`);
+    if(adminUploadDiv) {
+        adminUploadDiv.style.display = isAdmin ? 'block' : 'none';
+    }
+
+    if (docs.length === 0) {
+        const emptyText = (window.translations && window.translations[window.currentLang] && window.translations[window.currentLang]['bilanci.empty']) ? window.translations[window.currentLang]['bilanci.empty'] : 'Nessun documento presente in questa sezione.';
+        container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--text-secondary);"><i class="ph ph-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><p data-i18n="bilanci.empty">${emptyText}</p></div>`;
+        return;
+    }
+
+    let html = '';
+    docs.forEach(doc => {
+        let icon = 'ph-file';
+        if(doc.type === 'pdf') icon = 'ph-file-pdf';
+        if(doc.type === 'video') icon = 'ph-video-camera';
+        if(doc.type === 'image') icon = 'ph-image';
+
+        html += `
+        <div class="bilanci-item" data-id="${doc.id}">
+            <div class="bilanci-item-icon"><i class="ph ${icon}"></i></div>
+            <div class="bilanci-item-info">
+                <h4 class="bilanci-item-title">${doc.name}</h4>
+                <div class="bilanci-item-meta">${doc.date} &bull; ${doc.type.toUpperCase()}</div>
+            </div>
+            <div class="bilanci-item-actions">
+                <button class="bilanci-action-btn" onclick="openMediaModal('${doc.url}', '${doc.type}')" title="Visualizza">
+                    <i class="ph ph-eye"></i>
+                </button>
+                <a class="bilanci-action-btn" href="${doc.url}" download="${doc.name}" target="_blank" title="Download">
+                    <i class="ph ph-download-simple"></i>
+                </a>
+                ${isAdmin ? `
+                <button class="bilanci-action-btn" onclick="renameBilanciDoc('${company}', '${doc.id}')" title="Rinomina">
+                    <i class="ph ph-pencil-simple"></i>
+                </button>
+                <button class="bilanci-action-btn delete" onclick="deleteBilanciDoc('${company}', '${doc.id}')" title="Elimina">
+                    <i class="ph ph-trash"></i>
+                </button>
+                <div class="bilanci-action-btn drag-handle" title="Trascina per riordinare" style="cursor: grab;">
+                    <i class="ph ph-arrows-out-line-vertical"></i>
+                </div>
+                ` : ''}
+            </div>
+        </div>`;
+    });
+    
+    container.innerHTML = html;
+
+    if (isAdmin && typeof Sortable !== 'undefined') {
+        Sortable.create(container, {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: async function (evt) {
+                const newIndex = evt.newIndex;
+                const oldIndex = evt.oldIndex;
+                
+                const movedItem = docs.splice(oldIndex, 1)[0];
+                docs.splice(newIndex, 0, movedItem);
+                bilanciDB[company] = docs;
+                await window.saveBilanciToGitHub();
+            }
+        });
+    }
+};
+
+window.openMediaModal = function(url, type) {
+    const modal = document.getElementById('media-modal');
+    const body = document.getElementById('media-modal-body');
+    
+    body.innerHTML = '';
+    
+    if (type === 'pdf') {
+        body.innerHTML = `<iframe src="https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true" style="width:100%; min-width: 600px; height:80vh; border:none; border-radius: 8px;"></iframe>`;
+    } else if (type === 'video') {
+        body.innerHTML = `<video src="${url}" controls autoplay style="max-width:100%; max-height:80vh; border-radius: 8px;"></video>`;
+    } else if (type === 'image') {
+        body.innerHTML = `<img src="${url}" style="max-width:100%; max-height:80vh; border-radius: 8px; object-fit: contain;">`;
+    } else {
+        body.innerHTML = `<div style="padding: 2rem; text-align:center;">Anteprima non disponibile per questo tipo di file.</div>`;
+    }
+    
+    modal.style.display = 'flex';
+};
+
+window.closeMediaModal = function() {
+    const modal = document.getElementById('media-modal');
+    const body = document.getElementById('media-modal-body');
+    if (modal) modal.style.display = 'none';
+    if (body) body.innerHTML = ''; 
+};
+
+setTimeout(window.fetchBilanciFromGitHub, 1500);
+
+const oldUpdateRoleUI_Bilanci = window.updateRoleUI;
+window.updateRoleUI = function() {
+    if(typeof oldUpdateRoleUI_Bilanci === 'function') oldUpdateRoleUI_Bilanci();
+    window.renderBilanciList('watergarden');
+    window.renderBilanciList('arcoiris');
+};
+window.renameBilanciDoc = async function(company, id) {
+    const doc = bilanciDB[company].find(d => d.id === id);
+    if (!doc) return;
+    const oldName = doc.name;
+    const newName = prompt('Inserisci il nuovo nome per il documento:', doc.name);
+    if (newName && newName.trim() !== '' && newName !== doc.name) {
+        doc.name = newName.trim();
+        window.renderBilanciList(company);
+        const ok = await window.saveBilanciToGitHub();
+        if (ok === false) {
+            doc.name = oldName;
+            window.renderBilanciList(company);
+        }
+    }
+};
+
+// --- LOGICA COSTI E IMMOBILIZZAZIONI ---
+window.costiData = [];
+window.currentCostiYear = 2025;
+
+window.fetchCostiData = async function() {
+    try {
+        const timestamp = new Date().getTime();
+        const fileUrl = "uploads/spese.xlsx?t=" + timestamp;
+        
+        let workbook;
+        try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) {
+                throw new Error("HTTP error " + response.status);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        } catch (fetchErr) {
+            console.warn("Fetch failed, trying localStorage...", fetchErr);
+            // Fallback to localStorage if fetch fails (e.g. testing locally via file:///)
+            const cached = localStorage.getItem('sombra_costi_data');
+            if (cached) {
+                window.costiData = JSON.parse(cached);
+                window.renderCostiTables();
+                return;
+            } else {
+                throw fetchErr; // No cache, throw to show error and upload button
+            }
+        }
+        
+        window.costiData = [];
+        
+        if (workbook.SheetNames.includes("Spese Ordinarie (25-26)")) {
+            const sheet = workbook.Sheets["Spese Ordinarie (25-26)"];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            json.forEach(row => {
+                row.MacroType = "Spesa Ordinaria";
+                window.costiData.push(row);
+            });
+        }
+        
+        if (workbook.SheetNames.includes("Immobilizzato (25-26)")) {
+            const sheet = workbook.Sheets["Immobilizzato (25-26)"];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            json.forEach(row => {
+                row.MacroType = "Immobilizzato";
+                window.costiData.push(row);
+            });
+        }
+        
+        if (window.costiData.length === 0) {
+            document.getElementById("costiTableBody").innerHTML = `<tr><td colspan="15" style="text-align: center; color: orange;">File caricato, ma non sono stati trovati dati validi nei fogli.</td></tr>`;
+            return;
+        }
+        
+        // Cache to localStorage for future local testing
+        try {
+            localStorage.setItem('sombra_costi_data', JSON.stringify(window.costiData));
+        } catch(e) { console.warn("Could not save costiData to localStorage"); }
+        
+        window.renderCostiTables();
+        
+    } catch (e) {
         console.error("Errore nel caricamento o parsing dei costi:", e);
-        const html = `<tr class="error-row">
+        const tbody = document.getElementById("costiTableBody");
+        if (tbody) {
+            tbody.innerHTML = `<tr>
                 <td colspan="15" style="text-align: center; padding: 2rem;">
                     <div style="color: #ef4444; font-weight: bold; margin-bottom: 1rem;">Errore di caricamento: ${e.message}</div>
                     <p style="color: #64748b; margin-bottom: 1rem;">Se stai testando in locale (file:///), il browser blocca la lettura automatica del file per sicurezza. <br>Caricalo manualmente per questa sessione:</p>
@@ -19,12 +3786,7 @@ try { /* Chart.register(ChartDataLabels); */ } catch (e) {
                     </label>
                 </td>
             </tr>`;
-        
-        const tbody1 = document.getElementById("immobTableBody");
-        if (tbody1) tbody1.innerHTML = html;
-        
-        const tbody2 = document.getElementById("costiOrdTableBody");
-        if (tbody2) tbody2.innerHTML = html;
+        }
     }
 };
 
@@ -69,6 +3831,27 @@ function formatCostiCurrency(val) {
     if (typeof val === 'number') {
         return "R$ " + val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    return val;
+}
+
+window.costiSelectedYears = [2026];
+
+window.toggleCostiYear = function(year) {
+    const idx = window.costiSelectedYears.indexOf(year);
+    if (idx > -1) {
+        window.costiSelectedYears.splice(idx, 1);
+        document.getElementById('btn-costi-'+year).classList.remove('active');
+    } else {
+        window.costiSelectedYears.push(year);
+        window.costiSelectedYears.sort();
+        document.getElementById('btn-costi-'+year).classList.add('active');
+    }
+    window.renderCostiTables();
+};
+
+window.renderCostiTables = function() {
+    if (!window.costiData || window.costiData.length === 0) return;
+    
     const immobHead = document.getElementById('immobTableHead');
     const immobBody = document.getElementById('immobTableBody');
     const costiOrdHead = document.getElementById('costiOrdTableHead');
