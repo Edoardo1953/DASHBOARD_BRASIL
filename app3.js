@@ -2872,10 +2872,10 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
     }
 };
 
-window.publishLayoutToGitHub = async function() {
+window.publishLayoutToGitHub = async function(silent = false) {
     const saveBtn = document.getElementById('saveLayoutBtn');
     const originalText = saveBtn ? saveBtn.innerHTML : 'Salva Layout';
-    if(saveBtn) {
+    if(saveBtn && !silent) {
         saveBtn.innerHTML = 'Salvataggio...';
         saveBtn.disabled = true;
     }
@@ -2906,8 +2906,10 @@ window.publishLayoutToGitHub = async function() {
         
         const token = localStorage.getItem('sombra_github_token');
         if (!token) {
-            alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
-            toggleLayoutEditMode(true);
+            if (!silent) {
+                alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
+                toggleLayoutEditMode(true);
+            }
             return;
         }
         
@@ -2937,18 +2939,24 @@ window.publishLayoutToGitHub = async function() {
             body: JSON.stringify(bodyData)
         });
         
-        if(!putRes.ok) {
+        if (putRes.ok) {
+            if (!silent) {
+                alert('Layout salvato!');
+                toggleLayoutEditMode(true);
+            }
+        } else {
             const errorData = await putRes.json();
             throw new Error(`Errore GitHub (${putRes.status}): ${errorData.message}`);
         }
         
-        alert('Layout salvato!');
-        toggleLayoutEditMode(true);
-        
     } catch(err) {
-        alert('Errore: ' + err.message);
+        if (!silent) {
+            alert('Errore: ' + err.message);
+        } else {
+            console.error('Errore in publishLayoutToGitHub:', err.message);
+        }
     } finally {
-        if(saveBtn) {
+        if(saveBtn && !silent) {
             saveBtn.innerHTML = originalText;
             saveBtn.disabled = false;
         }
@@ -4039,7 +4047,7 @@ window.togglePageVisibility = async function(pageKey, e) {
     window.updateSidebarVisibilityUI();
     
     // Salva tramite la funzione di salvataggio layout
-    window.publishLayoutToGitHub();
+    window.publishLayoutToGitHub(true);
 };
 
 window.toggleAdminUserView = function(e) {
