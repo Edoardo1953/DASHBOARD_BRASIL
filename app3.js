@@ -3838,8 +3838,8 @@ window.pageVisibility = {};
 window.isAdminInUserView = false;
 
 window.updateSidebarVisibilityUI = function() {
-    const isUser = window.currentUserRole === 'USER' || window.isAdminInUserView;
-    const isRealAdmin = window.currentUserRole === 'ADMIN';
+    const isUser = currentUserRole === 'USER' || window.isAdminInUserView;
+    const isRealAdmin = currentUserRole === 'ADMIN';
     
     document.querySelectorAll('.sidebar-nav .nav-item[data-view]').forEach(item => {
         const pageKey = item.getAttribute('data-view');
