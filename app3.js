@@ -2872,10 +2872,10 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
     }
 };
 
-window.publishLayoutToGitHub = async function(silent = false) {
+window.publishLayoutToGitHub = async function() {
     const saveBtn = document.getElementById('saveLayoutBtn');
     const originalText = saveBtn ? saveBtn.innerHTML : 'Salva Layout';
-    if(saveBtn && !silent) {
+    if(saveBtn) {
         saveBtn.innerHTML = 'Salvataggio...';
         saveBtn.disabled = true;
     }
@@ -2906,10 +2906,8 @@ window.publishLayoutToGitHub = async function(silent = false) {
         
         const token = localStorage.getItem('sombra_github_token');
         if (!token) {
-            if (!silent) {
-                alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
-                toggleLayoutEditMode(true);
-            }
+            alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
+            toggleLayoutEditMode(true);
             return;
         }
         
@@ -2939,24 +2937,18 @@ window.publishLayoutToGitHub = async function(silent = false) {
             body: JSON.stringify(bodyData)
         });
         
-        if (putRes.ok) {
-            if (!silent) {
-                alert('Layout salvato!');
-                toggleLayoutEditMode(true);
-            }
-        } else {
+        if(!putRes.ok) {
             const errorData = await putRes.json();
             throw new Error(`Errore GitHub (${putRes.status}): ${errorData.message}`);
         }
         
+        alert('Layout salvato!');
+        toggleLayoutEditMode(true);
+        
     } catch(err) {
-        if (!silent) {
-            alert('Errore: ' + err.message);
-        } else {
-            console.error('Errore in publishLayoutToGitHub:', err.message);
-        }
+        alert('Errore: ' + err.message);
     } finally {
-        if(saveBtn && !silent) {
+        if(saveBtn) {
             saveBtn.innerHTML = originalText;
             saveBtn.disabled = false;
         }
@@ -3834,7 +3826,7 @@ function formatCostiCurrency(val) {
     return val;
 }
 
-window.costiSelectedYears = [2026];
+window.costiSelectedYears = [2025, 2026];
 
 window.toggleCostiYear = function(year) {
     const idx = window.costiSelectedYears.indexOf(year);
@@ -3891,10 +3883,7 @@ window.renderCostiTables = function() {
         }
         
         let html = '';
-        const normalCats = Object.keys(grouped).filter(cat => !cat.toLowerCase().includes('total')).sort();
-        const totalCats = Object.keys(grouped).filter(cat => cat.toLowerCase().includes('total')).sort();
-        
-        normalCats.forEach((cat, index) => {
+        Object.keys(grouped).sort().forEach((cat, index) => {
             const catId = macroTypeFilter.replace(/\s+/g, '') + '_cat_' + index;
             
             html += '<tr class="table-row-parent" onclick="window.toggleCostiAccordion(\'' + catId + '\')" style="cursor: pointer; background: var(--bg-secondary);">';
@@ -3912,15 +3901,6 @@ window.renderCostiTables = function() {
                 });
                 html += '</tr>';
             });
-        });
-        
-        totalCats.forEach(cat => {
-            html += '<tr style="background: var(--bg-secondary); border-top: 2px solid var(--border-color);">';
-            html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left; padding-left: 1.5rem;">' + cat + '</td>';
-            window.costiSelectedYears.forEach(y => {
-                html += '<td style="text-align: right; font-weight: bold;">' + formatCostiCurrency(grouped[cat].totalByYear[y]) + '</td>';
-            });
-            html += '</tr>';
         });
         
         tbody.innerHTML = html;
@@ -4059,7 +4039,7 @@ window.togglePageVisibility = async function(pageKey, e) {
     window.updateSidebarVisibilityUI();
     
     // Salva tramite la funzione di salvataggio layout
-    window.publishLayoutToGitHub(true);
+    window.publishLayoutToGitHub();
 };
 
 window.toggleAdminUserView = function(e) {
