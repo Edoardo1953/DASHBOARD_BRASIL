@@ -2883,7 +2883,7 @@ window.publishLayoutToGitHub = async function() {
     }
     
     try {
-        const layoutConfig = {};
+        const layoutConfig = { visibility: window.pageVisibility || {} };
         document.querySelectorAll('.layout-widget').forEach(el => {
             if(el.id) {
                 const width = el.style.width || window.getComputedStyle(el).width;
@@ -2959,9 +2959,18 @@ window.publishLayoutToGitHub = async function() {
 
 window.applyLayoutConfig = function(config) {
     if(!config) return;
+    
+    if (config.visibility) {
+        window.pageVisibility = config.visibility;
+        if (typeof window.updateSidebarVisibilityUI === 'function') {
+            window.updateSidebarVisibilityUI();
+        }
+    }
+    
     let applied = false;
     
     for(const id in config) {
+        if (id === 'visibility') continue;
         const el = document.getElementById(id);
         if(el) {
             if(config[id].width) el.style.width = config[id].width;
@@ -3694,3 +3703,261 @@ window.renameBilanciDoc = async function(company, id) {
         }
     }
 };
+
+// --- LOGICA COSTI E IMMOBILIZZAZIONI ---
+window.costiData = [];
+window.currentCostiYear = 2025;
+
+window.fetchCostiData = async function() {
+    try {
+        const timestamp = new Date().getTime();
+        const response = await fetch(`uploads/SPA_Database_Spese_2025_2026 (1).xlsx?t=${timestamp}`);
+        if (!response.ok) {
+            console.warn("Impossibile caricare il file dei costi. Verifica che esista in uploads/SPA_Database_Spese_2025_2026 (1).xlsx");
+            return;
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        window.costiData = [];
+        
+        if (workbook.SheetNames.includes("Spese Ordinarie (25-26)")) {
+            const sheet = workbook.Sheets["Spese Ordinarie (25-26)"];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            json.forEach(row => {
+                row.MacroType = "Spesa Ordinaria";
+                window.costiData.push(row);
+            });
+        }
+        
+        if (workbook.SheetNames.includes("Immobilizzato (25-26)")) {
+            const sheet = workbook.Sheets["Immobilizzato (25-26)"];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            json.forEach(row => {
+                row.MacroType = "Immobilizzato";
+                window.costiData.push(row);
+            });
+        }
+        
+        window.renderCostiTable(window.currentCostiYear);
+        
+    } catch (e) {
+        console.error("Errore nel caricamento o parsing dei costi:", e);
+    }
+};
+
+function formatCostiCurrency(val) {
+    if (val == null || val === 0 || val === "0") return "-";
+    if (typeof val === 'number') {
+        return "R$ " + val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return val;
+}
+
+window.switchCostiYear = function(year) {
+    window.currentCostiYear = year;
+    
+    document.querySelectorAll('.year-filter-btn').forEach(btn => {
+        if (btn.id && btn.id.startsWith('btn-costi')) {
+            btn.classList.remove('active');
+        }
+    });
+    const activeBtn = document.getElementById(`btn-costi-${year}`);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    window.renderCostiTable(year);
+};
+
+window.renderCostiTable = function(year) {
+    const tbody = document.getElementById("costiTableBody");
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (!window.costiData || window.costiData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="15" style="text-align: center;">Dati non disponibili o in caricamento...</td></tr>';
+        return;
+    }
+    
+    const filteredData = window.costiData.filter(row => row.Anno == year);
+    
+    if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="15" style="text-align: center;">Nessun dato per l'anno ${year}</td></tr>`;
+        return;
+    }
+    
+    let html = "";
+    
+    filteredData.forEach(row => {
+        const catTranslated = (row.Categoria === 'CUSTOS DOS SERVIÇOS') ? t('costi.cat.custos') || row.Categoria : row.Categoria;
+        
+        html += `
+            <tr>
+                <td style="font-weight: 600;">${row.MacroType || ''}</td>
+                <td>
+                    <div style="font-weight: bold; font-size: 0.9em; color: var(--text-secondary);">${row.Categoria || ''}</div>
+                    <div>${row.Tipologia || ''}</div>
+                </td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Gennaio)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Febbraio)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Marzo)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Aprile)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Maggio)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Giugno)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Luglio)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Agosto)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Settembre)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Ottobre)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Novembre)}</td>
+                <td style="text-align: right;">${formatCostiCurrency(row.Dicembre)}</td>
+                <td style="text-align: right; font-weight: bold; color: var(--text-primary);">${formatCostiCurrency(row["Totale Anno"])}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+};
+
+// Fetch all'avvio
+setTimeout(() => {
+    window.fetchCostiData();
+}, 2000);
+
+// --- LOGICA VISIBILITA' MENU (User View / Admin View) ---
+window.pageVisibility = {};
+window.isAdminInUserView = false;
+
+window.updateSidebarVisibilityUI = function() {
+    const isUser = window.currentUserRole === 'USER' || window.isAdminInUserView;
+    const isRealAdmin = window.currentUserRole === 'ADMIN';
+    
+    document.querySelectorAll('.sidebar-nav .nav-item[data-view]').forEach(item => {
+        // Ignoriamo la welcome-view per evitare che gli utenti si blocchino fuori
+        if (item.getAttribute('data-view') === 'welcome-view') return;
+        
+        const pageKey = item.getAttribute('data-view');
+        
+        // Wrap se non già wrappato
+        if (!item.parentElement.classList.contains('nav-item-wrapper')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'nav-item-wrapper';
+            wrapper.style.display = 'flex';
+            wrapper.style.justifyContent = 'space-between';
+            wrapper.style.alignItems = 'center';
+            item.parentNode.insertBefore(wrapper, item);
+            wrapper.appendChild(item);
+        }
+        
+        const wrapper = item.parentElement;
+        
+        // Rimuoviamo vecchi bottoni occhio
+        let oldBtn = wrapper.querySelector('.nav-eye-btn');
+        if (oldBtn) oldBtn.remove();
+        
+        if (isUser) {
+            // Modalità Utente: mostra solo le voci visibili
+            const isVisible = (window.pageVisibility[pageKey] !== false);
+            wrapper.style.display = isVisible ? 'flex' : 'none';
+        } else {
+            // Modalità Admin: mostra tutto, con occhio a fianco
+            wrapper.style.display = 'flex';
+            
+            const btn = document.createElement('button');
+            btn.className = 'nav-eye-btn';
+            btn.setAttribute('data-page', pageKey);
+            btn.style.cssText = 'background:none; border:none; padding:4px 8px; cursor:pointer; font-size:1.1rem; border-radius:4px; margin-left: 5px;';
+            
+            const isVisible = (window.pageVisibility[pageKey] !== false);
+            if (isVisible) {
+                btn.style.color = '#10b981';
+                btn.innerHTML = '<i class="ph ph-eye"></i>';
+                btn.title = 'Visibile (Clicca per nascondere)';
+            } else {
+                btn.style.color = '#ef4444';
+                btn.innerHTML = '<i class="ph ph-eye-slash"></i>';
+                btn.title = 'Nascosto (Clicca per mostrare)';
+            }
+            
+            btn.onclick = (e) => window.togglePageVisibility(pageKey, e);
+            wrapper.appendChild(btn);
+        }
+    });
+    
+    // Gestione del bottone "Passa a VISTA UTENTE / Torna a VISTA ADMIN"
+    const sidebarNav = document.querySelector('.sidebar-nav');
+    if (sidebarNav) {
+        let toggleBtn = sidebarNav.querySelector('#btn-toggle-view');
+        if (isRealAdmin) {
+            if (!toggleBtn) {
+                toggleBtn = document.createElement('a');
+                toggleBtn.href = '#';
+                toggleBtn.id = 'btn-toggle-view';
+                toggleBtn.className = 'nav-item';
+                toggleBtn.style.cssText = 'margin-top: 1rem; border: 1px dashed #f59e0b; color: #f59e0b; justify-content: center;';
+                toggleBtn.onclick = (e) => window.toggleAdminUserView(e);
+                
+                // Inseriamo prima dell'ultimo elemento (Logout)
+                const navItemsArray = Array.from(sidebarNav.querySelectorAll('.nav-item'));
+                const logoutBtn = navItemsArray.find(el => el.id === 'nav-logout');
+                if (logoutBtn) {
+                    sidebarNav.insertBefore(toggleBtn, logoutBtn.parentElement || logoutBtn);
+                } else {
+                    sidebarNav.appendChild(toggleBtn);
+                }
+            }
+            
+            toggleBtn.style.display = 'flex';
+            if (window.isAdminInUserView) {
+                toggleBtn.innerHTML = `<i class="ph ph-arrows-left-right"></i> <span>${t('nav.adminView') || 'Torna a VISTA ADMIN'}</span>`;
+            } else {
+                toggleBtn.innerHTML = `<i class="ph ph-arrows-left-right"></i> <span>${t('nav.userView') || 'Passa a VISTA UTENTE'}</span>`;
+            }
+        } else if (toggleBtn) {
+            toggleBtn.style.display = 'none';
+        }
+    }
+};
+
+window.togglePageVisibility = async function(pageKey, e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    const isVisible = (window.pageVisibility[pageKey] !== false);
+    window.pageVisibility[pageKey] = !isVisible; // Toggle
+    
+    window.updateSidebarVisibilityUI();
+    
+    // Salva tramite la funzione di salvataggio layout
+    window.publishLayoutToGitHub();
+};
+
+window.toggleAdminUserView = function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    window.isAdminInUserView = !window.isAdminInUserView;
+    window.updateSidebarVisibilityUI();
+    
+    // Se siamo passati a Vista Utente, andiamo alla dashboard se la vista corrente è nascosta
+    if (window.isAdminInUserView) {
+        // Forza click su dashboard
+        const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
+        if (dashBtn) dashBtn.click();
+    }
+};
+
+// Hook nel login esistente per mostrare/nascondere la UI
+const originalLoginFlow = window.showContent; // Presumiamo esista e venga chiamato al login
+if (originalLoginFlow) {
+    window.showContent = function() {
+        originalLoginFlow();
+        setTimeout(window.updateSidebarVisibilityUI, 100);
+    };
+} else {
+    // Fallback se showContent non è definito così, lo eseguiamo subito
+    setTimeout(window.updateSidebarVisibilityUI, 1000);
+}

@@ -109,6 +109,10 @@
                 <i class="ph ph-table"></i>
                 <span data-i18n="nav.dataDetail">Dettaglio Dati</span>
             </a>
+            <a href="#" class="nav-item" data-view="costi-view" id="nav-costi">
+                <i class="ph ph-currency-dollar"></i>
+                <span data-i18n="nav.costi">Costi e Immobilizzazioni</span>
+            </a>
             <a href="#" class="nav-item" data-view="input-view" id="nav-input">
                 <i class="ph ph-plus-circle"></i>
                 <span data-i18n="nav.insertData">Inserisci Dati</span>
@@ -806,6 +810,47 @@
                 </div>
                 <div id="bilanci-list-arcoiris" class="bilanci-list" style="display: flex; flex-direction: column; gap: 1rem;">
                     <!-- Popolato via JS -->
+                </div>
+            </div>
+        </div>
+        <div id="costi-view" class="view-section">
+            <div class="header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <h2 data-i18n="costi.title">Dettaglio Costi e Immobilizzazioni</h2>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <label style="font-weight: 600;" data-i18n="costi.selectYear">Seleziona Anno:</label>
+                    <div id="costi-year-filters" class="year-filters-container" style="display: flex; gap: 0.5rem;">
+                        <button class="year-filter-btn active" onclick="switchCostiYear(2025)" id="btn-costi-2025">2025</button>
+                        <button class="year-filter-btn" onclick="switchCostiYear(2026)" id="btn-costi-2026">2026</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="premium-table" id="costiTable">
+                        <thead>
+                            <tr>
+                                <th data-i18n="costi.macroType">Tipo Macro</th>
+                                <th data-i18n="costi.category">Categoria / Tipologia</th>
+                                <th>Gen</th>
+                                <th>Feb</th>
+                                <th>Mar</th>
+                                <th>Apr</th>
+                                <th>Mag</th>
+                                <th>Giu</th>
+                                <th>Lug</th>
+                                <th>Ago</th>
+                                <th>Set</th>
+                                <th>Ott</th>
+                                <th>Nov</th>
+                                <th>Dic</th>
+                                <th>Totale Anno</th>
+                            </tr>
+                        </thead>
+                        <tbody id="costiTableBody">
+                            <!-- Popolato via JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
