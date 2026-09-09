@@ -1,13 +1,17 @@
 {
+  "visibility": {
+    "input-view": true,
+    "costi-view": false
+  },
   "widget-monthly-revenue": {
     "width": "auto",
-    "height": "457px",
+    "height": "auto",
     "tx": 0,
     "ty": 0
   },
   "widget-yearly-revenue": {
     "width": "auto",
-    "height": "454px",
+    "height": "auto",
     "tx": 0,
     "ty": 0
   },
