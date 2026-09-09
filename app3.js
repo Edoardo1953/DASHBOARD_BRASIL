@@ -3833,10 +3833,10 @@ window.updateSidebarVisibilityUI = function() {
     const isRealAdmin = window.currentUserRole === 'ADMIN';
     
     document.querySelectorAll('.sidebar-nav .nav-item[data-view]').forEach(item => {
-        // Ignoriamo la welcome-view per evitare che gli utenti si blocchino fuori
-        if (item.getAttribute('data-view') === 'welcome-view') return;
-        
         const pageKey = item.getAttribute('data-view');
+        
+        // Ignoriamo le viste di sistema o esclusive admin per evitare occhietti vagabondi
+        if (['welcome-view', 'input-view', 'settings-view', 'users-view'].includes(pageKey)) return;
         
         // Wrap se non già wrappato
         if (!item.parentElement.classList.contains('nav-item-wrapper')) {
@@ -3942,22 +3942,41 @@ window.toggleAdminUserView = function(e) {
     window.isAdminInUserView = !window.isAdminInUserView;
     window.updateSidebarVisibilityUI();
     
-    // Se siamo passati a Vista Utente, andiamo alla dashboard se la vista corrente è nascosta
+    // Mostra/Nascondi tool admin durante la simulazione
+    const navSettings = document.getElementById('nav-settings');
+    const navUsers = document.getElementById('nav-users');
+    const navLayout = document.getElementById('nav-layout-toggle');
+    
     if (window.isAdminInUserView) {
-        // Forza click su dashboard
+        if (navSettings) navSettings.style.display = 'none';
+        if (navUsers) navUsers.style.display = 'none';
+        if (navLayout) navLayout.style.display = 'none';
+        
+        // Forza click su welcome-view se simuliamo l'utente (che va alla welcome-view all'accesso)
+        const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+        if (welcomeBtn) welcomeBtn.click();
+    } else {
+        if (navSettings) navSettings.style.display = 'flex';
+        if (navUsers) navUsers.style.display = 'flex';
+        if (navLayout) navLayout.style.display = 'flex';
+        
+        // Ritorno alla dashboard
         const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
         if (dashBtn) dashBtn.click();
     }
 };
 
-// Hook nel login esistente per mostrare/nascondere la UI
-const originalLoginFlow = window.showContent; // Presumiamo esista e venga chiamato al login
-if (originalLoginFlow) {
-    window.showContent = function() {
-        originalLoginFlow();
-        setTimeout(window.updateSidebarVisibilityUI, 100);
-    };
-} else {
-    // Fallback se showContent non è definito così, lo eseguiamo subito
-    setTimeout(window.updateSidebarVisibilityUI, 1000);
-}
+// Applica visibilità all'avvio (se già loggati)
+setTimeout(window.updateSidebarVisibilityUI, 1000);
+
+// Applica visibilità dopo il login
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', () => {
+                setTimeout(window.updateSidebarVisibilityUI, 500);
+            });
+        }
+    }, 500);
+});
