@@ -3725,7 +3725,7 @@ window.fetchCostiData = async function() {
             const cached = localStorage.getItem('sombra_costi_data');
             if (cached) {
                 window.costiData = JSON.parse(cached);
-                window.renderCostiTable(window.currentCostiYear);
+                window.renderCostiTables();
                 return;
             } else {
                 throw fetchErr; // No cache, throw to show error and upload button
@@ -3762,7 +3762,7 @@ window.fetchCostiData = async function() {
             localStorage.setItem('sombra_costi_data', JSON.stringify(window.costiData));
         } catch(e) { console.warn("Could not save costiData to localStorage"); }
         
-        window.renderCostiTable(window.currentCostiYear);
+        window.renderCostiTables();
         
     } catch (e) {
         console.error("Errore nel caricamento o parsing dei costi:", e);
@@ -3807,7 +3807,7 @@ window.handleManualCostiUpload = function(event) {
             
             if (window.costiData.length > 0) {
                 try { localStorage.setItem('sombra_costi_data', JSON.stringify(window.costiData)); } catch(err) {}
-                window.renderCostiTable(window.currentCostiYear);
+                window.renderCostiTables();
             } else {
                 alert("Nessun dato trovato nei fogli corretti.");
             }
@@ -3826,68 +3826,105 @@ function formatCostiCurrency(val) {
     return val;
 }
 
-window.switchCostiYear = function(year) {
-    window.currentCostiYear = year;
-    
-    document.querySelectorAll('.year-filter-btn').forEach(btn => {
-        if (btn.id && btn.id.startsWith('btn-costi')) {
-            btn.classList.remove('active');
-        }
-    });
-    const activeBtn = document.getElementById(`btn-costi-${year}`);
-    if (activeBtn) activeBtn.classList.add('active');
-    
-    window.renderCostiTable(year);
+window.costiSelectedYears = [2025, 2026];
+
+window.toggleCostiYear = function(year) {
+    const idx = window.costiSelectedYears.indexOf(year);
+    if (idx > -1) {
+        window.costiSelectedYears.splice(idx, 1);
+        document.getElementById('btn-costi-'+year).classList.remove('active');
+    } else {
+        window.costiSelectedYears.push(year);
+        window.costiSelectedYears.sort();
+        document.getElementById('btn-costi-'+year).classList.add('active');
+    }
+    window.renderCostiTables();
 };
 
-window.renderCostiTable = function(year) {
-    const tbody = document.getElementById("costiTableBody");
-    if (!tbody) return;
+window.renderCostiTables = function() {
+    if (!window.costiData || window.costiData.length === 0) return;
     
-    tbody.innerHTML = '';
+    const immobHead = document.getElementById('immobTableHead');
+    const immobBody = document.getElementById('immobTableBody');
+    const costiOrdHead = document.getElementById('costiOrdTableHead');
+    const costiOrdBody = document.getElementById('costiOrdTableBody');
     
-    if (!window.costiData || window.costiData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="15" style="text-align: center;">Dati non disponibili o in caricamento...</td></tr>';
-        return;
-    }
+    if (!immobHead || !costiOrdHead) return;
     
-    const filteredData = window.costiData.filter(row => row.Anno == year);
-    
-    if (filteredData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="15" style="text-align: center;">Nessun dato per l'anno ${year}</td></tr>`;
-        return;
-    }
-    
-    let html = "";
-    
-    filteredData.forEach(row => {
-        const catTranslated = (row.Categoria === 'CUSTOS DOS SERVIÇOS') ? t('costi.cat.custos') || row.Categoria : row.Categoria;
-        
-        html += `
-            <tr>
-                <td style="font-weight: 600;">${row.MacroType || ''}</td>
-                <td>
-                    <div style="font-weight: bold; font-size: 0.9em; color: var(--text-secondary);">${row.Categoria || ''}</div>
-                    <div>${row.Tipologia || ''}</div>
-                </td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Gennaio)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Febbraio)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Marzo)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Aprile)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Maggio)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Giugno)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Luglio)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Agosto)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Settembre)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Ottobre)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Novembre)}</td>
-                <td style="text-align: right;">${formatCostiCurrency(row.Dicembre)}</td>
-                <td style="text-align: right; font-weight: bold; color: var(--text-primary);">${formatCostiCurrency(row["Totale Anno"])}</td>
-            </tr>
-        `;
+    let thHtml = '<th style="text-align: left; width: 40%;">Categoria / Tipologia</th>';
+    window.costiSelectedYears.forEach(y => {
+        thHtml += '<th style="text-align: right;">' + y + '</th>';
     });
     
-    tbody.innerHTML = html;
+    immobHead.innerHTML = thHtml;
+    costiOrdHead.innerHTML = thHtml;
+    
+    function renderSpecificTable(tbody, macroTypeFilter) {
+        const grouped = {};
+        
+        window.costiData.filter(r => r.MacroType === macroTypeFilter && window.costiSelectedYears.includes(parseInt(r.Anno))).forEach(row => {
+            const cat = row.Categoria || 'Altro';
+            const tip = row.Tipologia || 'Altro';
+            const anno = parseInt(row.Anno);
+            const val = parseFloat(row["Totale Anno"]) || 0;
+            
+            if (!grouped[cat]) grouped[cat] = { totalByYear: {}, tipologie: {} };
+            if (!grouped[cat].totalByYear[anno]) grouped[cat].totalByYear[anno] = 0;
+            grouped[cat].totalByYear[anno] += val;
+            
+            if (!grouped[cat].tipologie[tip]) grouped[cat].tipologie[tip] = {};
+            if (!grouped[cat].tipologie[tip][anno]) grouped[cat].tipologie[tip][anno] = 0;
+            grouped[cat].tipologie[tip][anno] += val;
+        });
+        
+        if (Object.keys(grouped).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="' + (window.costiSelectedYears.length + 1) + '" style="text-align: center;">Nessun dato per gli anni selezionati</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        Object.keys(grouped).sort().forEach((cat, index) => {
+            const catId = macroTypeFilter.replace(/\s+/g, '') + '_cat_' + index;
+            
+            html += '<tr class="table-row-parent" onclick="window.toggleCostiAccordion(\'' + catId + '\')" style="cursor: pointer; background: var(--bg-secondary);">';
+            html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left;"><i id="icon_' + catId + '" class="ph ph-caret-right" style="margin-right: 8px; transition: transform 0.2s;"></i>' + cat + '</td>';
+            window.costiSelectedYears.forEach(y => {
+                html += '<td style="text-align: right; font-weight: bold;">' + formatCostiCurrency(grouped[cat].totalByYear[y]) + '</td>';
+            });
+            html += '</tr>';
+            
+            Object.keys(grouped[cat].tipologie).sort().forEach(tip => {
+                html += '<tr class="table-row-child child-of-' + catId + '" style="display: none; background: #fff;">';
+                html += '<td style="padding-left: 2.5rem; color: var(--text-secondary); text-align: left;">' + tip + '</td>';
+                window.costiSelectedYears.forEach(y => {
+                    html += '<td style="text-align: right; color: var(--text-secondary);">' + formatCostiCurrency(grouped[cat].tipologie[tip][y]) + '</td>';
+                });
+                html += '</tr>';
+            });
+        });
+        
+        tbody.innerHTML = html;
+    }
+    
+    renderSpecificTable(immobBody, "Immobilizzato");
+    renderSpecificTable(costiOrdBody, "Spesa Ordinaria");
+};
+
+window.toggleCostiAccordion = function(catId) {
+    const icon = document.getElementById('icon_' + catId);
+    const children = document.querySelectorAll('.child-of-' + catId);
+    
+    let isExpanded = false;
+    if (icon && icon.style.transform === 'rotate(90deg)') {
+        isExpanded = true;
+        icon.style.transform = 'rotate(0deg)';
+    } else if (icon) {
+        icon.style.transform = 'rotate(90deg)';
+    }
+    
+    children.forEach(child => {
+        child.style.display = isExpanded ? 'none' : 'table-row';
+    });
 };
 
 // Fetch all'avvio
