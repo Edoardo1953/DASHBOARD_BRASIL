@@ -11,7 +11,7 @@ const translations = {
         "nav.userManagement": "Gestione Utenti",
         "nav.logout": "Logout",
         "nav.azionariato": "Azionariato",
-        "nav.bilanci": "Bilanci",
+        "nav.bilanci": "Bilanci e Documenti",
         "nav.costi": "Costi e Immobilizzazioni",
         "costi.title": "Dettaglio Costi e Immobilizzazioni",
         "costi.selectYear": "Seleziona Anno:",

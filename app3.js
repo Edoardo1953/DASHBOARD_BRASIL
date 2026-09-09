@@ -339,7 +339,6 @@ function applyRoleRestrictions() {
     }
 
     if(currentUserRole === 'USER') {
-        if(navTable) navTable.style.display = 'none';
         if(navUsers) navUsers.style.display = 'none';
         if(navWelcome) navWelcome.style.display = 'flex';
         
@@ -347,7 +346,6 @@ function applyRoleRestrictions() {
         const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
         if(welcomeBtn) setTimeout(() => welcomeBtn.click(), 50);
     } else {
-        if(navTable) navTable.style.display = 'flex';
         if(navUsers) navUsers.style.display = 'flex';
         if(navWelcome) navWelcome.style.display = 'none';
         
@@ -3711,16 +3709,28 @@ window.currentCostiYear = 2025;
 window.fetchCostiData = async function() {
     try {
         const timestamp = new Date().getTime();
-        const fileUrl = encodeURI("uploads/SPA_Database_Spese_2025_2026 (1).xlsx") + "?t=" + timestamp;
-        const response = await fetch(fileUrl);
-        if (!response.ok) {
-            console.warn("Impossibile caricare il file dei costi.", response.status);
-            document.getElementById("costiTableBody").innerHTML = `<tr><td colspan="15" style="text-align: center; color: red;">Errore nel caricamento del file Excel (Codice: ${response.status}). Assicurati che il file esista in uploads.</td></tr>`;
-            return;
-        }
+        const fileUrl = "uploads/spese.xlsx?t=" + timestamp;
         
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        let workbook;
+        try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) {
+                throw new Error("HTTP error " + response.status);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        } catch (fetchErr) {
+            console.warn("Fetch failed, trying localStorage...", fetchErr);
+            // Fallback to localStorage if fetch fails (e.g. testing locally via file:///)
+            const cached = localStorage.getItem('sombra_costi_data');
+            if (cached) {
+                window.costiData = JSON.parse(cached);
+                window.renderCostiTable(window.currentCostiYear);
+                return;
+            } else {
+                throw fetchErr; // No cache, throw to show error and upload button
+            }
+        }
         
         window.costiData = [];
         
@@ -3747,13 +3757,65 @@ window.fetchCostiData = async function() {
             return;
         }
         
+        // Cache to localStorage for future local testing
+        try {
+            localStorage.setItem('sombra_costi_data', JSON.stringify(window.costiData));
+        } catch(e) { console.warn("Could not save costiData to localStorage"); }
+        
         window.renderCostiTable(window.currentCostiYear);
         
     } catch (e) {
         console.error("Errore nel caricamento o parsing dei costi:", e);
         const tbody = document.getElementById("costiTableBody");
-        if (tbody) tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: red;">Errore di sistema nel parsing: ${e.message}</td></tr>`;
+        if (tbody) {
+            tbody.innerHTML = `<tr>
+                <td colspan="15" style="text-align: center; padding: 2rem;">
+                    <div style="color: #ef4444; font-weight: bold; margin-bottom: 1rem;">Errore di caricamento: ${e.message}</div>
+                    <p style="color: #64748b; margin-bottom: 1rem;">Se stai testando in locale (file:///), il browser blocca la lettura automatica del file per sicurezza. <br>Caricalo manualmente per questa sessione:</p>
+                    <label class="btn btn-primary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; justify-content: center; width: auto; margin: 0 auto;">
+                        <i class="ph ph-upload-simple"></i> Carica file spese.xlsx
+                        <input type="file" style="display:none" accept=".xlsx" onchange="window.handleManualCostiUpload(event)">
+                    </label>
+                </td>
+            </tr>`;
+        }
     }
+};
+
+window.handleManualCostiUpload = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            
+            window.costiData = [];
+            
+            if (workbook.SheetNames.includes("Spese Ordinarie (25-26)")) {
+                const sheet = workbook.Sheets["Spese Ordinarie (25-26)"];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                json.forEach(row => { row.MacroType = "Spesa Ordinaria"; window.costiData.push(row); });
+            }
+            if (workbook.SheetNames.includes("Immobilizzato (25-26)")) {
+                const sheet = workbook.Sheets["Immobilizzato (25-26)"];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                json.forEach(row => { row.MacroType = "Immobilizzato"; window.costiData.push(row); });
+            }
+            
+            if (window.costiData.length > 0) {
+                try { localStorage.setItem('sombra_costi_data', JSON.stringify(window.costiData)); } catch(err) {}
+                window.renderCostiTable(window.currentCostiYear);
+            } else {
+                alert("Nessun dato trovato nei fogli corretti.");
+            }
+        } catch (err) {
+            alert("Errore nel parsing del file: " + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
 };
 
 function formatCostiCurrency(val) {
