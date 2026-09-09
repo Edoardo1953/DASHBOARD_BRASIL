@@ -2872,7 +2872,7 @@ window.toggleLayoutEditMode = function(skipFetch = false) {
     }
 };
 
-window.publishLayoutToGitHub = async function() {
+window.publishLayoutToGitHub = async function(silent = false) {
     const saveBtn = document.getElementById('saveLayoutBtn');
     const originalText = saveBtn ? saveBtn.innerHTML : 'Salva Layout';
     if(saveBtn) {
@@ -3766,9 +3766,7 @@ window.fetchCostiData = async function() {
         
     } catch (e) {
         console.error("Errore nel caricamento o parsing dei costi:", e);
-        const tbody = document.getElementById("costiTableBody");
-        if (tbody) {
-            tbody.innerHTML = `<tr>
+        const html = `<tr class="error-row">
                 <td colspan="15" style="text-align: center; padding: 2rem;">
                     <div style="color: #ef4444; font-weight: bold; margin-bottom: 1rem;">Errore di caricamento: ${e.message}</div>
                     <p style="color: #64748b; margin-bottom: 1rem;">Se stai testando in locale (file:///), il browser blocca la lettura automatica del file per sicurezza. <br>Caricalo manualmente per questa sessione:</p>
@@ -3778,8 +3776,16 @@ window.fetchCostiData = async function() {
                     </label>
                 </td>
             </tr>`;
+        
+        const tbody1 = document.getElementById("immobTableBody");
+        if (tbody1) tbody1.innerHTML = html;
+        
+        const tbody2 = document.getElementById("costiOrdTableBody");
+        if (tbody2) tbody2.innerHTML = html;
+        
+        const tbodyOld = document.getElementById("costiTableBody");
+        if (tbodyOld) tbodyOld.innerHTML = html;
         }
-    }
 };
 
 window.handleManualCostiUpload = function(event) {
@@ -3826,7 +3832,7 @@ function formatCostiCurrency(val) {
     return val;
 }
 
-window.costiSelectedYears = [2025, 2026];
+window.costiSelectedYears = [2026];
 
 window.toggleCostiYear = function(year) {
     const idx = window.costiSelectedYears.indexOf(year);
@@ -3883,7 +3889,10 @@ window.renderCostiTables = function() {
         }
         
         let html = '';
-        Object.keys(grouped).sort().forEach((cat, index) => {
+        const normalCats = Object.keys(grouped).filter(cat => !cat.toLowerCase().includes('total')).sort();
+        const totalCats = Object.keys(grouped).filter(cat => cat.toLowerCase().includes('total')).sort();
+        
+        normalCats.forEach((cat, index) => {
             const catId = macroTypeFilter.replace(/\s+/g, '') + '_cat_' + index;
             
             html += '<tr class="table-row-parent" onclick="window.toggleCostiAccordion(\'' + catId + '\')" style="cursor: pointer; background: var(--bg-secondary);">';
@@ -3901,6 +3910,15 @@ window.renderCostiTables = function() {
                 });
                 html += '</tr>';
             });
+        });
+        
+        totalCats.forEach(cat => {
+            html += '<tr style="background: var(--bg-secondary); border-top: 2px solid var(--border-color);">';
+            html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left; padding-left: 1.5rem;">' + cat + '</td>';
+            window.costiSelectedYears.forEach(y => {
+                html += '<td style="text-align: right; font-weight: bold;">' + formatCostiCurrency(grouped[cat].totalByYear[y]) + '</td>';
+            });
+            html += '</tr>';
         });
         
         tbody.innerHTML = html;
@@ -4039,7 +4057,7 @@ window.togglePageVisibility = async function(pageKey, e) {
     window.updateSidebarVisibilityUI();
     
     // Salva tramite la funzione di salvataggio layout
-    window.publishLayoutToGitHub();
+    window.publishLayoutToGitHub(true);
 };
 
 window.toggleAdminUserView = function(e) {
