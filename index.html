@@ -179,6 +179,10 @@
                         <div id="year-filters" class="year-filters-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end;">
                             <!-- Popolato via JS -->
                         </div>
+                        <div id="costi-year-filters" class="year-filters-container" style="display: none; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end;">
+                            <button class="year-filter-btn" onclick="window.toggleCostiYear(2025)" id="btn-costi-2025">2025</button>
+                            <button class="year-filter-btn active" onclick="window.toggleCostiYear(2026)" id="btn-costi-2026">2026</button>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; width: 100%; justify-content: flex-end; flex-wrap: wrap;">
                         <button id="restoreYearsBtnTop" class="btn-multi-select" style="margin-top: 0;"><i class="ph ph-arrow-counter-clockwise"></i> <span data-i18n="header.restoreYears">Ripristina anni nascosti</span></button>
@@ -1087,7 +1091,7 @@
         </div>
     </div>
 
-    <script src="app3.js?v=50"></script>
+    <script src="app3.js?v=51"></script>
     <script>
         function goToAnalisiOccupazione() {
             // Seleziona il radio button dell'occupazione
