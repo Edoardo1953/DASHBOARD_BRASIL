@@ -1,7 +1,7 @@
 {
   "visibility": {
     "input-view": true,
-    "costi-view": false
+    "costi-view": true
   },
   "widget-monthly-revenue": {
     "width": "auto",
