@@ -4347,18 +4347,30 @@ document.addEventListener('DOMContentLoaded', () => {
  * Le credenziali utenti (sombra_spa_users) vengono preservate.
  */
 window.hardRefreshApp = function() {
-    // Keys da preservare: utenti e token GitHub
-    const PRESERVE_KEYS = ['sombra_spa_users', 'sombra_github_token'];
+    // Keys da preservare SEMPRE: credenziali, token GitHub, e il DB dati principale
+    const PRESERVE_KEYS = [
+        'sombra_spa_users',      // credenziali utenti
+        'sombra_github_token',   // token GitHub API
+        'sombra_spa_db',         // dati finanziari principali
+        'sombra_costi_data',     // dati costi (fetch da GitHub)
+    ];
 
-    // Raccoglie tutte le chiavi sombra_* tranne quelle da preservare
+    // Rimuove solo: layout, filtri anni per-utente, stati UI, lingua
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('sombra_') && !PRESERVE_KEYS.includes(key)) {
+        if (!key) continue;
+        // Rimuove i filtri anni nascosti per ogni utente (sombra_spa_hidden_years_*)
+        if (key.startsWith('sombra_spa_hidden_years_')) {
+            keysToRemove.push(key);
+            continue;
+        }
+        // Rimuove altre chiavi sombra_* non critiche (ma non quelle preservate)
+        if (key.startsWith('sombra_') && !PRESERVE_KEYS.includes(key)) {
             keysToRemove.push(key);
         }
     }
-    // Rimuove anche la lingua (verr├á reimpostata dal browser) e altri stati UI
+    // Rimuove layout e lingua
     keysToRemove.push('local_layout_config', 'app_lang');
 
     keysToRemove.forEach(k => localStorage.removeItem(k));
