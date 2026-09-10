@@ -4182,33 +4182,7 @@ window.toggleAdminUserView = function(e) {
         const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
         if (dashBtn) dashBtn.click();
     }
-    }
-    
-    renderSpecificTable(immobBody, "Immobilizzato");
-    renderSpecificTable(costiOrdBody, "Spesa Ordinaria");
 };
-
-window.toggleCostiAccordion = function(catId) {
-    const icon = document.getElementById('icon_' + catId);
-    const children = document.querySelectorAll('.child-of-' + catId);
-    
-    let isExpanded = false;
-    if (icon && icon.style.transform === 'rotate(90deg)') {
-        isExpanded = true;
-        icon.style.transform = 'rotate(0deg)';
-    } else if (icon) {
-        icon.style.transform = 'rotate(90deg)';
-    }
-    
-    children.forEach(child => {
-        child.style.display = isExpanded ? 'none' : 'table-row';
-    });
-};
-
-// Fetch all'avvio
-setTimeout(() => {
-    window.fetchCostiData();
-}, 2000);
 
 // --- LOGICA VISIBILITA' MENU (User View / Admin View) ---
 window.pageVisibility = {};
