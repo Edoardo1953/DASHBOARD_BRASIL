@@ -186,6 +186,26 @@ function initNavigation() {
             document.getElementById(targetView).classList.add('active');
             
             // Se andiamo in dashboard, aggiorniamo i dati
+            if(targetView === 'costi-view') {
+                const mainFilters = document.getElementById('year-filters');
+                const costiFilters = document.getElementById('costi-year-filters');
+                const btn1 = document.getElementById('restoreYearsBtnTop');
+                const btn2 = document.getElementById('toggle-multi-select');
+                if (mainFilters) mainFilters.style.display = 'none';
+                if (costiFilters) costiFilters.style.display = 'flex';
+                if (btn1) btn1.style.display = 'none';
+                if (btn2) btn2.style.display = 'none';
+            } else {
+                const mainFilters = document.getElementById('year-filters');
+                const costiFilters = document.getElementById('costi-year-filters');
+                const btn1 = document.getElementById('restoreYearsBtnTop');
+                const btn2 = document.getElementById('toggle-multi-select');
+                if (mainFilters) mainFilters.style.display = 'flex';
+                if (costiFilters) costiFilters.style.display = 'none';
+                if (btn1) btn1.style.display = 'inline-block';
+                if (btn2) btn2.style.display = 'inline-block';
+            }
+            
             if(targetView === 'dashboard-view') {
                 updateDashboard();
             } else if (targetView === 'table-view') {
