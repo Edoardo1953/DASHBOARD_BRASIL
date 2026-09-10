@@ -3865,7 +3865,7 @@ window.renderCostiTables = function() {
     
     if (!immobHead || !costiOrdHead) return;
     
-    let thHtml = '<th style="text-align: left; width: 40%;">Categoria / Tipologia</th>';
+    let thHtml = '<th style="text-align: left; width: 40%;">' + (typeof t === "function" ? t("costi.category") : "Categoria / Tipologia") + '</th>';
     window.costiSelectedYears.forEach(y => {
         thHtml += '<th style="text-align: right;">' + y + '</th>';
     });
@@ -3892,7 +3892,7 @@ window.renderCostiTables = function() {
         });
         
         if (Object.keys(grouped).length === 0) {
-            tbody.innerHTML = '<tr><td colspan="' + (window.costiSelectedYears.length + 1) + '" style="text-align: center;">Nessun dato per gli anni selezionati</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="' + (window.costiSelectedYears.length + 1) + '" style="text-align: center;">' + (typeof t === "function" ? t("costi.noData") : "Nessun dato per gli anni selezionati") + '</td></tr>';
             return;
         }
         
