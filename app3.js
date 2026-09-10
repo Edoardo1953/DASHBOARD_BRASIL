@@ -1,4 +1,4 @@
-﻿let monthlyChartInstance = null;
+let monthlyChartInstance = null;
 let yearlyChartInstance = null;
 let yearlyTrendChartInstance = null;
 let yearlyCompositionChartInstance = null;
@@ -105,42 +105,31 @@ async function syncToGitHub(usersObj) {
     const token = localStorage.getItem('sombra_github_token');
 
     if (!token) {
-        // Nessun token configurato: mostra il pannello di configurazione
         showGithubTokenSetup();
         return;
     }
 
     showSyncStatus('loading', 'Sincronizzazione in corso...');
 
-    try {
-        // 1. Leggi il file attuale da GitHub
-        const getRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+    // Helper: legge il file da GitHub e ritorna { content, sha }
+    async function readGitHubFile() {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json'
+                'Accept': 'application/vnd.github+json',
+                'Cache-Control': 'no-cache'
             }
         });
+        if (res.status === 401) throw new Error('TOKEN_INVALID');
+        if (!res.ok) throw new Error(`Impossibile leggere ${GITHUB_FILE} da GitHub (${res.status})`);
+        const fileData = await res.json();
+        const content = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))));
+        return { content, sha: fileData.sha };
+    }
 
-        if (getRes.status === 401) throw new Error('Token non valido o scaduto. Riconfiguralo.');
-        if (!getRes.ok) throw new Error(`Impossibile leggere ${GITHUB_FILE} da GitHub (${getRes.status})`);
-
-        const fileData = await getRes.json();
-        const currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))));
-        const sha = fileData.sha;
-
-        // 2. Sostituisci il blocco DEFAULT_USERS
-        const newBlock = generateDefaultUsersBlock(usersObj);
-        const newContent = currentContent.replace(/const DEFAULT_USERS = \{[\s\S]*?\};/, newBlock);
-
-        if (newContent === currentContent) {
-            // Se il contenuto ├â┬¿ lo stesso, significa che GitHub ├â┬¿ gi├â┬á aggiornato con questa lista!
-            // Nessun bisogno di fare una richiesta PUT.
-            showSyncStatus('success', '├ó┼ôÔÇª Utenti gi├â┬á sincronizzati su GitHub!');
-            return;
-        }
-
-        // 3. Scrivi il file aggiornato su GitHub
-        const putRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
+    // Helper: scrive il file su GitHub
+    async function writeGitHubFile(newContent, sha) {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -153,21 +142,68 @@ async function syncToGitHub(usersObj) {
                 sha: sha
             })
         });
+        if (res.status === 401) throw new Error('TOKEN_INVALID');
+        return res;
+    }
 
-        if (putRes.status === 401) throw new Error('Token non valido o scaduto. Riconfiguralo.');
-        if (!putRes.ok) {
-            const errData = await putRes.json().catch(() => ({}));
-            throw new Error(errData.message || `Errore GitHub (${putRes.status})`);
+    const MAX_RETRIES = 3;
+
+    try {
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                const { content: currentContent, sha } = await readGitHubFile();
+
+                const newBlock = generateDefaultUsersBlock(usersObj);
+                const newContent = currentContent.replace(/const DEFAULT_USERS = \{[\s\S]*?\};/, newBlock);
+
+                if (newContent === currentContent) {
+                    showSyncStatus('success', '\u2705 Utenti gia sincronizzati su GitHub!');
+                    return;
+                }
+
+                const putRes = await writeGitHubFile(newContent, sha);
+
+                if (putRes.ok) {
+                    showSyncStatus('success', '\u2705 Utenti sincronizzati su GitHub! Tutti potranno accedere entro 1-2 minuti.');
+                    return;
+                }
+
+                if (putRes.status === 409 || putRes.status === 422) {
+                    const errData = await putRes.json().catch(() => ({}));
+                    lastError = new Error(errData.message || `SHA conflict (${putRes.status})`);
+                    if (attempt < MAX_RETRIES) {
+                        showSyncStatus('loading', `Conflitto SHA, tentativo ${attempt + 1}/${MAX_RETRIES}...`);
+                        await new Promise(r => setTimeout(r, 1500 * attempt));
+                        continue;
+                    }
+                } else {
+                    const errData = await putRes.json().catch(() => ({}));
+                    throw new Error(errData.message || `Errore GitHub (${putRes.status})`);
+                }
+
+            } catch (innerErr) {
+                if (innerErr.message === 'TOKEN_INVALID') throw innerErr;
+                lastError = innerErr;
+                if (attempt < MAX_RETRIES) {
+                    await new Promise(r => setTimeout(r, 1000 * attempt));
+                    continue;
+                }
+            }
         }
 
-        // Successo!
-        showSyncStatus('success', '├ó┼ôÔÇª Utenti sincronizzati su GitHub! Tutti potranno accedere entro 1-2 minuti.');
+        throw lastError || new Error('Impossibile sincronizzare dopo 3 tentativi.');
 
     } catch (err) {
         console.error('GitHub sync error:', err);
-        const isAuthError = err.message.includes('Token non valido');
-        if (isAuthError) localStorage.removeItem('sombra_github_token');
-        showSyncStatus('error', '├ó┬Ø┼Æ ' + err.message + (isAuthError ? ' Usa il pulsante "Configura Token".' : ''));
+        const isAuthError = err.message === 'TOKEN_INVALID' || err.message.includes('Token non valido');
+        if (isAuthError) {
+            localStorage.removeItem('sombra_github_token');
+            showSyncStatus('error', '\u274c Token non valido o scaduto. Riconfiguralo.');
+        } else {
+            showSyncStatus('error', '\u26a0\ufe0f Sync GitHub fallita (deploy in corso?). Login locale OK. Riprova tra qualche minuto.');
+        }
     }
 }
 
