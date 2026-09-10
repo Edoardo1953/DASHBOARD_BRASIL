@@ -2944,16 +2944,23 @@ window.publishLayoutToGitHub = async function(silent = false) {
             throw new Error(`Errore GitHub (${putRes.status}): ${errorData.message}`);
         }
         
-        alert('Layout salvato!');
-        toggleLayoutEditMode(true);
+        if (!silent) {
+            alert('Layout salvato!');
+            toggleLayoutEditMode(true);
+        }
         
     } catch(err) {
-        alert('Errore: ' + err.message);
+        if (!silent) {
+            alert('Errore: ' + err.message);
+        } else {
+            console.error('Errore publishLayoutToGitHub:', err.message);
+        }
     } finally {
-        if(saveBtn) {
+        if(saveBtn && !silent) {
             saveBtn.innerHTML = originalText;
             saveBtn.disabled = false;
         }
+    }
     }
 };
 
