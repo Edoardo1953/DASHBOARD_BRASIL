@@ -2906,8 +2906,10 @@ window.publishLayoutToGitHub = async function(silent = false) {
         
         const token = localStorage.getItem('sombra_github_token');
         if (!token) {
-            alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
-            toggleLayoutEditMode(true);
+            if (!silent) {
+                alert('Layout salvato localmente nel tuo browser.\n\nPer renderlo visibile a tutti gli utenti, devi configurare il Token GitHub nella Gestione Utenti.');
+                toggleLayoutEditMode(true);
+            }
             return;
         }
         
