@@ -2961,7 +2961,6 @@ window.publishLayoutToGitHub = async function(silent = false) {
             saveBtn.disabled = false;
         }
     }
-    }
 };
 
 window.applyLayoutConfig = function(config) {
