@@ -60,26 +60,27 @@ function setLanguage(lang) {
  * Traduce tutti gli elementi DOM con l'attributo data-i18n
  */
 function translatePage() {
-    const elements = document.querySelectorAll('[data-i18n]');
+    const elements = document.querySelectorAll('[data-i18n], [data-i18n-title]');
     elements.forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        
-        // Controlla se bisogna tradurre il placeholder o il testo interno
-        if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-            el.placeholder = t(key);
-        } else {
-            // Se l'elemento contiene un'icona Phosphor prima del testo, preserveremo l'icona
-            const icon = el.querySelector('i');
-            if (icon) {
-                // Sostituiamo solo il testo (nodo di tipo 3)
-                Array.from(el.childNodes).forEach(node => {
-                    if (node.nodeType === 3 && node.nodeValue.trim() !== '') {
-                        node.nodeValue = t(key);
-                    }
-                });
+        if (el.hasAttribute('data-i18n')) {
+            const key = el.getAttribute('data-i18n');
+            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                el.placeholder = t(key);
             } else {
-                el.textContent = t(key);
+                const icon = el.querySelector('i');
+                if (icon) {
+                    Array.from(el.childNodes).forEach(node => {
+                        if (node.nodeType === 3 && node.nodeValue.trim() !== '') {
+                            node.nodeValue = t(key);
+                        }
+                    });
+                } else {
+                    el.textContent = t(key);
+                }
             }
+        }
+        if (el.hasAttribute('data-i18n-title')) {
+            el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
         }
     });
 }

@@ -4146,6 +4146,174 @@ window.toggleAdminUserView = function(e) {
         const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
         if (dashBtn) dashBtn.click();
     }
+    }
+    
+    renderSpecificTable(immobBody, "Immobilizzato");
+    renderSpecificTable(costiOrdBody, "Spesa Ordinaria");
+};
+
+window.toggleCostiAccordion = function(catId) {
+    const icon = document.getElementById('icon_' + catId);
+    const children = document.querySelectorAll('.child-of-' + catId);
+    
+    let isExpanded = false;
+    if (icon && icon.style.transform === 'rotate(90deg)') {
+        isExpanded = true;
+        icon.style.transform = 'rotate(0deg)';
+    } else if (icon) {
+        icon.style.transform = 'rotate(90deg)';
+    }
+    
+    children.forEach(child => {
+        child.style.display = isExpanded ? 'none' : 'table-row';
+    });
+};
+
+// Fetch all'avvio
+setTimeout(() => {
+    window.fetchCostiData();
+}, 2000);
+
+// --- LOGICA VISIBILITA' MENU (User View / Admin View) ---
+window.pageVisibility = {};
+window.isAdminInUserView = false;
+
+window.updateSidebarVisibilityUI = function() {
+    const isUser = currentUserRole === 'USER' || window.isAdminInUserView;
+    const isRealAdmin = currentUserRole === 'ADMIN';
+    
+    document.querySelectorAll('.sidebar-nav .nav-item[data-view]').forEach(item => {
+        const pageKey = item.getAttribute('data-view');
+        
+        // Ignoriamo le viste di sistema o esclusive admin per evitare occhietti vagabondi
+        if (['welcome-view', 'input-view', 'settings-view', 'users-view'].includes(pageKey)) return;
+        
+        // Wrap se non già wrappato
+        if (!item.parentElement.classList.contains('nav-item-wrapper')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'nav-item-wrapper';
+            wrapper.style.display = 'flex';
+            wrapper.style.justifyContent = 'space-between';
+            wrapper.style.alignItems = 'center';
+            item.parentNode.insertBefore(wrapper, item);
+            wrapper.appendChild(item);
+        }
+        
+        const wrapper = item.parentElement;
+        
+        // Rimuoviamo vecchi bottoni occhio
+        let oldBtn = wrapper.querySelector('.nav-eye-btn');
+        if (oldBtn) oldBtn.remove();
+        
+        if (isUser) {
+            // Modalità Utente: mostra solo le voci visibili
+            const isVisible = (window.pageVisibility[pageKey] !== false);
+            wrapper.style.display = isVisible ? 'flex' : 'none';
+        } else {
+            // Modalità Admin: mostra tutto, con occhio a fianco
+            wrapper.style.display = 'flex';
+            
+            const btn = document.createElement('button');
+            btn.className = 'nav-eye-btn';
+            btn.setAttribute('data-page', pageKey);
+            btn.style.cssText = 'background:none; border:none; padding:4px 8px; cursor:pointer; font-size:1.1rem; border-radius:4px; margin-left: 5px;';
+            
+            const isVisible = (window.pageVisibility[pageKey] !== false);
+            if (isVisible) {
+                btn.style.color = '#10b981';
+                btn.innerHTML = '<i class="ph ph-eye"></i>';
+                btn.title = 'Visibile (Clicca per nascondere)';
+            } else {
+                btn.style.color = '#ef4444';
+                btn.innerHTML = '<i class="ph ph-eye-slash"></i>';
+                btn.title = 'Nascosto (Clicca per mostrare)';
+            }
+            
+            btn.onclick = (e) => window.togglePageVisibility(pageKey, e);
+            wrapper.appendChild(btn);
+        }
+    });
+    
+    // Gestione del bottone "Passa a VISTA UTENTE / Torna a VISTA ADMIN"
+    const sidebarNav = document.querySelector('.sidebar-nav');
+    if (sidebarNav) {
+        let toggleBtn = sidebarNav.querySelector('#btn-toggle-view');
+        if (isRealAdmin) {
+            if (!toggleBtn) {
+                toggleBtn = document.createElement('a');
+                toggleBtn.href = '#';
+                toggleBtn.id = 'btn-toggle-view';
+                toggleBtn.className = 'nav-item';
+                toggleBtn.style.cssText = 'margin-top: 1rem; border: 1px dashed #f59e0b; color: #f59e0b; justify-content: center;';
+                toggleBtn.onclick = (e) => window.toggleAdminUserView(e);
+                
+                // Inseriamo prima dell'ultimo elemento (Logout)
+                const navItemsArray = Array.from(sidebarNav.querySelectorAll('.nav-item'));
+                const logoutBtn = navItemsArray.find(el => el.id === 'nav-logout');
+                if (logoutBtn) {
+                    sidebarNav.insertBefore(toggleBtn, logoutBtn.parentElement || logoutBtn);
+                } else {
+                    sidebarNav.appendChild(toggleBtn);
+                }
+            }
+            
+            toggleBtn.style.display = 'flex';
+            if (window.isAdminInUserView) {
+                toggleBtn.innerHTML = `<i class="ph ph-arrows-left-right"></i> <span>${t('nav.adminView') || 'Torna a VISTA ADMIN'}</span>`;
+            } else {
+                toggleBtn.innerHTML = `<i class="ph ph-arrows-left-right"></i> <span>${t('nav.userView') || 'Passa a VISTA UTENTE'}</span>`;
+            }
+        } else if (toggleBtn) {
+            toggleBtn.style.display = 'none';
+        }
+    }
+};
+
+window.togglePageVisibility = async function(pageKey, e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    const isVisible = (window.pageVisibility[pageKey] !== false);
+    window.pageVisibility[pageKey] = !isVisible; // Toggle
+    
+    window.updateSidebarVisibilityUI();
+    
+    // Salva tramite la funzione di salvataggio layout
+    window.publishLayoutToGitHub(true);
+};
+
+window.toggleAdminUserView = function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    window.isAdminInUserView = !window.isAdminInUserView;
+    window.updateSidebarVisibilityUI();
+    
+    // Mostra/Nascondi tool admin durante la simulazione
+    const navSettings = document.getElementById('nav-settings');
+    const navUsers = document.getElementById('nav-users');
+    const navLayout = document.getElementById('nav-layout-toggle');
+    
+    if (window.isAdminInUserView) {
+        if (navSettings) navSettings.style.display = 'none';
+        if (navUsers) navUsers.style.display = 'none';
+        if (navLayout) navLayout.style.display = 'none';
+        
+        // Forza click su welcome-view se simuliamo l'utente (che va alla welcome-view all'accesso)
+        const welcomeBtn = document.querySelector('.nav-item[data-view="welcome-view"]');
+        if (welcomeBtn) welcomeBtn.click();
+    } else {
+        if (navSettings) navSettings.style.display = 'flex';
+        if (navUsers) navUsers.style.display = 'flex';
+        if (navLayout) navLayout.style.display = 'flex';
+        
+        // Ritorno alla dashboard
+        const dashBtn = document.querySelector('.nav-item[data-view="dashboard-view"]');
+        if (dashBtn) dashBtn.click();
+    }
 };
 
 // Applica visibilità all'avvio (se già loggati)
@@ -4162,3 +4330,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 500);
 });
+
+/**
+ * Hard Refresh - svuota la cache app (localStorage dati/filtri/layout)
+ * e ricarica la pagina bypassando la cache del browser.
+ * Le credenziali utenti (sombra_spa_users) vengono preservate.
+ */
+window.hardRefreshApp = function() {
+    // Keys da preservare: utenti e token GitHub
+    const PRESERVE_KEYS = ['sombra_spa_users', 'sombra_github_token'];
+
+    // Raccoglie tutte le chiavi sombra_* tranne quelle da preservare
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sombra_') && !PRESERVE_KEYS.includes(key)) {
+            keysToRemove.push(key);
+        }
+    }
+    // Rimuove anche la lingua (verrà reimpostata dal browser) e altri stati UI
+    keysToRemove.push('local_layout_config', 'app_lang');
+
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    // Ricarica forzata bypassando la cache del browser
+    window.location.reload(true);
+};
