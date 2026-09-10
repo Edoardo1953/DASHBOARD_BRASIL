@@ -392,7 +392,7 @@ function initNavigation() {
                 if (mainFilters) mainFilters.style.display = 'none';
                 if (costiFilters) costiFilters.style.display = 'flex';
                 if (btn1) btn1.style.display = 'none';
-                if (btn2) btn2.style.display = 'none';
+                if (btn2) btn2.style.display = 'inline-block';
             } else {
                 const mainFilters = document.getElementById('year-filters');
                 const costiFilters = document.getElementById('costi-year-filters');
@@ -3920,13 +3920,32 @@ window.renderCostiTables = function() {
         const normalCats = Object.keys(grouped).filter(cat => !cat.toLowerCase().includes('total')).sort();
         const totalCats = Object.keys(grouped).filter(cat => cat.toLowerCase().includes('total')).sort();
         
+        // Calcolo i totali generali per anno per le percentuali
+        const grandTotalsByYear = {};
+        window.costiSelectedYears.forEach(y => { grandTotalsByYear[y] = 0; });
+        if (totalCats.length > 0) {
+            totalCats.forEach(cat => {
+                window.costiSelectedYears.forEach(y => {
+                    grandTotalsByYear[y] += grouped[cat].totalByYear[y] || 0;
+                });
+            });
+        } else {
+            normalCats.forEach(cat => {
+                window.costiSelectedYears.forEach(y => {
+                    grandTotalsByYear[y] += grouped[cat].totalByYear[y] || 0;
+                });
+            });
+        }
+        
         normalCats.forEach((cat, index) => {
             const catId = macroTypeFilter.replace(/\s+/g, '') + '_cat_' + index;
             
             html += '<tr class="table-row-parent" onclick="window.toggleCostiAccordion(\'' + catId + '\')" style="cursor: pointer; background: var(--bg-secondary);">';
             html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left;"><i id="icon_' + catId + '" class="ph ph-caret-right" style="margin-right: 8px; transition: transform 0.2s;"></i>' + cat + '</td>';
             window.costiSelectedYears.forEach(y => {
-                html += '<td style="text-align: right; font-weight: bold;">' + formatCostiCurrency(grouped[cat].totalByYear[y]) + '</td>';
+                const val = grouped[cat].totalByYear[y] || 0;
+                const perc = grandTotalsByYear[y] > 0 ? ((val / grandTotalsByYear[y]) * 100).toFixed(1) + '%' : '0.0%';
+                html += '<td style="text-align: right; font-weight: bold; white-space: nowrap;">' + formatCostiCurrency(val) + ' <span style="color: var(--text-secondary); font-size: 0.85em; margin-left: 6px;">(' + perc + ')</span></td>';
             });
             html += '</tr>';
             
@@ -3934,17 +3953,26 @@ window.renderCostiTables = function() {
                 html += '<tr class="table-row-child child-of-' + catId + '" style="display: none; background: #fff;">';
                 html += '<td style="padding-left: 2.5rem; color: var(--text-secondary); text-align: left;">' + tip + '</td>';
                 window.costiSelectedYears.forEach(y => {
-                    html += '<td style="text-align: right; color: var(--text-secondary);">' + formatCostiCurrency(grouped[cat].tipologie[tip][y]) + '</td>';
+                    const val = grouped[cat].tipologie[tip][y] || 0;
+                    const perc = grandTotalsByYear[y] > 0 ? ((val / grandTotalsByYear[y]) * 100).toFixed(1) + '%' : '0.0%';
+                    html += '<td style="text-align: right; color: var(--text-secondary); white-space: nowrap;">' + formatCostiCurrency(val) + ' <span style="opacity: 0.7; font-size: 0.85em; margin-left: 6px;">(' + perc + ')</span></td>';
                 });
                 html += '</tr>';
             });
         });
         
         totalCats.forEach(cat => {
-            html += '<tr style="background: var(--bg-secondary); border-top: 2px solid var(--border-color);">';
-            html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left; padding-left: 1.5rem;">' + cat + '</td>';
+            // Riga vuota per staccare il totale
+            html += '<tr style="height: 15px; background: transparent;"><td colspan="' + (window.costiSelectedYears.length + 1) + '" style="border: none;"></td></tr>';
+            
+            // Riga del totale con bordi e font più grande
+            html += '<tr style="background: var(--bg-secondary); border-top: 2px solid var(--text-primary); border-bottom: 2px solid var(--text-primary);">';
+            html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left; padding-left: 1.5rem; text-transform: uppercase;">' + cat + '</td>';
             window.costiSelectedYears.forEach(y => {
-                html += '<td style="text-align: right; font-weight: bold;">' + formatCostiCurrency(grouped[cat].totalByYear[y]) + '</td>';
+                const val = grouped[cat].totalByYear[y] || 0;
+                // Il totale è sempre 100%
+                const perc = grandTotalsByYear[y] > 0 ? '100.0%' : '0.0%';
+                html += '<td style="text-align: right; font-weight: bold; font-size: 1.1em; white-space: nowrap;">' + formatCostiCurrency(val) + ' <span style="color: var(--text-secondary); font-size: 0.85em; margin-left: 6px;">(' + perc + ')</span></td>';
             });
             html += '</tr>';
         });
