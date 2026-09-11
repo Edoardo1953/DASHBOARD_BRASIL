@@ -444,7 +444,7 @@
                 
                 <!-- Colonna Inferiore (Grafico) -->
                 <div class="comparator-chart" style="width: 100%;">
-                    <div class="chart-card layout-widget" style="width: 100%; min-height: 500px; height: 100%;" id="widget-comparator-chart">
+                    <div class="chart-card layout-widget" style="width: 100%; min-height: 500px;" id="widget-comparator-chart">
                         <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                             <h3 data-i18n="comparator.monthlyTrend">Andamento Mensile Comparato</h3>
                             <select id="comp-chart-type" class="form-control" style="padding: 0.4rem; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 0.9rem; font-weight: bold; color: #0f172a; cursor: pointer;" onchange="updateComparator()">
@@ -452,7 +452,7 @@
                                 <option value="line" data-i18n="comparator.line">Linee</option>
                             </select>
                         </div>
-                        <div class="chart-container" style="height: calc(100% - 60px); min-height: 400px;">
+                        <div class="chart-container" style="position: relative; height: 420px; width: 100%;">
                             <canvas id="comparatorChart"></canvas>
                         </div>
                     </div>
@@ -544,7 +544,7 @@
                 </div>
             </div>
 
-            <div class="analisi-area-layout" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="analisi-area-layout" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem; padding-bottom: 2rem;">
                 
                 <!-- Chart -->
                 <div class="chart-card layout-widget" style="width: 100%; display: flex; flex-direction: column;" id="widget-area-chart">
@@ -555,21 +555,21 @@
                             <option value="grouped">Grafico Affiancato</option>
                         </select>
                     </div>
-                    <div class="chart-body" style="position: relative; flex-grow: 1; min-height: 200px; width: 100%;">
+                    <div class="chart-body" style="position: relative; height: 420px; width: 100%; flex-shrink: 0;">
                         <canvas id="analisiAreaChart"></canvas>
                     </div>
                 </div>
 
                 <!-- Table -->
-                <div class="table-card layout-widget" style="padding: 0; display: flex; flex-direction: column;" id="widget-area-table">
-                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white; flex-shrink: 0;">DETTAGLIO RICAVI PER AREA (R$)</div>
-                    <div style="overflow: auto; flex-grow: 1; width: 100%;">
+                <div class="table-card layout-widget" style="padding: 0;" id="widget-area-table">
+                    <div style="background-color: var(--accent-blue); padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem; color: white;">DETTAGLIO RICAVI PER AREA (R$)</div>
+                    <div style="overflow-x: auto; width: 100%; padding-bottom: 1rem;">
                         <table class="premium-table" style="margin: 0 auto; width: max-content; min-width: 50%;">
                         <thead>
                             <tr>
                                 <th data-i18n="table.year">Anno</th>
                                 <th id="th-area-diarias">Diarias</th>
-                                <th id="th-area-ab">A & B</th>
+                                <th id="th-area-ab">A &amp; B</th>
                                 <th id="th-area-spa">Spa (+ Outros)</th>
                                 <th style="background-color: #d1fae5;">Totale</th>
                             </tr>
@@ -1095,6 +1095,7 @@
         </div>
     </div>
 
+    <script src="db_preload.js?v=1"></script>
     <script src="app3.js?v=53"></script>
     <script>
         function goToAnalisiOccupazione() {
