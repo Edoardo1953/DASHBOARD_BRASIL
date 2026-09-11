@@ -828,34 +828,44 @@
             </div>
             
             <div class="table-card" style="margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem; color: var(--accent-blue);" data-i18n="costi.immobTitle">IMMOBILIZZAZIONI</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <h3 style="margin: 0; color: var(--accent-blue);" data-i18n="costi.immobTitle">IMMOBILIZZAZIONI</h3>
+                    <button onclick="window.toggleCostiChart('immob')"
+                        id="btn-immob-chart"
+                        style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.9rem; border-radius:20px; border:2px solid var(--accent-blue); background:transparent; color:var(--accent-blue); font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">
+                        <i class="ph ph-chart-bar"></i> <span data-i18n="costi.showChart">Vedi Grafico</span>
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table class="premium-table" id="immobTable">
-                        <thead>
-                            <tr id="immobTableHead">
-                                <!-- Popolato via JS -->
-                            </tr>
-                        </thead>
-                        <tbody id="immobTableBody">
-                            <!-- Popolato via JS -->
-                        </tbody>
+                        <thead><tr id="immobTableHead"></tr></thead>
+                        <tbody id="immobTableBody"></tbody>
                     </table>
+                </div>
+                <!-- Grafico Immobilizzazioni (nascosto di default) -->
+                <div id="immob-chart-container" style="display:none; position:relative; height:380px; width:100%; margin-top:1.5rem;">
+                    <canvas id="immobChart"></canvas>
                 </div>
             </div>
 
-            <div class="table-card">
-                <h3 style="margin-bottom: 1rem; color: var(--accent-red);" data-i18n="costi.costiOrdTitle">COSTI (Spese Ordinarie)</h3>
+            <div class="table-card" style="padding-bottom: 2rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <h3 style="margin: 0; color: var(--accent-red);" data-i18n="costi.costiOrdTitle">COSTI (Spese Ordinarie)</h3>
+                    <button onclick="window.toggleCostiChart('costi')"
+                        id="btn-costi-chart"
+                        style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.9rem; border-radius:20px; border:2px solid var(--accent-red); background:transparent; color:var(--accent-red); font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">
+                        <i class="ph ph-chart-bar"></i> <span data-i18n="costi.showChart">Vedi Grafico</span>
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table class="premium-table" id="costiOrdTable">
-                        <thead>
-                            <tr id="costiOrdTableHead">
-                                <!-- Popolato via JS -->
-                            </tr>
-                        </thead>
-                        <tbody id="costiOrdTableBody">
-                            <!-- Popolato via JS -->
-                        </tbody>
+                        <thead><tr id="costiOrdTableHead"></tr></thead>
+                        <tbody id="costiOrdTableBody"></tbody>
                     </table>
+                </div>
+                <!-- Grafico Costi (nascosto di default) -->
+                <div id="costi-chart-container" style="display:none; position:relative; height:380px; width:100%; margin-top:1.5rem;">
+                    <canvas id="costiOrdChart"></canvas>
                 </div>
             </div>
         </div>

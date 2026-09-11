@@ -4024,6 +4024,173 @@ window.renderCostiTables = function() {
     
     renderSpecificTable(immobBody, "Immobilizzato");
     renderSpecificTable(costiOrdBody, "Spesa Ordinaria");
+
+    // Disegna i grafici dopo il render delle tabelle
+    setTimeout(function() {
+        window.drawImmobChart();
+        window.drawCostiOrdChart();
+    }, 50);
+};
+
+
+// --- GRAFICI COSTI E IMMOBILIZZAZIONI ---
+let immobChartInstance = null;
+let costiOrdChartInstance = null;
+
+const COSTI_YEAR_COLORS = [
+    { bg: 'rgba(59,130,246,0.85)',  border: 'rgba(59,130,246,1)'  },  // blue
+    { bg: 'rgba(239,68,68,0.85)',   border: 'rgba(239,68,68,1)'   },  // red
+    { bg: 'rgba(16,185,129,0.85)',  border: 'rgba(16,185,129,1)'  },  // green
+    { bg: 'rgba(245,158,11,0.85)',  border: 'rgba(245,158,11,1)'  },  // amber
+];
+
+// Grafico Immobilizzazioni: categorie + tipologie, multi-anno affiancato
+window.drawImmobChart = function() {
+    const canvas = document.getElementById('immobChart');
+    if (!canvas || !window.costiData || window.costiData.length === 0) return;
+
+    if (immobChartInstance) { immobChartInstance.destroy(); immobChartInstance = null; }
+
+    const years = window.costiSelectedYears;
+    const rows  = window.costiData.filter(r =>
+        r.MacroType === 'Immobilizzato' && years.includes(parseInt(r.Anno))
+    );
+
+    // Raggruppa: categoria -> tipologia -> anno -> valore
+    const grouped = {};
+    rows.forEach(row => {
+        const cat  = row.Categoria  || 'Altro';
+        const tip  = row.Tipologia  || 'Altro';
+        const anno = parseInt(row.Anno);
+        const val  = parseFloat(row['Totale Anno']) || 0;
+        if (!grouped[cat])       grouped[cat]       = {};
+        if (!grouped[cat][tip])  grouped[cat][tip]  = {};
+        grouped[cat][tip][anno]  = (grouped[cat][tip][anno] || 0) + val;
+    });
+
+    // Etichette: "Categoria: Tipologia"
+    const labels = [];
+    Object.keys(grouped).sort().forEach(cat => {
+        Object.keys(grouped[cat]).sort().forEach(tip => {
+            const shortCat = cat.length > 22 ? cat.substring(0,20) + '\u2026' : cat;
+            const shortTip = tip.length > 22 ? tip.substring(0,20) + '\u2026' : tip;
+            labels.push(shortCat + '\n' + shortTip);
+        });
+    });
+
+    const datasets = years.map((year, idx) => {
+        const data = [];
+        Object.keys(grouped).sort().forEach(cat => {
+            Object.keys(grouped[cat]).sort().forEach(tip => {
+                data.push(grouped[cat][tip][year] || 0);
+            });
+        });
+        const c = COSTI_YEAR_COLORS[idx % COSTI_YEAR_COLORS.length];
+        return { label: String(year), data, backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, borderRadius: 4 };
+    });
+
+    immobChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                datalabels: { display: false },
+                tooltip: { callbacks: { label: c => c.dataset.label + ': ' + formatCostiCurrency(c.raw) } }
+            },
+            scales: {
+                x: { ticks: { maxRotation: 45, font: { size: 10 } } },
+                y: { ticks: { callback: v => 'R$ ' + (v / 1000).toFixed(0) + 'K' } }
+            }
+        }
+    });
+};
+
+// Grafico Costi Ordinarie: solo categorie, multi-anno affiancato
+window.drawCostiOrdChart = function() {
+    const canvas = document.getElementById('costiOrdChart');
+    if (!canvas || !window.costiData || window.costiData.length === 0) return;
+
+    if (costiOrdChartInstance) { costiOrdChartInstance.destroy(); costiOrdChartInstance = null; }
+
+    const years = window.costiSelectedYears;
+    const rows  = window.costiData.filter(r =>
+        r.MacroType === 'Spesa Ordinaria' && years.includes(parseInt(r.Anno))
+    );
+
+    // Raggruppa: categoria -> anno -> valore (esclude righe TOTAL)
+    const grouped = {};
+    rows.forEach(row => {
+        const cat  = row.Categoria || 'Altro';
+        if (cat.toLowerCase().includes('total')) return;
+        const anno = parseInt(row.Anno);
+        const val  = parseFloat(row['Totale Anno']) || 0;
+        if (!grouped[cat]) grouped[cat] = {};
+        grouped[cat][anno] = (grouped[cat][anno] || 0) + val;
+    });
+
+    const cats   = Object.keys(grouped).sort();
+    const labels = cats.map(c => c.length > 28 ? c.substring(0,26) + '\u2026' : c);
+
+    const datasets = years.map((year, idx) => {
+        const c = COSTI_YEAR_COLORS[idx % COSTI_YEAR_COLORS.length];
+        return {
+            label: String(year),
+            data: cats.map(cat => grouped[cat][year] || 0),
+            backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, borderRadius: 4
+        };
+    });
+
+    costiOrdChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                datalabels: { display: false },
+                tooltip: { callbacks: { label: c => c.dataset.label + ': ' + formatCostiCurrency(c.raw) } }
+            },
+            scales: {
+                x: { ticks: { maxRotation: 45, font: { size: 11 } } },
+                y: { ticks: { callback: v => 'R$ ' + (v / 1000).toFixed(0) + 'K' } }
+            }
+        }
+    });
+};
+
+
+// Toggle accordion grafico costi/immob
+window.toggleCostiChart = function(type) {
+    const containerId = type === 'immob' ? 'immob-chart-container' : 'costi-chart-container';
+    const btnId       = type === 'immob' ? 'btn-immob-chart'       : 'btn-costi-chart';
+    const container   = document.getElementById(containerId);
+    const btn         = document.getElementById(btnId);
+    if (!container) return;
+
+    const isOpen = container.style.display !== 'none';
+
+    if (isOpen) {
+        // Chiudi
+        container.style.display = 'none';
+        if (btn) btn.querySelector('span').textContent = typeof t === 'function' ? t('costi.showChart') : 'Vedi Grafico';
+    } else {
+        // Apri e disegna
+        container.style.display = 'block';
+        if (btn) btn.querySelector('span').textContent = typeof t === 'function' ? t('costi.hideChart') : 'Nascondi Grafico';
+        // Disegna solo la chart rilevante (lazy draw)
+        setTimeout(function() {
+            if (type === 'immob') window.drawImmobChart();
+            else                  window.drawCostiOrdChart();
+        }, 50);
+        // Scroll morbido verso il grafico
+        setTimeout(function() {
+            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 80);
+    }
 };
 
 window.toggleCostiAccordion = function(catId) {
