@@ -1,6 +1,6 @@
 {
   "visibility": {
-    "yearly-history-view": false
+    "yearly-history-view": true
   },
   "widget-monthly-revenue": {
     "width": "1003.31px",
