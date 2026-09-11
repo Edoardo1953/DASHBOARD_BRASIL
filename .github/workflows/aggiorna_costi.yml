@@ -1,0 +1,35 @@
+name: 🔄 Auto-aggiorna costi_preload.js
+
+on:
+  push:
+    paths:
+      - 'Uploads/spese.xlsx'
+
+jobs:
+  genera-preload:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Installa dipendenze
+        run: pip install openpyxl
+
+      - name: Genera costi_preload.js
+        run: python scripts/make_costi_preload.py
+
+      - name: Commit e push costi_preload.js
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions Bot"
+          git add costi_preload.js
+          git diff --staged --quiet && echo "Nessuna modifica" || (
+            git commit -m "auto: rigenera costi_preload.js da spese.xlsx aggiornato"
+            git push
+          )

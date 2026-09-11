@@ -3779,7 +3779,7 @@ window.currentCostiYear = 2025;
 window.fetchCostiData = async function() {
     try {
         const timestamp = new Date().getTime();
-        const fileUrl = "uploads/spese.xlsx?t=" + timestamp;
+        const fileUrl = "Uploads/spese.xlsx?t=" + timestamp;
         
         let workbook;
         try {
