@@ -3942,7 +3942,7 @@ window.renderCostiTables = function() {
         olderYear = Math.min(...window.costiSelectedYears);
         newerYear = Math.max(...window.costiSelectedYears);
 
-        // Trova l'ultimo mese con dati non nulli per il newerYear
+        // Trova l'ultimo mese con dati per il newerYear
         let maxMonthIdx = -1;
         window.costiData.filter(r => parseInt(r.Anno) === newerYear).forEach(r => {
             COSTI_MONTHS_NAMES.forEach((m, idx) => {
@@ -3960,7 +3960,8 @@ window.renderCostiTables = function() {
     
     let thHtml = '<th style="text-align: left; width: 38%;">' + (typeof t === "function" ? t("costi.category") : "Categoria / Tipologia") + '</th>';
     window.costiSelectedYears.forEach(y => {
-        thHtml += '<th style="text-align: right;">' + y + '</th>';
+        const yLabel = (isYtd && isTwoYears) ? `${y} <span style="font-size: 0.8em; font-weight: normal; opacity: 0.85;">(YTD)</span>` : y;
+        thHtml += '<th style="text-align: right;">' + yLabel + '</th>';
     });
     if (isTwoYears) {
         const varLabel = isYtd 
@@ -3989,7 +3990,7 @@ window.renderCostiTables = function() {
         }
     }
     
-    function renderSpecificTable(tbody, macroTypeFilter) {
+    function renderSpecificTable(tbody, macroTypeFilter, tableCardId) {
         const grouped = {};
         
         window.costiData.filter(r => r.MacroType === macroTypeFilter && window.costiSelectedYears.includes(parseInt(r.Anno))).forEach(row => {
@@ -4053,6 +4054,10 @@ window.renderCostiTables = function() {
                 grandYtdTotalsByYear[y] += grouped[cat].ytdTotalByYear[y] || 0;
             });
         });
+
+        // In modalita YTD (confronto 2 anni), usiamo i valori YTD sia per la tabella che per il calcolo
+        const useYtdValues = (isTwoYears && isYtd);
+        const displayTotals = useYtdValues ? grandYtdTotalsByYear : grandTotalsByYear;
         
         normalCats.forEach((cat, index) => {
             const catId = macroTypeFilter.replace(/\s+/g, '') + '_cat_' + index;
@@ -4060,14 +4065,14 @@ window.renderCostiTables = function() {
             html += '<tr class="table-row-parent" onclick="window.toggleCostiAccordion(\'' + catId + '\')" style="cursor: pointer; background: var(--bg-secondary);">';
             html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left;"><i id="icon_' + catId + '" class="ph ph-caret-right" style="margin-right: 8px; transition: transform 0.2s;"></i>' + cat + '</td>';
             window.costiSelectedYears.forEach(y => {
-                const val = grouped[cat].totalByYear[y] || 0;
-                const perc = grandTotalsByYear[y] > 0 ? ((val / grandTotalsByYear[y]) * 100).toFixed(1) + '%' : '0.0%';
+                const val = useYtdValues ? (grouped[cat].ytdTotalByYear[y] || 0) : (grouped[cat].totalByYear[y] || 0);
+                const perc = displayTotals[y] > 0 ? ((val / displayTotals[y]) * 100).toFixed(1) + '%' : '0.0%';
                 html += '<td style="text-align: right; font-weight: bold; white-space: nowrap;">' + formatCostiCurrency(val) + ' <span style="color: var(--text-secondary); font-size: 0.85em; margin-left: 6px;">(' + perc + ')</span></td>';
             });
 
             if (isTwoYears) {
-                const v1 = isYtd ? (grouped[cat].ytdTotalByYear[olderYear] || 0) : (grouped[cat].totalByYear[olderYear] || 0);
-                const v2 = isYtd ? (grouped[cat].ytdTotalByYear[newerYear] || 0) : (grouped[cat].totalByYear[newerYear] || 0);
+                const v1 = useYtdValues ? (grouped[cat].ytdTotalByYear[olderYear] || 0) : (grouped[cat].totalByYear[olderYear] || 0);
+                const v2 = useYtdValues ? (grouped[cat].ytdTotalByYear[newerYear] || 0) : (grouped[cat].totalByYear[newerYear] || 0);
                 const varRes = formatVariation(v1, v2);
                 html += '<td style="text-align: right; font-weight: bold; color: ' + varRes.color + '; white-space: nowrap;">' + varRes.text + '</td>';
             }
@@ -4078,14 +4083,14 @@ window.renderCostiTables = function() {
                 html += '<tr class="table-row-child child-of-' + catId + '" style="display: none; background: #fff;">';
                 html += '<td style="padding-left: 2.5rem; color: var(--text-secondary); text-align: left;">' + tip + '</td>';
                 window.costiSelectedYears.forEach(y => {
-                    const val = grouped[cat].tipologie[tip][y] || 0;
-                    const perc = grandTotalsByYear[y] > 0 ? ((val / grandTotalsByYear[y]) * 100).toFixed(1) + '%' : '0.0%';
+                    const val = useYtdValues ? (grouped[cat].tipologieYtd[tip]?.[y] || 0) : (grouped[cat].tipologie[tip]?.[y] || 0);
+                    const perc = displayTotals[y] > 0 ? ((val / displayTotals[y]) * 100).toFixed(1) + '%' : '0.0%';
                     html += '<td style="text-align: right; color: var(--text-secondary); white-space: nowrap;">' + formatCostiCurrency(val) + ' <span style="opacity: 0.7; font-size: 0.85em; margin-left: 6px;">(' + perc + ')</span></td>';
                 });
 
                 if (isTwoYears) {
-                    const v1 = isYtd ? (grouped[cat].tipologieYtd[tip]?.[olderYear] || 0) : (grouped[cat].tipologie[tip]?.[olderYear] || 0);
-                    const v2 = isYtd ? (grouped[cat].tipologieYtd[tip]?.[newerYear] || 0) : (grouped[cat].tipologie[tip]?.[newerYear] || 0);
+                    const v1 = useYtdValues ? (grouped[cat].tipologieYtd[tip]?.[olderYear] || 0) : (grouped[cat].tipologie[tip]?.[olderYear] || 0);
+                    const v2 = useYtdValues ? (grouped[cat].tipologieYtd[tip]?.[newerYear] || 0) : (grouped[cat].tipologie[tip]?.[newerYear] || 0);
                     const varRes = formatVariation(v1, v2);
                     html += '<td style="text-align: right; font-weight: 500; color: ' + varRes.color + '; white-space: nowrap;">' + varRes.text + '</td>';
                 }
@@ -4102,14 +4107,14 @@ window.renderCostiTables = function() {
             html += '<tr style="background: var(--bg-secondary); border-top: 2px solid var(--text-primary); border-bottom: 2px solid var(--text-primary);">';
             html += '<td style="font-weight: bold; color: var(--text-primary); text-align: left; padding-left: 1.5rem; text-transform: uppercase;">' + cat + '</td>';
             window.costiSelectedYears.forEach(y => {
-                const val = grouped[cat].totalByYear[y] || 0;
-                const perc = grandTotalsByYear[y] > 0 ? '100.0%' : '0.0%';
+                const val = useYtdValues ? (grouped[cat].ytdTotalByYear[y] || 0) : (grouped[cat].totalByYear[y] || 0);
+                const perc = displayTotals[y] > 0 ? '100.0%' : '0.0%';
                 html += '<td style="text-align: right; font-weight: bold; font-size: 1.1em; white-space: nowrap;">' + formatCostiCurrency(val) + ' <span style="color: var(--text-secondary); font-size: 0.85em; margin-left: 6px;">(' + perc + ')</span></td>';
             });
 
             if (isTwoYears) {
-                const v1 = isYtd ? (grandYtdTotalsByYear[olderYear] || 0) : (grandTotalsByYear[olderYear] || 0);
-                const v2 = isYtd ? (grandYtdTotalsByYear[newerYear] || 0) : (grandTotalsByYear[newerYear] || 0);
+                const v1 = useYtdValues ? (grandYtdTotalsByYear[olderYear] || 0) : (grandTotalsByYear[olderYear] || 0);
+                const v2 = useYtdValues ? (grandYtdTotalsByYear[newerYear] || 0) : (grandTotalsByYear[newerYear] || 0);
                 const varRes = formatVariation(v1, v2);
                 html += '<td style="text-align: right; font-weight: bold; font-size: 1.1em; color: ' + varRes.color + '; white-space: nowrap;">' + varRes.text + '</td>';
             }
@@ -4118,6 +4123,26 @@ window.renderCostiTables = function() {
         });
         
         tbody.innerHTML = html;
+
+        // Note informativa YTD sotto la tabella se applicabile
+        const noteContainerId = macroTypeFilter === "Immobilizzato" ? "immob-ytd-note" : "costi-ytd-note";
+        let noteEl = document.getElementById(noteContainerId);
+        if (useYtdValues) {
+            const firstM = validMonths[0];
+            const lastM = validMonths[validMonths.length - 1];
+            if (!noteEl && tbody.closest('.table-card')) {
+                noteEl = document.createElement('div');
+                noteEl.id = noteContainerId;
+                noteEl.style.cssText = "font-size: 0.85rem; color: #64748b; margin-top: 0.75rem; display: flex; align-items: center; gap: 0.4rem;";
+                tbody.closest('.table-responsive').after(noteEl);
+            }
+            if (noteEl) {
+                noteEl.innerHTML = `<i class="ph ph-info" style="color: #3b82f6;"></i> Comparazione Year-to-Date (YTD) calcolata a parita di periodo sui mesi disponibili: <strong>${firstM} - ${lastM}</strong>.`;
+                noteEl.style.display = "flex";
+            }
+        } else if (noteEl) {
+            noteEl.style.display = "none";
+        }
     }
     
     renderSpecificTable(immobBody, "Immobilizzato");
@@ -4135,7 +4160,27 @@ const COSTI_YEAR_COLORS = [
     { bg: 'rgba(245,158,11,0.85)',  border: 'rgba(245,158,11,1)'  },  // amber
 ];
 
-// Grafico Immobilizzazioni: categorie + tipologie, multi-anno affiancato
+// Helper per determinare i mesi validi YTD per i grafici
+function getCostiValidMonths() {
+    const COSTI_MONTHS_NAMES = [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+    ];
+    if (window.costiSelectedYears.length !== 2) return { isYtd: false, months: COSTI_MONTHS_NAMES };
+    const newerYear = Math.max(...window.costiSelectedYears);
+    let maxMonthIdx = -1;
+    window.costiData.filter(r => parseInt(r.Anno) === newerYear).forEach(r => {
+        COSTI_MONTHS_NAMES.forEach((m, idx) => {
+            if (parseFloat(r[m]) > 0 && idx > maxMonthIdx) maxMonthIdx = idx;
+        });
+    });
+    if (maxMonthIdx >= 0 && maxMonthIdx < 11) {
+        return { isYtd: true, months: COSTI_MONTHS_NAMES.slice(0, maxMonthIdx + 1) };
+    }
+    return { isYtd: false, months: COSTI_MONTHS_NAMES };
+}
+
+// Grafico Immobilizzazioni: categorie + tipologie, multi-anno affiancato (con supporto YTD)
 window.drawImmobChart = function() {
     const canvas = document.getElementById('immobChart');
     if (!canvas || !window.costiData || window.costiData.length === 0) return;
@@ -4143,6 +4188,7 @@ window.drawImmobChart = function() {
     if (immobChartInstance) { immobChartInstance.destroy(); immobChartInstance = null; }
 
     const years = window.costiSelectedYears;
+    const ytdInfo = getCostiValidMonths();
     const rows  = window.costiData.filter(r =>
         r.MacroType === 'Immobilizzato' && years.includes(parseInt(r.Anno))
     );
@@ -4153,7 +4199,14 @@ window.drawImmobChart = function() {
         const cat  = row.Categoria  || 'Altro';
         const tip  = row.Tipologia  || 'Altro';
         const anno = parseInt(row.Anno);
-        const val  = parseFloat(row['Totale Anno']) || 0;
+        
+        let val = 0;
+        if (ytdInfo.isYtd) {
+            ytdInfo.months.forEach(m => { val += parseFloat(row[m]) || 0; });
+        } else {
+            val = parseFloat(row['Totale Anno']) || 0;
+        }
+
         if (!grouped[cat])       grouped[cat]       = {};
         if (!grouped[cat][tip])  grouped[cat][tip]  = {};
         grouped[cat][tip][anno]  = (grouped[cat][tip][anno] || 0) + val;
@@ -4163,8 +4216,8 @@ window.drawImmobChart = function() {
     const labels = [];
     Object.keys(grouped).sort().forEach(cat => {
         Object.keys(grouped[cat]).sort().forEach(tip => {
-            const shortCat = cat.length > 22 ? cat.substring(0,20) + '\u2026' : cat;
-            const shortTip = tip.length > 22 ? tip.substring(0,20) + '\u2026' : tip;
+            const shortCat = cat.length > 22 ? cat.substring(0,20) + '…' : cat;
+            const shortTip = tip.length > 22 ? tip.substring(0,20) + '…' : tip;
             labels.push(shortCat + '\n' + shortTip);
         });
     });
@@ -4177,7 +4230,8 @@ window.drawImmobChart = function() {
             });
         });
         const c = COSTI_YEAR_COLORS[idx % COSTI_YEAR_COLORS.length];
-        return { label: String(year), data, backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, borderRadius: 4 };
+        const labelText = ytdInfo.isYtd ? `${year} (YTD)` : String(year);
+        return { label: labelText, data, backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, borderRadius: 4 };
     });
 
     immobChartInstance = new Chart(canvas.getContext('2d'), {
@@ -4199,7 +4253,7 @@ window.drawImmobChart = function() {
     });
 };
 
-// Grafico Costi Ordinarie: solo categorie, multi-anno affiancato
+// Grafico Costi Ordinarie: solo categorie, multi-anno affiancato (con supporto YTD)
 window.drawCostiOrdChart = function() {
     const canvas = document.getElementById('costiOrdChart');
     if (!canvas || !window.costiData || window.costiData.length === 0) return;
@@ -4207,6 +4261,7 @@ window.drawCostiOrdChart = function() {
     if (costiOrdChartInstance) { costiOrdChartInstance.destroy(); costiOrdChartInstance = null; }
 
     const years = window.costiSelectedYears;
+    const ytdInfo = getCostiValidMonths();
     const rows  = window.costiData.filter(r =>
         r.MacroType === 'Spesa Ordinaria' && years.includes(parseInt(r.Anno))
     );
@@ -4217,18 +4272,26 @@ window.drawCostiOrdChart = function() {
         const cat  = row.Categoria || 'Altro';
         if (cat.toLowerCase().includes('total')) return;
         const anno = parseInt(row.Anno);
-        const val  = parseFloat(row['Totale Anno']) || 0;
+        
+        let val = 0;
+        if (ytdInfo.isYtd) {
+            ytdInfo.months.forEach(m => { val += parseFloat(row[m]) || 0; });
+        } else {
+            val = parseFloat(row['Totale Anno']) || 0;
+        }
+
         if (!grouped[cat]) grouped[cat] = {};
         grouped[cat][anno] = (grouped[cat][anno] || 0) + val;
     });
 
     const cats   = Object.keys(grouped).sort();
-    const labels = cats.map(c => c.length > 28 ? c.substring(0,26) + '\u2026' : c);
+    const labels = cats.map(c => c.length > 28 ? c.substring(0,26) + '…' : c);
 
     const datasets = years.map((year, idx) => {
         const c = COSTI_YEAR_COLORS[idx % COSTI_YEAR_COLORS.length];
+        const labelText = ytdInfo.isYtd ? `${year} (YTD)` : String(year);
         return {
-            label: String(year),
+            label: labelText,
             data: cats.map(cat => grouped[cat][year] || 0),
             backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, borderRadius: 4
         };
@@ -4253,8 +4316,6 @@ window.drawCostiOrdChart = function() {
     });
 };
 
-
-// Toggle accordion grafico costi/immob
 window.toggleCostiChart = function(type) {
     const containerId = type === 'immob' ? 'immob-chart-container' : 'costi-chart-container';
     const btnId       = type === 'immob' ? 'btn-immob-chart'       : 'btn-costi-chart';
