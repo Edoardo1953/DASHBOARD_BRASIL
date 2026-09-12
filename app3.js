@@ -3976,15 +3976,18 @@ window.renderCostiTables = function() {
     function formatVariation(val1, val2) {
         if (val1 > 0 && val2 > 0) {
             const diff = ((val2 - val1) / val1) * 100;
-            const color = diff >= 0 ? '#16a34a' : '#dc2626';
+            // Per i COSTI: incremento spesa (+) = ROSSO, riduzione spesa (-) = VERDE (risparmio)
+            let color = '#64748b';
+            if (diff > 0) color = '#dc2626';      // Aumento costi: Rosso
+            else if (diff < 0) color = '#16a34a'; // Risparmio costi: Verde
             const sign = diff >= 0 ? '+' : '';
             return { text: sign + diff.toFixed(2) + '%', color: color };
         } else if (val1 === 0 && val2 === 0) {
             return { text: '0.00%', color: '#64748b' };
         } else if (val1 === 0 && val2 > 0) {
-            return { text: '+100.00%', color: '#16a34a' };
+            return { text: '+100.00%', color: '#dc2626' }; // Nuova spesa: Rosso
         } else if (val1 > 0 && val2 === 0) {
-            return { text: '-100.00%', color: '#dc2626' };
+            return { text: '-100.00%', color: '#16a34a' }; // Spesa azzerata: Verde
         } else {
             return { text: '-', color: '#64748b' };
         }
