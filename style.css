@@ -69,9 +69,10 @@ p {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 2rem 3rem;
+    padding: 2rem 3rem 6rem 3rem;
     height: 100vh;
     overflow-y: auto;
+    scroll-behavior: smooth;
 }
 
 /* Sidebar Components */
