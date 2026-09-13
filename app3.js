@@ -4435,13 +4435,31 @@ window.setSpeseMacroFilter = function(macro, btn) {
         btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
         btn.classList.add('active');
     }
+    
+    if (macro === 'ALL') {
+        window.selectedSpeseCategory = '__TOTAL_ALL__';
+        window.selectedSpeseTipologia = '__TOTAL_ALL__';
+    } else if (macro === 'Spesa Ordinaria') {
+        window.selectedSpeseCategory = '__TOTAL_ORD__';
+        window.selectedSpeseTipologia = '__TOTAL_ORD__';
+    } else if (macro === 'Immobilizzato') {
+        window.selectedSpeseCategory = '__TOTAL_IMM__';
+        window.selectedSpeseTipologia = '__TOTAL_IMM__';
+    }
+
     window.renderSpeseAccordion();
+    window.renderSpeseMonthlyTable();
 };
 
 window.filterSpeseAccordion = function(query) {
     const q = (query || '').toLowerCase().trim();
     const container = document.getElementById('spese-accordion-container');
     if (!container) return;
+
+    const topBtn = container.querySelector('.spese-top-total-btn');
+    if (topBtn) {
+        topBtn.style.display = q ? 'none' : 'flex';
+    }
 
     const catGroups = container.querySelectorAll('.spese-cat-group');
     let hasVisibleImmob = false;
@@ -4525,13 +4543,17 @@ window.renderSpeseAccordion = function() {
     const immobCats = Object.keys(tree).filter(c => tree[c].macro === 'Immobilizzato').sort();
     const sortedCats = [...ordCats, ...immobCats];
     
-    // Seleziona la prima categoria se non è selezionata o non è presente
-    if (!window.selectedSpeseCategory || !tree[window.selectedSpeseCategory]) {
-        if (sortedCats.length > 0) {
-            window.selectedSpeseCategory = sortedCats[0];
-            const tips = Array.from(tree[sortedCats[0]].tipologie).sort();
-            window.selectedSpeseTipologia = tips.length > 0 ? tips[0] : '__ALL__';
-            window.selectedSpeseMacroType = tree[sortedCats[0]].macro;
+    // Seleziona il default se non è selezionato
+    if (!window.selectedSpeseCategory) {
+        if (filterMacro === 'ALL') {
+            window.selectedSpeseCategory = '__TOTAL_ALL__';
+            window.selectedSpeseTipologia = '__TOTAL_ALL__';
+        } else if (filterMacro === 'Spesa Ordinaria') {
+            window.selectedSpeseCategory = '__TOTAL_ORD__';
+            window.selectedSpeseTipologia = '__TOTAL_ORD__';
+        } else if (filterMacro === 'Immobilizzato') {
+            window.selectedSpeseCategory = '__TOTAL_IMM__';
+            window.selectedSpeseTipologia = '__TOTAL_IMM__';
         }
     }
 
@@ -4558,14 +4580,14 @@ window.renderSpeseAccordion = function() {
         // Voce speciale: Tutte le tipologie (Totale Categoria)
         const isAllActive = (cat === window.selectedSpeseCategory && window.selectedSpeseTipologia === '__ALL__');
         const allTipLabel = typeof t === 'function' ? t('speseDettaglio.allTipologie') : 'Tutte le tipologie (Totale Categoria)';
-        grpHtml += `    <button class="spese-tip-item ${isAllActive ? 'active' : ''}" data-tip="${allTipLabel}" onclick="window.selectSpeseItem('${catObj.macro}', '${cat.replace(/'/g, "\\'")}', '__ALL__')">`;
+        grpHtml += `    <button class="spese-tip-item ${isAllActive ? 'active' : ''}" data-tip="__ALL__" onclick="event.stopPropagation(); window.selectSpeseItem('${catObj.macro}', '${cat.replace(/'/g, "\\'")}', '__ALL__')">`;
         grpHtml += `      <span style="font-weight:600; color:var(--accent-blue);"><i class="ph ph-squares-four" style="margin-right:4px;"></i> ${allTipLabel}</span>`;
         grpHtml += `    </button>`;
 
         // Singole tipologie
         tips.forEach(tip => {
             const isTipActive = (cat === window.selectedSpeseCategory && window.selectedSpeseTipologia === tip);
-            grpHtml += `    <button class="spese-tip-item ${isTipActive ? 'active' : ''}" data-tip="${tip}" onclick="window.selectSpeseItem('${catObj.macro}', '${cat.replace(/'/g, "\\'")}', '${tip.replace(/'/g, "\\'")}')">`;
+            grpHtml += `    <button class="spese-tip-item ${isTipActive ? 'active' : ''}" data-tip="${tip.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); window.selectSpeseItem('${catObj.macro}', '${cat.replace(/'/g, "\\'")}', '${tip.replace(/'/g, "\\'")}')">`;
             grpHtml += `      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${tip}">${tip}</span>`;
             grpHtml += `    </button>`;
         });
@@ -4576,6 +4598,42 @@ window.renderSpeseAccordion = function() {
     }
 
     let html = '';
+
+    // Card pulsante Totale Macro in cima alla lista
+    if (filterMacro === 'ALL') {
+        const isTotActive = (window.selectedSpeseCategory === '__TOTAL_ALL__');
+        const lbl = typeof t === 'function' ? t('speseDettaglio.totalAll') : 'Tutte le Spese (Totale Generale)';
+        html += `
+        <button class="spese-top-total-btn ${isTotActive ? 'active' : ''}" onclick="window.selectSpeseItem('ALL', '__TOTAL_ALL__', '__TOTAL_ALL__')">
+            <div style="display:flex; align-items:center; gap:0.5rem; overflow:hidden; text-overflow:ellipsis;">
+                <i class="ph ph-chart-pie-slice" style="color:var(--accent-blue); font-size:1.1rem; flex-shrink:0;"></i>
+                <span style="font-weight:700;">${lbl}</span>
+            </div>
+            <i class="ph ph-caret-right" style="color:#94a3b8; font-size:0.85rem;"></i>
+        </button>`;
+    } else if (filterMacro === 'Spesa Ordinaria') {
+        const isTotActive = (window.selectedSpeseCategory === '__TOTAL_ORD__');
+        const lbl = typeof t === 'function' ? t('speseDettaglio.totalOrd') : 'Totale Spese Ordinarie';
+        html += `
+        <button class="spese-top-total-btn ${isTotActive ? 'active' : ''}" onclick="window.selectSpeseItem('Spesa Ordinaria', '__TOTAL_ORD__', '__TOTAL_ORD__')">
+            <div style="display:flex; align-items:center; gap:0.5rem; overflow:hidden; text-overflow:ellipsis;">
+                <i class="ph ph-receipt" style="color:var(--accent-red); font-size:1.1rem; flex-shrink:0;"></i>
+                <span style="font-weight:700;">${lbl}</span>
+            </div>
+            <i class="ph ph-caret-right" style="color:#94a3b8; font-size:0.85rem;"></i>
+        </button>`;
+    } else if (filterMacro === 'Immobilizzato') {
+        const isTotActive = (window.selectedSpeseCategory === '__TOTAL_IMM__');
+        const lbl = typeof t === 'function' ? t('speseDettaglio.totalImm') : 'Totale Immobilizzato';
+        html += `
+        <button class="spese-top-total-btn ${isTotActive ? 'active' : ''}" onclick="window.selectSpeseItem('Immobilizzato', '__TOTAL_IMM__', '__TOTAL_IMM__')">
+            <div style="display:flex; align-items:center; gap:0.5rem; overflow:hidden; text-overflow:ellipsis;">
+                <i class="ph ph-buildings" style="color:var(--accent-blue); font-size:1.1rem; flex-shrink:0;"></i>
+                <span style="font-weight:700;">${lbl}</span>
+            </div>
+            <i class="ph ph-caret-right" style="color:#94a3b8; font-size:0.85rem;"></i>
+        </button>`;
+    }
     
     // 1. Spese Ordinarie
     ordCats.forEach((cat, idx) => {
@@ -4606,8 +4664,17 @@ window.renderSpeseAccordion = function() {
 
 window.toggleSpeseAccordionGroup = function(btn, cat) {
     const group = btn.closest('.spese-cat-group');
-    if (group) {
-        group.classList.toggle('open');
+    if (!group) return;
+    
+    const wasOpen = group.classList.contains('open');
+    const isAlreadySelected = (window.selectedSpeseCategory === cat && window.selectedSpeseTipologia === '__ALL__');
+
+    if (wasOpen && isAlreadySelected) {
+        group.classList.remove('open');
+    } else {
+        group.classList.add('open');
+        const macro = group.getAttribute('data-macro') || 'Spesa Ordinaria';
+        window.selectSpeseItem(macro, cat, '__ALL__');
     }
 };
 
@@ -4620,22 +4687,96 @@ window.selectSpeseItem = function(macroType, category, tipologia) {
     if (container) {
         container.querySelectorAll('.spese-tip-item').forEach(el => el.classList.remove('active'));
         container.querySelectorAll('.spese-cat-header').forEach(el => el.classList.remove('active'));
+        container.querySelectorAll('.spese-top-total-btn').forEach(el => el.classList.remove('active'));
         
-        const currentGroup = container.querySelector(`.spese-cat-group[data-cat="${category}"]`);
-        if (currentGroup) {
-            currentGroup.classList.add('open');
-            if (tipologia === '__ALL__') {
-                currentGroup.querySelector('.spese-cat-header')?.classList.add('active');
-                currentGroup.querySelector('.spese-tip-item:first-child')?.classList.add('active');
-            } else {
-                const targetBtn = Array.from(currentGroup.querySelectorAll('.spese-tip-item')).find(b => b.getAttribute('data-tip') === tipologia);
-                if (targetBtn) targetBtn.classList.add('active');
+        if (category === '__TOTAL_ALL__' || category === '__TOTAL_ORD__' || category === '__TOTAL_IMM__') {
+            container.querySelector('.spese-top-total-btn')?.classList.add('active');
+        } else {
+            const currentGroup = container.querySelector(`.spese-cat-group[data-cat="${category}"]`);
+            if (currentGroup) {
+                currentGroup.classList.add('open');
+                if (tipologia === '__ALL__') {
+                    currentGroup.querySelector('.spese-cat-header')?.classList.add('active');
+                    currentGroup.querySelector('.spese-tip-item[data-tip="__ALL__"]')?.classList.add('active');
+                } else {
+                    const targetBtn = Array.from(currentGroup.querySelectorAll('.spese-tip-item')).find(b => b.getAttribute('data-tip') === tipologia);
+                    if (targetBtn) targetBtn.classList.add('active');
+                }
             }
         }
     }
 
     window.renderSpeseMonthlyTable();
 };
+
+function getSpeseRecords(category, tipologia) {
+    if (!window.costiData || window.costiData.length === 0) return { records: [], macroType: 'Spesa Ordinaria' };
+
+    const COSTI_MONTHS_NAMES = [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+    ];
+
+    let records = [];
+    let macroType = 'Spesa Ordinaria';
+
+    if (category === '__TOTAL_ALL__') {
+        macroType = 'ALL';
+        const validRows = window.costiData.filter(r => r.Categoria !== '[TOTALE GENERALE]');
+        const yearsFound = [...new Set(validRows.map(r => parseInt(r.Anno)))].sort();
+        yearsFound.forEach(y => {
+            const rowYear = { Categoria: '__TOTAL_ALL__', Tipologia: '__TOTAL_ALL__', Anno: y, MacroType: 'ALL', "Totale Anno": 0 };
+            COSTI_MONTHS_NAMES.forEach(m => {
+                rowYear[m] = validRows.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
+                rowYear["Totale Anno"] += rowYear[m];
+            });
+            records.push(rowYear);
+        });
+    } else if (category === '__TOTAL_ORD__') {
+        macroType = 'Spesa Ordinaria';
+        const validRows = window.costiData.filter(r => r.Categoria !== '[TOTALE GENERALE]' && r.MacroType !== 'Immobilizzato');
+        const yearsFound = [...new Set(validRows.map(r => parseInt(r.Anno)))].sort();
+        yearsFound.forEach(y => {
+            const rowYear = { Categoria: '__TOTAL_ORD__', Tipologia: '__TOTAL_ORD__', Anno: y, MacroType: 'Spesa Ordinaria', "Totale Anno": 0 };
+            COSTI_MONTHS_NAMES.forEach(m => {
+                rowYear[m] = validRows.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
+                rowYear["Totale Anno"] += rowYear[m];
+            });
+            records.push(rowYear);
+        });
+    } else if (category === '__TOTAL_IMM__') {
+        macroType = 'Immobilizzato';
+        const validRows = window.costiData.filter(r => r.Categoria !== '[TOTALE GENERALE]' && r.MacroType === 'Immobilizzato');
+        const yearsFound = [...new Set(validRows.map(r => parseInt(r.Anno)))].sort();
+        yearsFound.forEach(y => {
+            const rowYear = { Categoria: '__TOTAL_IMM__', Tipologia: '__TOTAL_IMM__', Anno: y, MacroType: 'Immobilizzato', "Totale Anno": 0 };
+            COSTI_MONTHS_NAMES.forEach(m => {
+                rowYear[m] = validRows.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
+                rowYear["Totale Anno"] += rowYear[m];
+            });
+            records.push(rowYear);
+        });
+    } else if (tipologia === '__ALL__') {
+        const catRows = window.costiData.filter(r => r.Categoria === category && r.Tipologia !== 'Tutte le voci');
+        const rowsToSum = catRows.length > 0 ? catRows : window.costiData.filter(r => r.Categoria === category);
+        if (rowsToSum.length > 0) macroType = rowsToSum[0].MacroType || 'Spesa Ordinaria';
+
+        const yearsFound = [...new Set(rowsToSum.map(r => parseInt(r.Anno)))].sort();
+        yearsFound.forEach(y => {
+            const rowYear = { Categoria: category, Tipologia: '__ALL__', Anno: y, MacroType: macroType, "Totale Anno": 0 };
+            COSTI_MONTHS_NAMES.forEach(m => {
+                rowYear[m] = rowsToSum.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
+                rowYear["Totale Anno"] += rowYear[m];
+            });
+            records.push(rowYear);
+        });
+    } else {
+        records = window.costiData.filter(r => r.Categoria === category && r.Tipologia === tipologia);
+        if (records.length > 0) macroType = records[0].MacroType || 'Spesa Ordinaria';
+    }
+
+    return { records, macroType };
+}
 
 window.renderSpeseMonthlyTable = function() {
     if (!window.costiData || window.costiData.length === 0) return;
@@ -4649,48 +4790,56 @@ window.renderSpeseMonthlyTable = function() {
     const tipologia = window.selectedSpeseTipologia;
     if (!category) return;
 
-    // Trova i record corrispondenti
-    let records = [];
-    let macroType = 'Spesa Ordinaria';
-
-    if (tipologia === '__ALL__') {
-        // Somma tutte le tipologie della categoria
-        const catRows = window.costiData.filter(r => r.Categoria === category);
-        if (catRows.length > 0) macroType = catRows[0].MacroType || 'Spesa Ordinaria';
-        
-        // Raggruppa per anno
-        const yearsFound = [...new Set(catRows.map(r => parseInt(r.Anno)))];
-        yearsFound.forEach(y => {
-            const rowYear = { Categoria: category, Tipologia: '__ALL__', Anno: y, MacroType: macroType, "Totale Anno": 0 };
-            COSTI_MONTHS_NAMES.forEach(m => {
-                rowYear[m] = catRows.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
-                rowYear["Totale Anno"] += rowYear[m];
-            });
-            records.push(rowYear);
-        });
-    } else {
-        records = window.costiData.filter(r => r.Categoria === category && r.Tipologia === tipologia);
-        if (records.length > 0) macroType = records[0].MacroType || 'Spesa Ordinaria';
-    }
+    const { records, macroType } = getSpeseRecords(category, tipologia);
 
     // Aggiorna Badges e Titolo
     const badgeMacro = document.getElementById('spese-badge-macro');
     if (badgeMacro) {
-        const macroLabel = macroType === 'Immobilizzato' 
-            ? (typeof t === 'function' ? t('speseDettaglio.immobMacro') : 'Immobilizzato')
-            : (typeof t === 'function' ? t('speseDettaglio.macroSpesaOrd') : 'Spesa Ordinaria');
+        let macroLabel = '';
+        let macroBg = 'rgba(59,130,246,0.1)';
+        let macroColor = 'var(--accent-blue)';
+        
+        if (category === '__TOTAL_ALL__') {
+            macroLabel = typeof t === 'function' ? t('speseDettaglio.allMacro') : 'Tutte';
+        } else if (category === '__TOTAL_ORD__' || macroType === 'Spesa Ordinaria') {
+            macroLabel = typeof t === 'function' ? t('speseDettaglio.macroSpesaOrd') : 'Spesa Ordinaria';
+            macroBg = 'rgba(239,68,68,0.1)';
+            macroColor = 'var(--accent-red)';
+        } else {
+            macroLabel = typeof t === 'function' ? t('speseDettaglio.immobMacro') : 'Immobilizzato';
+        }
         badgeMacro.textContent = macroLabel;
-        badgeMacro.style.background = macroType === 'Immobilizzato' ? 'rgba(59,130,246,0.1)' : 'rgba(239,68,68,0.1)';
-        badgeMacro.style.color = macroType === 'Immobilizzato' ? 'var(--accent-blue)' : 'var(--accent-red)';
+        badgeMacro.style.background = macroBg;
+        badgeMacro.style.color = macroColor;
     }
 
     const badgeCat = document.getElementById('spese-badge-cat');
-    if (badgeCat) badgeCat.textContent = category;
+    if (badgeCat) {
+        if (category === '__TOTAL_ALL__') {
+            badgeCat.textContent = typeof t === 'function' ? t('speseDettaglio.totalAll') : 'Tutte le Spese (Totale Generale)';
+        } else if (category === '__TOTAL_ORD__') {
+            badgeCat.textContent = typeof t === 'function' ? t('speseDettaglio.totalOrd') : 'Totale Spese Ordinarie';
+        } else if (category === '__TOTAL_IMM__') {
+            badgeCat.textContent = typeof t === 'function' ? t('speseDettaglio.totalImm') : 'Totale Immobilizzato';
+        } else {
+            badgeCat.textContent = category;
+        }
+    }
 
     const selectedTitle = document.getElementById('spese-selected-title');
     if (selectedTitle) {
-        const catTotLabel = typeof t === 'function' ? t('speseDettaglio.categoryTotal') : 'Totale Categoria';
-        selectedTitle.textContent = (tipologia === '__ALL__') ? `${catTotLabel}: ${category}` : tipologia;
+        if (category === '__TOTAL_ALL__') {
+            selectedTitle.textContent = typeof t === 'function' ? t('speseDettaglio.totalAll') : 'Tutte le Spese (Totale Generale)';
+        } else if (category === '__TOTAL_ORD__') {
+            selectedTitle.textContent = typeof t === 'function' ? t('speseDettaglio.totalOrd') : 'Totale Spese Ordinarie';
+        } else if (category === '__TOTAL_IMM__') {
+            selectedTitle.textContent = typeof t === 'function' ? t('speseDettaglio.totalImm') : 'Totale Immobilizzato';
+        } else if (tipologia === '__ALL__') {
+            const catTotLabel = typeof t === 'function' ? t('speseDettaglio.categoryTotal') : 'Totale Categoria';
+            selectedTitle.textContent = `${catTotLabel}: ${category}`;
+        } else {
+            selectedTitle.textContent = tipologia;
+        }
     }
 
     // Calcolo YTD per confronto 2 anni
@@ -4911,20 +5060,7 @@ window.drawSpeseDettaglioChart = function() {
     const tipologia = window.selectedSpeseTipologia;
     if (!category || !window.costiData || window.costiData.length === 0) return;
 
-    let records = [];
-    if (tipologia === '__ALL__') {
-        const catRows = window.costiData.filter(r => r.Categoria === category);
-        const yearsFound = [...new Set(catRows.map(r => parseInt(r.Anno)))];
-        yearsFound.forEach(y => {
-            const rowYear = { Categoria: category, Tipologia: '__ALL__', Anno: y };
-            COSTI_MONTHS_NAMES.forEach(m => {
-                rowYear[m] = catRows.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
-            });
-            records.push(rowYear);
-        });
-    } else {
-        records = window.costiData.filter(r => r.Categoria === category && r.Tipologia === tipologia);
-    }
+    const { records } = getSpeseRecords(category, tipologia);
 
     const chartTypeSelector = document.getElementById('speseChartTypeSelector');
     const chartType = (chartTypeSelector && chartTypeSelector.value) || 'bar';
