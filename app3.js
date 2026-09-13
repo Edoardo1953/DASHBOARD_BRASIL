@@ -435,6 +435,18 @@ function initNavigation() {
                 if (costiFilters) costiFilters.style.display = 'flex';
                 if (btn1) btn1.style.display = 'none';
                 if (btn2) btn2.style.display = 'inline-block';
+            } else if(targetView === 'spese-dettaglio-view') {
+                const mainFilters = document.getElementById('year-filters');
+                const costiFilters = document.getElementById('costi-year-filters');
+                const btn1 = document.getElementById('restoreYearsBtnTop');
+                const btn2 = document.getElementById('toggle-multi-select');
+                if (mainFilters) mainFilters.style.display = 'none';
+                if (costiFilters) costiFilters.style.display = 'none';
+                if (btn1) btn1.style.display = 'none';
+                if (btn2) btn2.style.display = 'none';
+                if (typeof window.renderSpeseDettaglioView === 'function') {
+                    window.renderSpeseDettaglioView();
+                }
             } else {
                 const mainFilters = document.getElementById('year-filters');
                 const costiFilters = document.getElementById('costi-year-filters');
@@ -466,6 +478,10 @@ function initNavigation() {
                 if (typeof window.renderBilanciList === 'function') {
                     window.renderBilanciList('watergarden');
                     window.renderBilanciList('arcoiris');
+                }
+            } else if (targetView === 'spese-dettaglio-view') {
+                if (typeof window.renderSpeseDettaglioView === 'function') {
+                    window.renderSpeseDettaglioView();
                 }
             }
             
@@ -1028,8 +1044,11 @@ function updateDashboard() {
     });
     
     // Aggiorna UI KPIs
-    document.getElementById('kpi-total-revenue').textContent = formatCurrency(totalNetSales);
-    document.getElementById('kpi-diarias').textContent = formatCurrency(totalDiarias);
+    const kpiTotRevEl = document.getElementById('kpi-total-revenue');
+    if (kpiTotRevEl) kpiTotRevEl.textContent = formatCurrency(totalNetSales);
+    
+    const kpiDiariasEl = document.getElementById('kpi-diarias');
+    if (kpiDiariasEl) kpiDiariasEl.textContent = formatCurrency(totalDiarias);
     
     const diariasPercEl = document.getElementById('kpi-diarias-perc');
     if(diariasPercEl) {
@@ -1041,11 +1060,12 @@ function updateDashboard() {
         }
     }
 
-    document.getElementById('kpi-occupancy').textContent = formatPercent(avgOccupancy);
+    const kpiOccEl = document.getElementById('kpi-occupancy');
+    if (kpiOccEl) kpiOccEl.textContent = formatPercent(avgOccupancy);
     
     const kpiGrossEl = document.getElementById('kpi-gross-sales');
     if (kpiGrossEl) kpiGrossEl.textContent = formatCurrency(totalGross);
-    else document.getElementById('kpi-taxes').textContent = formatCurrency(totalTaxes);
+    else if (document.getElementById('kpi-taxes')) document.getElementById('kpi-taxes').textContent = formatCurrency(totalTaxes);
 
     // Aggiorna Titolo Grafico Mensile
     const chartTitleEl = document.getElementById('monthlyChartTitle');
@@ -1061,18 +1081,20 @@ function updateDashboard() {
     
     // Trend UI
     const trendEl = document.getElementById('kpi-revenue-trend');
-    if(prevTotalNetSales > 0) {
-        const trendPct = ((totalNetSales - prevTotalNetSales) / prevTotalNetSales) * 100;
-        if(trendPct >= 0) {
-            trendEl.className = 'trend positive';
-            trendEl.innerHTML = `<i class="ph ph-trend-up"></i> ${trendPct.toFixed(2)}% vs anno prec. (stessi mesi)`;
+    if (trendEl) {
+        if(prevTotalNetSales > 0) {
+            const trendPct = ((totalNetSales - prevTotalNetSales) / prevTotalNetSales) * 100;
+            if(trendPct >= 0) {
+                trendEl.className = 'trend positive';
+                trendEl.innerHTML = `<i class="ph ph-trend-up"></i> ${trendPct.toFixed(2)}% vs anno prec. (stessi mesi)`;
+            } else {
+                trendEl.className = 'trend negative';
+                trendEl.innerHTML = `<i class="ph ph-trend-down"></i> ${Math.abs(trendPct).toFixed(2)}% vs anno prec. (stessi mesi)`;
+            }
         } else {
-            trendEl.className = 'trend negative';
-            trendEl.innerHTML = `<i class="ph ph-trend-down"></i> ${Math.abs(trendPct).toFixed(2)}% vs anno prec. (stessi mesi)`;
+            trendEl.innerHTML = `Nessun dato anno prec.`;
+            trendEl.className = 'trend';
         }
-    } else {
-        trendEl.innerHTML = `Nessun dato anno prec.`;
-        trendEl.className = 'trend';
     }
 
     // Disegna Grafici
@@ -2784,6 +2806,9 @@ document.addEventListener('languageChanged', (e) => {
     if (document.getElementById('yearlyTableBody')) { if(typeof updateYearlyHistory === 'function') updateYearlyHistory(); }
     if (document.getElementById('analisi-dati-tbody')) { if(typeof updateAnalisiDati === 'function') updateAnalisiDati(); }
     if (document.getElementById('analisi-area-tbody')) { if(typeof updateAnalisiArea === 'function') updateAnalisiArea(); }
+    if (document.getElementById('spese-dettaglio-view') && !document.getElementById('spese-dettaglio-view').classList.contains('hidden')) {
+        if(typeof window.renderSpeseDettaglioView === 'function') window.renderSpeseDettaglioView();
+    }
 });
 
 
@@ -3894,10 +3919,11 @@ window.handleManualCostiUpload = function(event) {
     reader.readAsArrayBuffer(file);
 };
 
-function formatCostiCurrency(val) {
+function formatCostiCurrency(val, decimals = 2) {
     if (val == null || val === 0 || val === "0") return "-";
-    if (typeof val === 'number') {
-        return "R$ " + val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = typeof val === 'number' ? val : parseFloat(val);
+    if (!isNaN(num)) {
+        return "R$ " + num.toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
     }
     return val;
 }
@@ -4370,6 +4396,626 @@ setTimeout(() => {
     window.fetchCostiData();
 }, 2000);
 
+// ==========================================
+// LOGICA DETTAGLIO VOCI DI SPESA
+// ==========================================
+
+let speseDettaglioChartInstance = null;
+window.speseSelectedYears = [2026];
+window.selectedSpeseMacroType = 'ALL'; // 'ALL', 'Spesa Ordinaria', 'Immobilizzato'
+window.selectedSpeseCategory = null;
+window.selectedSpeseTipologia = null; // '__ALL__' o nome tipologia
+
+window.toggleSpeseDettaglioYear = function(year) {
+    const idx = window.speseSelectedYears.indexOf(year);
+    if (idx > -1) {
+        if (window.speseSelectedYears.length > 1) {
+            window.speseSelectedYears.splice(idx, 1);
+            document.getElementById('btn-spese-' + year)?.classList.remove('active');
+        }
+    } else {
+        window.speseSelectedYears.push(year);
+        window.speseSelectedYears.sort();
+        document.getElementById('btn-spese-' + year)?.classList.add('active');
+    }
+    window.renderSpeseMonthlyTable();
+};
+
+window.setSpeseMacroFilter = function(macro, btn) {
+    window.selectedSpeseMacroType = macro;
+    document.querySelectorAll('.spese-macro-tab').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-secondary)';
+        b.style.boxShadow = 'none';
+        b.classList.remove('active');
+    });
+    if (btn) {
+        btn.style.background = 'white';
+        btn.style.color = 'var(--accent-blue)';
+        btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+        btn.classList.add('active');
+    }
+    window.renderSpeseAccordion();
+};
+
+window.filterSpeseAccordion = function(query) {
+    const q = (query || '').toLowerCase().trim();
+    const container = document.getElementById('spese-accordion-container');
+    if (!container) return;
+
+    const catGroups = container.querySelectorAll('.spese-cat-group');
+    let hasVisibleImmob = false;
+
+    catGroups.forEach(group => {
+        const catName = (group.getAttribute('data-cat') || '').toLowerCase();
+        const macro = group.getAttribute('data-macro') || '';
+        const tipItems = group.querySelectorAll('.spese-tip-item');
+        let hasMatchingTip = false;
+
+        tipItems.forEach(item => {
+            const tipName = (item.getAttribute('data-tip') || '').toLowerCase();
+            if (!q || tipName.includes(q) || catName.includes(q)) {
+                item.style.display = 'flex';
+                if (q && tipName.includes(q)) hasMatchingTip = true;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        if (!q || catName.includes(q) || hasMatchingTip) {
+            group.style.display = 'block';
+            if (macro === 'Immobilizzato') hasVisibleImmob = true;
+            if (q && (catName.includes(q) || hasMatchingTip)) {
+                group.classList.add('open');
+            }
+        } else {
+            group.style.display = 'none';
+        }
+    });
+
+    const divider = container.querySelector('.spese-section-divider');
+    if (divider) {
+        divider.style.display = (!q || hasVisibleImmob) ? 'flex' : 'none';
+    }
+};
+
+window.renderSpeseDettaglioView = function() {
+    if (!window.costiData || window.costiData.length === 0) {
+        const cached = localStorage.getItem('sombra_costi_data');
+        if (cached) {
+            try { window.costiData = JSON.parse(cached); } catch(e) {}
+        }
+    }
+    if (!window.costiData || window.costiData.length === 0) {
+        window.fetchCostiData().then(() => {
+            window.renderSpeseAccordion();
+            window.renderSpeseMonthlyTable();
+        });
+        return;
+    }
+    window.renderSpeseAccordion();
+    window.renderSpeseMonthlyTable();
+};
+
+window.renderSpeseAccordion = function() {
+    const container = document.getElementById('spese-accordion-container');
+    if (!container || !window.costiData || window.costiData.length === 0) return;
+
+    const filterMacro = window.selectedSpeseMacroType || 'ALL';
+    const rows = window.costiData.filter(r => filterMacro === 'ALL' || r.MacroType === filterMacro);
+
+    // Costruisci la mappa Categoria -> Set(Tipologie) e MacroType
+    const tree = {};
+    rows.forEach(r => {
+        const cat = r.Categoria || 'Altro';
+        if (cat === '[TOTALE GENERALE]') return; // Escludi totali fittizi dall'albero
+        if (!tree[cat]) {
+            tree[cat] = {
+                macro: r.MacroType || 'Spesa Ordinaria',
+                tipologie: new Set()
+            };
+        }
+        if (r.Tipologia && r.Tipologia !== 'Tutte le voci') {
+            tree[cat].tipologie.add(r.Tipologia);
+        }
+    });
+
+    // Isola e ordina separatamente Spese Ordinarie e Immobilizzato (Immobilizzato sempre in fondo)
+    const ordCats = Object.keys(tree).filter(c => tree[c].macro !== 'Immobilizzato').sort();
+    const immobCats = Object.keys(tree).filter(c => tree[c].macro === 'Immobilizzato').sort();
+    const sortedCats = [...ordCats, ...immobCats];
+    
+    // Seleziona la prima categoria se non è selezionata o non è presente
+    if (!window.selectedSpeseCategory || !tree[window.selectedSpeseCategory]) {
+        if (sortedCats.length > 0) {
+            window.selectedSpeseCategory = sortedCats[0];
+            const tips = Array.from(tree[sortedCats[0]].tipologie).sort();
+            window.selectedSpeseTipologia = tips.length > 0 ? tips[0] : '__ALL__';
+            window.selectedSpeseMacroType = tree[sortedCats[0]].macro;
+        }
+    }
+
+    function renderCategoryGroup(cat, idx) {
+        const catObj = tree[cat];
+        const tips = Array.from(catObj.tipologie).sort();
+        const isOpen = false;
+        const isCatActive = (cat === window.selectedSpeseCategory && window.selectedSpeseTipologia === '__ALL__');
+        const macroIcon = catObj.macro === 'Immobilizzato' ? 'ph-buildings' : 'ph-receipt';
+
+        let grpHtml = `<div class="spese-cat-group ${isOpen ? 'open' : ''}" data-cat="${cat}" data-macro="${catObj.macro}">`;
+        grpHtml += `  <button class="spese-cat-header ${isCatActive ? 'active' : ''}" onclick="window.toggleSpeseAccordionGroup(this, '${cat.replace(/'/g, "\\'")}')">`;
+        grpHtml += `    <div style="display:flex; align-items:center; gap:0.5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">`;
+        grpHtml += `      <i class="ph ${macroIcon}" style="color: ${catObj.macro === 'Immobilizzato' ? 'var(--accent-blue)' : 'var(--accent-red)'}; font-size:1rem; flex-shrink:0;"></i>`;
+        grpHtml += `      <span style="overflow:hidden; text-overflow:ellipsis;" title="${cat}">${cat}</span>`;
+        grpHtml += `    </div>`;
+        grpHtml += `    <div style="display:flex; align-items:center; gap:0.4rem; flex-shrink:0;">`;
+        grpHtml += `      <span class="badge" style="background:#e2e8f0; color:#475569; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:10px;">${tips.length}</span>`;
+        grpHtml += `      <i class="ph ph-caret-down arrow"></i>`;
+        grpHtml += `    </div>`;
+        grpHtml += `  </button>`;
+        grpHtml += `  <div class="spese-tip-list">`;
+        
+        // Voce speciale: Tutte le tipologie (Totale Categoria)
+        const isAllActive = (cat === window.selectedSpeseCategory && window.selectedSpeseTipologia === '__ALL__');
+        const allTipLabel = typeof t === 'function' ? t('speseDettaglio.allTipologie') : 'Tutte le tipologie (Totale Categoria)';
+        grpHtml += `    <button class="spese-tip-item ${isAllActive ? 'active' : ''}" data-tip="${allTipLabel}" onclick="window.selectSpeseItem('${catObj.macro}', '${cat.replace(/'/g, "\\'")}', '__ALL__')">`;
+        grpHtml += `      <span style="font-weight:600; color:var(--accent-blue);"><i class="ph ph-squares-four" style="margin-right:4px;"></i> ${allTipLabel}</span>`;
+        grpHtml += `    </button>`;
+
+        // Singole tipologie
+        tips.forEach(tip => {
+            const isTipActive = (cat === window.selectedSpeseCategory && window.selectedSpeseTipologia === tip);
+            grpHtml += `    <button class="spese-tip-item ${isTipActive ? 'active' : ''}" data-tip="${tip}" onclick="window.selectSpeseItem('${catObj.macro}', '${cat.replace(/'/g, "\\'")}', '${tip.replace(/'/g, "\\'")}')">`;
+            grpHtml += `      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${tip}">${tip}</span>`;
+            grpHtml += `    </button>`;
+        });
+
+        grpHtml += `  </div>`;
+        grpHtml += `</div>`;
+        return grpHtml;
+    }
+
+    let html = '';
+    
+    // 1. Spese Ordinarie
+    ordCats.forEach((cat, idx) => {
+        html += renderCategoryGroup(cat, idx);
+    });
+
+    // 2. Sezione Isolata Immobilizzato (se visibile e presente)
+    if (immobCats.length > 0) {
+        if (filterMacro === 'ALL' && ordCats.length > 0) {
+            const immobLabel = typeof t === 'function' ? (t('costi.immobTitle') || t('speseDettaglio.immobMacro')) : 'IMMOBILIZZATO';
+            html += `
+            <div class="spese-section-divider" style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 0.75rem; font-weight: 800; color: #64748b; letter-spacing: 0.06em; text-transform: uppercase; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="ph ph-buildings" style="color: var(--accent-blue); font-size: 0.95rem;"></i>
+                    <span>${immobLabel}</span>
+                </span>
+                <span class="badge" style="background: rgba(59,130,246,0.1); color: var(--accent-blue); font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${immobCats.length}</span>
+            </div>`;
+        }
+
+        immobCats.forEach((cat, idx) => {
+            html += renderCategoryGroup(cat, ordCats.length + idx);
+        });
+    }
+
+    container.innerHTML = html;
+};
+
+window.toggleSpeseAccordionGroup = function(btn, cat) {
+    const group = btn.closest('.spese-cat-group');
+    if (group) {
+        group.classList.toggle('open');
+    }
+};
+
+window.selectSpeseItem = function(macroType, category, tipologia) {
+    window.selectedSpeseCategory = category;
+    window.selectedSpeseTipologia = tipologia;
+    
+    // Aggiorna classi active negli accordion
+    const container = document.getElementById('spese-accordion-container');
+    if (container) {
+        container.querySelectorAll('.spese-tip-item').forEach(el => el.classList.remove('active'));
+        container.querySelectorAll('.spese-cat-header').forEach(el => el.classList.remove('active'));
+        
+        const currentGroup = container.querySelector(`.spese-cat-group[data-cat="${category}"]`);
+        if (currentGroup) {
+            currentGroup.classList.add('open');
+            if (tipologia === '__ALL__') {
+                currentGroup.querySelector('.spese-cat-header')?.classList.add('active');
+                currentGroup.querySelector('.spese-tip-item:first-child')?.classList.add('active');
+            } else {
+                const targetBtn = Array.from(currentGroup.querySelectorAll('.spese-tip-item')).find(b => b.getAttribute('data-tip') === tipologia);
+                if (targetBtn) targetBtn.classList.add('active');
+            }
+        }
+    }
+
+    window.renderSpeseMonthlyTable();
+};
+
+window.renderSpeseMonthlyTable = function() {
+    if (!window.costiData || window.costiData.length === 0) return;
+
+    const COSTI_MONTHS_NAMES = [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+    ];
+
+    const category = window.selectedSpeseCategory;
+    const tipologia = window.selectedSpeseTipologia;
+    if (!category) return;
+
+    // Trova i record corrispondenti
+    let records = [];
+    let macroType = 'Spesa Ordinaria';
+
+    if (tipologia === '__ALL__') {
+        // Somma tutte le tipologie della categoria
+        const catRows = window.costiData.filter(r => r.Categoria === category);
+        if (catRows.length > 0) macroType = catRows[0].MacroType || 'Spesa Ordinaria';
+        
+        // Raggruppa per anno
+        const yearsFound = [...new Set(catRows.map(r => parseInt(r.Anno)))];
+        yearsFound.forEach(y => {
+            const rowYear = { Categoria: category, Tipologia: '__ALL__', Anno: y, MacroType: macroType, "Totale Anno": 0 };
+            COSTI_MONTHS_NAMES.forEach(m => {
+                rowYear[m] = catRows.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
+                rowYear["Totale Anno"] += rowYear[m];
+            });
+            records.push(rowYear);
+        });
+    } else {
+        records = window.costiData.filter(r => r.Categoria === category && r.Tipologia === tipologia);
+        if (records.length > 0) macroType = records[0].MacroType || 'Spesa Ordinaria';
+    }
+
+    // Aggiorna Badges e Titolo
+    const badgeMacro = document.getElementById('spese-badge-macro');
+    if (badgeMacro) {
+        const macroLabel = macroType === 'Immobilizzato' 
+            ? (typeof t === 'function' ? t('speseDettaglio.immobMacro') : 'Immobilizzato')
+            : (typeof t === 'function' ? t('speseDettaglio.macroSpesaOrd') : 'Spesa Ordinaria');
+        badgeMacro.textContent = macroLabel;
+        badgeMacro.style.background = macroType === 'Immobilizzato' ? 'rgba(59,130,246,0.1)' : 'rgba(239,68,68,0.1)';
+        badgeMacro.style.color = macroType === 'Immobilizzato' ? 'var(--accent-blue)' : 'var(--accent-red)';
+    }
+
+    const badgeCat = document.getElementById('spese-badge-cat');
+    if (badgeCat) badgeCat.textContent = category;
+
+    const selectedTitle = document.getElementById('spese-selected-title');
+    if (selectedTitle) {
+        const catTotLabel = typeof t === 'function' ? t('speseDettaglio.categoryTotal') : 'Totale Categoria';
+        selectedTitle.textContent = (tipologia === '__ALL__') ? `${catTotLabel}: ${category}` : tipologia;
+    }
+
+    // Calcolo YTD per confronto 2 anni
+    const isTwoYears = window.speseSelectedYears.length === 2;
+    let olderYear = null;
+    let newerYear = null;
+    let isYtd = false;
+    let maxMonthIdx = 11;
+
+    if (isTwoYears) {
+        olderYear = Math.min(...window.speseSelectedYears);
+        newerYear = Math.max(...window.speseSelectedYears);
+
+        // Trova l'ultimo mese con dati nell'anno più recente per TUTTO window.costiData
+        let globalMaxMonth = -1;
+        window.costiData.filter(r => parseInt(r.Anno) === newerYear).forEach(r => {
+            COSTI_MONTHS_NAMES.forEach((m, idx) => {
+                if (parseFloat(r[m]) > 0 && idx > globalMaxMonth) {
+                    globalMaxMonth = idx;
+                }
+            });
+        });
+
+        if (globalMaxMonth >= 0 && globalMaxMonth < 11) {
+            isYtd = true;
+            maxMonthIdx = globalMaxMonth;
+        }
+    }
+
+    const ytdBadge = document.getElementById('spese-ytd-info-badge');
+    if (ytdBadge) {
+        ytdBadge.style.display = (isTwoYears && isYtd) ? 'inline-flex' : 'none';
+        if (isTwoYears && isYtd) {
+            const lastMName = COSTI_MONTHS_NAMES[maxMonthIdx];
+            ytdBadge.innerHTML = `<i class="ph ph-info" style="margin-right:4px;"></i> <span>YTD: Gennaio - ${lastMName} (${newerYear})</span>`;
+        }
+    }
+
+    // Costruisci THEAD Tabella
+    const thead = document.getElementById('speseMonthlyTableHead');
+    const SPESE_MONTH_KEYS = ['month.jan', 'month.feb', 'month.mar', 'month.apr', 'month.may', 'month.jun', 'month.jul', 'month.aug', 'month.sep', 'month.oct', 'month.nov', 'month.dec'];
+    const SPESE_MONTHS_3L = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
+    if (thead) {
+        const yearColLabel = typeof t === 'function' ? t('table.year') : 'Anno';
+        let thHtml = `<th style="text-align: left; min-width: 60px;">${yearColLabel}</th>`;
+        COSTI_MONTHS_NAMES.forEach((m, idx) => {
+            const shortM = (typeof t === 'function' ? t(SPESE_MONTH_KEYS[idx]) : SPESE_MONTHS_3L[idx]);
+            thHtml += `<th style="text-align: right; min-width: 65px;">${shortM}</th>`;
+        });
+        const totHeader = (isTwoYears && isYtd) 
+            ? ((typeof t === 'function' ? t('speseDettaglio.kpiTotal') : 'Totale') + ' YTD')
+            : ((typeof t === 'function' ? t('speseDettaglio.kpiTotal') : 'Totale') + ' ' + (typeof t === 'function' ? t('table.year') : 'Anno'));
+        thHtml += `<th style="text-align: right; min-width: 100px; font-weight: bold;">${totHeader}</th>`;
+        thead.innerHTML = thHtml;
+    }
+
+    // Funzione helper per calcolo variazione con colori (riduzione costi = verde, aumento = rosso)
+    function calcVariation(valOld, valNew) {
+        if (valOld > 0 && valNew > 0) {
+            const diff = ((valNew - valOld) / valOld) * 100;
+            const color = diff > 0 ? '#dc2626' : (diff < 0 ? '#16a34a' : '#64748b');
+            const sign = diff >= 0 ? '+' : '';
+            return { text: sign + diff.toFixed(2) + '%', color };
+        } else if (valOld === 0 && valNew === 0) {
+            return { text: '0.00%', color: '#64748b' };
+        } else if (valOld === 0 && valNew > 0) {
+            return { text: '+100.00%', color: '#dc2626' };
+        } else if (valOld > 0 && valNew === 0) {
+            return { text: '-100.00%', color: '#16a34a' };
+        } else {
+            return { text: '-', color: '#64748b' };
+        }
+    }
+
+    // Costruisci TBODY Tabella
+    const tbody = document.getElementById('speseMonthlyTableBody');
+    if (tbody) {
+        let bodyHtml = '';
+
+        if (!isTwoYears) {
+            // Singolo anno
+            const selectedY = window.speseSelectedYears[0] || 2026;
+            const rec = records.find(r => parseInt(r.Anno) === selectedY);
+            
+            bodyHtml += `<tr>`;
+            bodyHtml += `<td style="font-weight: 700; color: var(--accent-blue); text-align: left;">${selectedY}</td>`;
+            
+            let totRow = 0;
+            COSTI_MONTHS_NAMES.forEach(m => {
+                const val = rec ? (parseFloat(rec[m]) || 0) : 0;
+                totRow += val;
+                bodyHtml += `<td style="text-align: right; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${formatCostiCurrency(val, 0)}</td>`;
+            });
+            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1.05rem; background-color: rgba(59,130,246,0.06); color: var(--accent-blue);">${formatCostiCurrency(totRow, 0)}</td>`;
+            bodyHtml += `</tr>`;
+
+        } else {
+            // 2 Anni selezionati (es. 2025 vs 2026)
+            const recOld = records.find(r => parseInt(r.Anno) === olderYear);
+            const recNew = records.find(r => parseInt(r.Anno) === newerYear);
+
+            // Riga Anno 1 (Older)
+            bodyHtml += `<tr style="background: #ffffff;">`;
+            bodyHtml += `<td style="font-weight: 700; color: var(--accent-blue); text-align: left;">${olderYear}</td>`;
+            let sumYtdOld = 0;
+            let sumFullOld = 0;
+            COSTI_MONTHS_NAMES.forEach((m, idx) => {
+                const val = recOld ? (parseFloat(recOld[m]) || 0) : 0;
+                sumFullOld += val;
+                if (idx <= maxMonthIdx) sumYtdOld += val;
+                bodyHtml += `<td style="text-align: right; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${formatCostiCurrency(val, 0)}</td>`;
+            });
+            const displayTotOld = isYtd ? sumYtdOld : sumFullOld;
+            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; background-color: rgba(59,130,246,0.06); color: var(--accent-blue);">${formatCostiCurrency(displayTotOld, 0)}</td>`;
+            bodyHtml += `</tr>`;
+
+            // Riga Anno 2 (Newer)
+            bodyHtml += `<tr style="background: #ffffff;">`;
+            bodyHtml += `<td style="font-weight: 700; color: #f59e0b; text-align: left;">${newerYear}</td>`;
+            let sumYtdNew = 0;
+            COSTI_MONTHS_NAMES.forEach((m, idx) => {
+                const val = recNew ? (parseFloat(recNew[m]) || 0) : 0;
+                if (idx <= maxMonthIdx) sumYtdNew += val;
+                bodyHtml += `<td style="text-align: right; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${formatCostiCurrency(val, 0)}</td>`;
+            });
+            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; background-color: rgba(245,158,11,0.06); color: #f59e0b;">${formatCostiCurrency(sumYtdNew, 0)}</td>`;
+            bodyHtml += `</tr>`;
+
+            // Riga Variazione %
+            const varRowLabel = typeof t === 'function' ? t('costi.variation') : 'Variazione %';
+            bodyHtml += `<tr style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 600;">`;
+            bodyHtml += `<td style="text-align: left; color: var(--text-secondary); font-size: 0.85rem;">${varRowLabel}</td>`;
+            COSTI_MONTHS_NAMES.forEach((m, idx) => {
+                if (idx <= maxMonthIdx) {
+                    const vOld = recOld ? (parseFloat(recOld[m]) || 0) : 0;
+                    const vNew = recNew ? (parseFloat(recNew[m]) || 0) : 0;
+                    const vRes = calcVariation(vOld, vNew);
+                    bodyHtml += `<td style="text-align: right; color: ${vRes.color}; font-size: 0.85rem;">${vRes.text}</td>`;
+                } else {
+                    bodyHtml += `<td style="text-align: right; color: #94a3b8; font-size: 0.85rem;">-</td>`;
+                }
+            });
+            const totVarRes = calcVariation(displayTotOld, sumYtdNew);
+            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; color: ${totVarRes.color}; background-color: #f1f5f9;">${totVarRes.text}</td>`;
+            bodyHtml += `</tr>`;
+        }
+
+        tbody.innerHTML = bodyHtml;
+    }
+
+    // Aggiorna KPI nella card superiore
+    const kpiContainer = document.getElementById('spese-kpi-container');
+    if (kpiContainer) {
+        const primaryYear = isTwoYears ? newerYear : (window.speseSelectedYears[0] || 2026);
+        const primaryRec = records.find(r => parseInt(r.Anno) === primaryYear);
+
+        let totPrimary = 0;
+        let activeMonthsCount = 0;
+        let peakVal = 0;
+        let peakMonth = '-';
+
+        COSTI_MONTHS_NAMES.forEach((m, idx) => {
+            const val = primaryRec ? (parseFloat(primaryRec[m]) || 0) : 0;
+            if (isTwoYears && isYtd && idx > maxMonthIdx) return;
+            if (val > 0) {
+                totPrimary += val;
+                activeMonthsCount++;
+                if (val > peakVal) {
+                    peakVal = val;
+                    const spKey = SPESE_MONTH_KEYS[idx];
+                    peakMonth = typeof t === 'function' ? t(spKey) : SPESE_MONTHS_3L[idx];
+                }
+            }
+        });
+
+        const avgMonthly = activeMonthsCount > 0 ? (totPrimary / activeMonthsCount) : 0;
+        const totBaseLabel = typeof t === 'function' ? t('speseDettaglio.kpiTotal') : 'Totale';
+        const avgMonthlyLabel = typeof t === 'function' ? t('speseDettaglio.kpiAvgMonthly') : 'Media Mensile';
+        const peakMonthLabel = typeof t === 'function' ? t('speseDettaglio.kpiPeakMonth') : 'Mese di Picco';
+        const totLabel = (isTwoYears && isYtd) ? `${totBaseLabel} YTD (${primaryYear})` : `${totBaseLabel} (${primaryYear})`;
+
+        kpiContainer.innerHTML = `
+            <div class="spese-kpi-badge">
+                <span class="kpi-lbl">${totLabel}</span>
+                <span class="kpi-val" style="color: var(--accent-blue);">${formatCostiCurrency(totPrimary, 0)}</span>
+            </div>
+            <div class="spese-kpi-badge">
+                <span class="kpi-lbl">${avgMonthlyLabel}</span>
+                <span class="kpi-val">${formatCostiCurrency(avgMonthly, 0)}</span>
+            </div>
+            <div class="spese-kpi-badge">
+                <span class="kpi-lbl">${peakMonthLabel}</span>
+                <span class="kpi-val" style="font-size: 0.95rem;">${peakMonth} (${formatCostiCurrency(peakVal, 0)})</span>
+            </div>
+        `;
+    }
+
+    // Disegna Grafico
+    window.drawSpeseDettaglioChart();
+};
+
+window.drawSpeseDettaglioChart = function() {
+    const canvas = document.getElementById('speseDettaglioChart');
+    if (!canvas) return;
+
+    const COSTI_MONTHS_NAMES = [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+    ];
+
+    if (speseDettaglioChartInstance) {
+        speseDettaglioChartInstance.destroy();
+        speseDettaglioChartInstance = null;
+    }
+
+    const category = window.selectedSpeseCategory;
+    const tipologia = window.selectedSpeseTipologia;
+    if (!category || !window.costiData || window.costiData.length === 0) return;
+
+    let records = [];
+    if (tipologia === '__ALL__') {
+        const catRows = window.costiData.filter(r => r.Categoria === category);
+        const yearsFound = [...new Set(catRows.map(r => parseInt(r.Anno)))];
+        yearsFound.forEach(y => {
+            const rowYear = { Categoria: category, Tipologia: '__ALL__', Anno: y };
+            COSTI_MONTHS_NAMES.forEach(m => {
+                rowYear[m] = catRows.filter(r => parseInt(r.Anno) === y).reduce((sum, r) => sum + (parseFloat(r[m]) || 0), 0);
+            });
+            records.push(rowYear);
+        });
+    } else {
+        records = window.costiData.filter(r => r.Categoria === category && r.Tipologia === tipologia);
+    }
+
+    const chartTypeSelector = document.getElementById('speseChartTypeSelector');
+    const chartType = (chartTypeSelector && chartTypeSelector.value) || 'bar';
+    const SPESE_MONTH_KEYS = ['month.jan', 'month.feb', 'month.mar', 'month.apr', 'month.may', 'month.jun', 'month.jul', 'month.aug', 'month.sep', 'month.oct', 'month.nov', 'month.dec'];
+    const SPESE_MONTHS_3L = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    const labels = COSTI_MONTHS_NAMES.map((m, idx) => (typeof t === 'function' ? t(SPESE_MONTH_KEYS[idx]) : SPESE_MONTHS_3L[idx]));
+
+    const years = [...window.speseSelectedYears].sort();
+    const colors = [
+        { bg: 'rgba(59, 130, 246, 0.85)', border: '#3b82f6', lineBg: 'rgba(59, 130, 246, 0.1)' },
+        { bg: 'rgba(245, 158, 11, 0.85)', border: '#f59e0b', lineBg: 'rgba(245, 158, 11, 0.1)' },
+        { bg: 'rgba(16, 185, 129, 0.85)', border: '#10b981', lineBg: 'rgba(16, 185, 129, 0.1)' }
+    ];
+
+    const datasets = years.map((y, idx) => {
+        const rec = records.find(r => parseInt(r.Anno) === y);
+        const data = COSTI_MONTHS_NAMES.map(m => {
+            const val = rec ? (parseFloat(rec[m]) || 0) : 0;
+            return val;
+        });
+
+        const col = colors[idx % colors.length];
+        return {
+            label: `Spese ${y} (R$)`,
+            data: data,
+            backgroundColor: chartType === 'line' ? col.lineBg : col.bg,
+            borderColor: col.border,
+            borderWidth: chartType === 'line' ? 2.5 : 1,
+            borderRadius: chartType === 'bar' ? 4 : 0,
+            fill: chartType === 'line',
+            tension: 0.35,
+            pointBackgroundColor: col.border,
+            pointRadius: chartType === 'line' ? 4 : 0
+        };
+    });
+
+    speseDettaglioChartInstance = new Chart(canvas.getContext('2d'), {
+        type: chartType,
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 25, bottom: 5, left: 10, right: 10 } },
+            plugins: {
+                legend: { display: true, position: 'top', align: 'end' },
+                datalabels: {
+                    display: true,
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#475569',
+                    font: { weight: 'bold', size: 9 },
+                    formatter: function(value) {
+                        if (!value || value === 0) return '';
+                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                        if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                        return value.toFixed(0);
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': ' + formatCostiCurrency(ctx.raw, 0);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    beginAtZero: true,
+                    grace: '15%',
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: {
+                        callback: function(v) {
+                            if (v >= 1000000) return 'R$ ' + (v / 1000000).toFixed(1) + 'M';
+                            if (v >= 1000) return 'R$ ' + (v / 1000).toFixed(0) + 'k';
+                            return 'R$ ' + v;
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+window.changeSpeseChartType = function(type) {
+    if (speseDettaglioChartInstance) {
+        window.drawSpeseDettaglioChart();
+    }
+};
+
 // --- LOGICA VISIBILITA' MENU (User View / Admin View) ---
 window.pageVisibility = {};
 window.isAdminInUserView = false;
@@ -4562,3 +5208,59 @@ window.hardRefreshApp = function() {
     // Ricarica: bootApp ricaricherà layout da GitHub, dati dal preload
     window.location.reload(true);
 };
+
+window.goToDettaglioRicavi = function() {
+    document.querySelectorAll('.view-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = '';
+    });
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    
+    const targetSection = document.getElementById('table-view');
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+    
+    const mainFilters = document.getElementById('year-filters');
+    const costiFilters = document.getElementById('costi-year-filters');
+    const btn1 = document.getElementById('restoreYearsBtnTop');
+    const btn2 = document.getElementById('toggle-multi-select');
+    if (mainFilters) mainFilters.style.display = 'flex';
+    if (costiFilters) costiFilters.style.display = 'none';
+    if (btn1) btn1.style.display = 'inline-block';
+    if (btn2) btn2.style.display = 'inline-block';
+    
+    if (typeof updateTable === 'function') updateTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.goToDashboard = function() {
+    document.querySelectorAll('.view-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = '';
+    });
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    
+    const dashNav = document.getElementById('nav-dashboard') || document.querySelector('.nav-item[data-view="dashboard-view"]');
+    if (dashNav) {
+        dashNav.classList.add('active');
+    }
+    
+    const dashSection = document.getElementById('dashboard-view');
+    if (dashSection) {
+        dashSection.classList.add('active');
+    }
+    
+    const mainFilters = document.getElementById('year-filters');
+    const costiFilters = document.getElementById('costi-year-filters');
+    const btn1 = document.getElementById('restoreYearsBtnTop');
+    const btn2 = document.getElementById('toggle-multi-select');
+    if (mainFilters) mainFilters.style.display = 'flex';
+    if (costiFilters) costiFilters.style.display = 'none';
+    if (btn1) btn1.style.display = 'inline-block';
+    if (btn2) btn2.style.display = 'inline-block';
+    
+    if (typeof updateDashboard === 'function') updateDashboard();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+

@@ -66,7 +66,7 @@ preload_js = f"""// AUTO-GENERATO — NON MODIFICARE MANUALMENTE
         var existing = localStorage.getItem('sombra_costi_data');
         var data = {data_json};
         localStorage.setItem('sombra_costi_data', JSON.stringify(data));
-            console.log('[Preload Costi] ' + data.length + ' record caricati con successo.');}
+        console.log('[Preload Costi] ' + data.length + ' record caricati con successo.');
     }} catch(e) {{
         console.error('[Preload Costi] Errore:', e);
     }}

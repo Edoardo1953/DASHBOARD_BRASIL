@@ -1465,3 +1465,210 @@ body.layout-edit-mode .layout-widget canvas {
 .bilanci-action-btn.drag-handle:active {
     cursor: grabbing;
 }
+
+/* ==========================================
+   SPESE DETTAGLIO (VOCI DI COSTO) STYLES
+   ========================================== */
+.spese-layout-grid {
+    display: grid;
+    grid-template-columns: 290px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+#speseMonthlyTable {
+    width: 100%;
+    table-layout: auto;
+    font-size: 0.82rem;
+}
+#speseMonthlyTable th,
+#speseMonthlyTable td {
+    white-space: nowrap;
+    padding: 0.4rem 0.35rem;
+    font-size: 0.8rem;
+}
+#speseMonthlyTable th {
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+}
+#speseMonthlyTable th:first-child,
+#speseMonthlyTable td:first-child {
+    position: sticky;
+    left: 0;
+    background: #ffffff;
+    z-index: 2;
+}
+#speseMonthlyTable thead th:first-child {
+    background: #f8fafc;
+}
+#speseMonthlyTable th:last-child,
+#speseMonthlyTable td:last-child {
+    position: sticky;
+    right: 0;
+    background: #f1f5f9;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.06);
+    z-index: 2;
+}
+#speseMonthlyTable thead th:last-child {
+    background: #e2e8f0;
+}
+#speseMonthlyTable tbody tr:hover td:last-child {
+    background: #e2e8f0;
+}
+
+.spese-sidebar-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 180px);
+    position: sticky;
+    top: 1rem;
+}
+
+.spese-accordion-scroll {
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.spese-accordion-scroll::-webkit-scrollbar {
+    width: 5px;
+}
+.spese-accordion-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.spese-cat-group {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: var(--transition);
+}
+.spese-cat-group:hover {
+    border-color: #cbd5e1;
+}
+.spese-cat-group[data-macro="Immobilizzato"] {
+    border-left: 3px solid #3b82f6;
+}
+.spese-section-divider {
+    margin: 1.25rem 0 0.6rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.spese-cat-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.85rem;
+    background: #f8fafc;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: left;
+    transition: var(--transition);
+    gap: 0.5rem;
+}
+.spese-cat-header:hover {
+    background: #f1f5f9;
+}
+.spese-cat-header.active {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.spese-cat-header i.arrow {
+    transition: transform 0.25s ease;
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+.spese-cat-group.open .spese-cat-header i.arrow {
+    transform: rotate(180deg);
+}
+
+.spese-tip-list {
+    display: none;
+    flex-direction: column;
+    padding: 0.35rem 0.4rem;
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    gap: 2px;
+}
+.spese-cat-group.open .spese-tip-list {
+    display: flex;
+}
+
+.spese-tip-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.65rem;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: var(--transition);
+    width: 100%;
+}
+.spese-tip-item:hover {
+    background: #f1f5f9;
+    color: var(--accent-blue);
+    padding-left: 0.85rem;
+}
+.spese-tip-item.active {
+    background: linear-gradient(90deg, rgba(59,130,246,0.12), rgba(99,102,241,0.08));
+    color: var(--accent-blue);
+    font-weight: 700;
+    border-left: 3px solid var(--accent-blue);
+    padding-left: 0.65rem;
+}
+
+.spese-kpi-badge {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    min-width: 110px;
+}
+.spese-kpi-badge .kpi-lbl {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+.spese-kpi-badge .kpi-val {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+@media (max-width: 992px) {
+    .spese-layout-grid {
+        grid-template-columns: 1fr;
+    }
+    .spese-sidebar-card {
+        position: static;
+        max-height: 400px;
+    }
+}
+

@@ -76,9 +76,9 @@
                 <span>Home</span>
             </a>
 
-            <!-- Sezione: Analisi Ricavi -->
+            <!-- Sezione: Area Ricavi -->
             <div class="nav-section-title">
-                <span data-i18n="nav.sectionRicavi">Analisi Ricavi</span>
+                <span data-i18n="nav.sectionRicavi">Area Ricavi</span>
             </div>
             <a href="#" class="nav-item active" data-view="dashboard-view" id="nav-dashboard">
                 <i class="ph ph-squares-four"></i>
@@ -100,18 +100,18 @@
                 <i class="ph ph-chart-pie-slice"></i>
                 <span data-i18n="nav.areaAnalysis">Analisi per Area</span>
             </a>
-            <a href="#" class="nav-item" data-view="table-view" id="nav-table">
-                <i class="ph ph-table"></i>
-                <span data-i18n="nav.dataDetail">Dettaglio Ricavi</span>
-            </a>
 
-            <!-- Sezione: Analisi Costi -->
+            <!-- Sezione: Area Costi -->
             <div class="nav-section-title">
-                <span data-i18n="nav.sectionCosti">Analisi Costi</span>
+                <span data-i18n="nav.sectionCosti">Area Costi</span>
             </div>
             <a href="#" class="nav-item" data-view="costi-view" id="nav-costi">
                 <i class="ph ph-currency-dollar"></i>
                 <span data-i18n="nav.costi">Costi e Immobilizzazioni</span>
+            </a>
+            <a href="#" class="nav-item" data-view="spese-dettaglio-view" id="nav-spese-dettaglio">
+                <i class="ph ph-tree-structure"></i>
+                <span data-i18n="nav.speseDettaglio">Dettaglio Voci di Spesa</span>
             </a>
             
             <!-- Sezione: Gestione & Società -->
@@ -282,19 +282,21 @@
                         <p class="kpi-value"><span id="kpi-diarias">R$ 0.00</span> <span id="kpi-diarias-perc" style="font-size: 0.65em; color: var(--text-secondary); font-weight: normal; margin-left: 5px;">(0%)</span></p>
                     </div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon"><i class="ph ph-currency-dollar"></i></div>
-                    <div class="kpi-info">
-                        <h3 data-i18n="kpi.totalRevenueNet">Fatturato Totale (Net Sales)</h3>
-                        <p id="kpi-total-revenue" class="kpi-value">R$ 0.00</p>
-                        <span id="kpi-revenue-trend" class="trend positive"><i class="ph ph-trend-up"></i> 0%</span>
-                    </div>
-                </div>
                 <div class="kpi-card" onclick="goToAnalisiOccupazione()" style="cursor: pointer;" title="Vai a Analisi Dati - Occupazione">
                     <div class="kpi-icon purple"><i class="ph ph-users"></i></div>
                     <div class="kpi-info">
                         <h3 data-i18n="kpi.avgOccupancy">Occupazione Media</h3>
                         <p id="kpi-occupancy" class="kpi-value">0%</p>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-action-card" onclick="window.goToDettaglioRicavi()" style="cursor: pointer; transition: all 0.25s ease; border: 1.5px dashed #93c5fd; background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);" title="Apri Dettaglio Ricavi Completo">
+                    <div class="kpi-icon blue" style="background: #e0f2fe; color: #0284c7;"><i class="ph ph-table"></i></div>
+                    <div class="kpi-info" style="display: flex; flex-direction: column; justify-content: center;">
+                        <h3 data-i18n="nav.dataDetail" style="margin: 0 0 0.25rem 0; color: #0369a1;">Dettaglio Ricavi</h3>
+                        <div style="display: flex; align-items: center; gap: 0.35rem; color: var(--accent-blue); font-weight: 700; font-size: 0.85rem;">
+                            <span data-i18n="common.openDetail">Visualizza Tabella</span>
+                            <i class="ph ph-arrow-circle-right" style="font-size: 1.1rem;"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -603,9 +605,11 @@
         <!-- View: Table -->
         <div id="table-view" class="view-section">
             <div class="table-card">
-                <div class="table-header-custom" style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 data-i18n="table.detailTitle">Dettaglio Ricavi Completo</h3>
-                    <button class="btn btn-secondary" onclick="undoLastAction()" title="Annulla l'ultima azione" style="padding: 0.4rem 0.8rem; border-radius: 4px;"><i class="ph ph-arrow-u-up-left"></i> Annulla</button>
+                <div class="table-header-custom" style="display: flex; justify-content: flex-start; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="window.goToDashboard()" title="Torna alla Dashboard" style="padding: 0.45rem 0.9rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 600; cursor: pointer;">
+                        <i class="ph ph-arrow-left" style="font-size: 1.1rem;"></i> <span data-i18n="nav.dashboard">Dashboard</span>
+                    </button>
+                    <h3 data-i18n="table.detailTitle" style="margin: 0;">Dettaglio Ricavi Completo</h3>
                 </div>
                 <div class="table-responsive">
                     <table class="premium-table" id="dataTable">
@@ -878,6 +882,108 @@
                 <!-- Grafico Costi (nascosto di default) -->
                 <div id="costi-chart-container" style="display:none; position:relative; height:380px; width:100%; margin-top:1.5rem;">
                     <canvas id="costiOrdChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Dettaglio Voci di Spesa -->
+        <div id="spese-dettaglio-view" class="view-section" style="padding-bottom: 3rem;">
+            <div class="header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2 data-i18n="speseDettaglio.title" style="margin: 0 0 0.25rem 0;">Dettaglio Mensile Voci di Spesa</h2>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;" data-i18n="speseDettaglio.selectItem">Seleziona una voce dalla lista a sinistra per visualizzare i dettagli mensili</p>
+                </div>
+                <!-- Controlli Anno dedicati alla pagina -->
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; background: white; padding: 0.35rem 0.6rem; border-radius: 20px; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.08);">
+                        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); margin-right: 4px;" data-i18n="costi.selectYear">Seleziona Anno:</span>
+                        <button class="year-pill" onclick="window.toggleSpeseDettaglioYear(2025)" id="btn-spese-2025">2025</button>
+                        <button class="year-pill active" onclick="window.toggleSpeseDettaglioYear(2026)" id="btn-spese-2026">2026</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layout a due colonne: Sinistra Accordion, Destra Tabella & Grafico -->
+            <div class="spese-layout-grid">
+                <!-- Colonna Sinistra: Lista Svolgente (Accordion) -->
+                <div class="spese-sidebar-card">
+                    <!-- Ricerca Rapida -->
+                    <div style="position: relative; margin-bottom: 0.75rem;">
+                        <i class="ph ph-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem;"></i>
+                        <input type="text" id="spese-search-input" placeholder="Cerca voce o categoria..." data-i18n-placeholder="speseDettaglio.searchPlaceholder" oninput="window.filterSpeseAccordion(this.value)" style="width: 100%; padding: 0.65rem 0.8rem 0.65rem 2.4rem; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.9rem; background: #f8fafc; transition: var(--transition);">
+                    </div>
+
+                    <!-- Filtri Macrotype -->
+                    <div style="display: flex; gap: 0.35rem; margin-bottom: 0.85rem; background: #f1f5f9; padding: 4px; border-radius: 8px;">
+                        <button class="spese-macro-tab active" onclick="window.setSpeseMacroFilter('ALL', this)" id="tab-macro-all" style="flex: 1; padding: 0.35rem 0.4rem; font-size: 0.75rem; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: white; color: var(--accent-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1);" data-i18n="speseDettaglio.allMacro">Tutte</button>
+                        <button class="spese-macro-tab" onclick="window.setSpeseMacroFilter('Spesa Ordinaria', this)" id="tab-macro-ord" style="flex: 1; padding: 0.35rem 0.4rem; font-size: 0.75rem; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-secondary);" data-i18n="speseDettaglio.ordMacro">Ordinarie</button>
+                        <button class="spese-macro-tab" onclick="window.setSpeseMacroFilter('Immobilizzato', this)" id="tab-macro-imm" style="flex: 1; padding: 0.35rem 0.4rem; font-size: 0.75rem; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-secondary);" data-i18n="speseDettaglio.immobMacro">Immobilizzato</button>
+                    </div>
+
+                    <!-- Contenitore Voci Accordion -->
+                    <div id="spese-accordion-container" class="spese-accordion-scroll">
+                        <!-- Popolato via JS -->
+                    </div>
+                </div>
+
+                <!-- Colonna Destra: Dettagli, Tabella Orizzontale & Grafico -->
+                <div class="spese-content-area" style="display: flex; flex-direction: column; gap: 1.5rem; min-width: 0;">
+                    
+                    <!-- Card Intestazione Voce Selezionata con KPI -->
+                    <div class="card" style="background: white; border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid var(--card-border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                                    <span id="spese-badge-macro" class="badge" style="background: rgba(59,130,246,0.1); color: var(--accent-blue); font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px;">Spesa Ordinaria</span>
+                                    <i class="ph ph-caret-right" style="font-size: 0.75rem; color: #94a3b8;"></i>
+                                    <span id="spese-badge-cat" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">CATEGORIA</span>
+                                </div>
+                                <h3 id="spese-selected-title" style="margin: 0; color: var(--text-primary); font-size: 1.3rem;">Nome Tipologia o Totale Categoria</h3>
+                            </div>
+                            <div id="spese-kpi-container" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                                <!-- KPI injectati via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabella Orizzontale dei Mesi -->
+                    <div class="table-card" style="margin: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="ph ph-calendar" style="color: var(--accent-blue);"></i> <span data-i18n="speseDettaglio.monthlyTrend">Andamento Mensile (R$)</span>
+                            </h3>
+                            <div id="spese-ytd-info-badge" style="display: none; background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; border: 1px solid #bae6fd;">
+                                <i class="ph ph-info"></i> <span data-i18n="speseDettaglio.ytdNote">Comparazione YTD a parità di periodo</span>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="premium-table" id="speseMonthlyTable" style="margin: 0;">
+                                <thead>
+                                    <tr id="speseMonthlyTableHead">
+                                        <!-- Popolato via JS -->
+                                    </tr>
+                                </thead>
+                                <tbody id="speseMonthlyTableBody">
+                                    <!-- Popolato via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Grafico Sottostante -->
+                    <div class="chart-card" style="width: 100%;">
+                        <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);" data-i18n="speseDettaglio.chartTitle">Andamento Mensile Spese</h3>
+                            <select id="speseChartTypeSelector" onchange="window.changeSpeseChartType(this.value)" style="padding: 0.35rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); font-weight: 600; font-size: 0.85rem; background: white; cursor: pointer;">
+                                <option value="bar" data-i18n="selector.bar">Barre</option>
+                                <option value="line" data-i18n="selector.line">Linea</option>
+                            </select>
+                        </div>
+                        <div class="chart-body" style="height: 350px; width: 100%; position: relative;">
+                            <canvas id="speseDettaglioChart"></canvas>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
