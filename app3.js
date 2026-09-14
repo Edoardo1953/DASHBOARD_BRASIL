@@ -402,6 +402,18 @@ function applyRoleRestrictions() {
     }
 }
 
+// Utility globale per resettare lo scorrimento in cima alla pagina
+window.resetPageScroll = function() {
+    const mainContentEl = document.querySelector('.main-content');
+    if (mainContentEl) {
+        mainContentEl.scrollTop = 0;
+        try { mainContentEl.scrollTo({ top: 0, left: 0, behavior: 'instant' }); } catch(e) {}
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+};
+
 // --- Navigazione ---
 function initNavigation() {
     const navItems = document.querySelectorAll('.nav-item[data-view]');
@@ -423,12 +435,10 @@ function initNavigation() {
             item.classList.add('active');
             targetElement.classList.add('active');
             
-            // Riporta lo scorrimento all'inizio della pagina in alto
-            const mainContentEl = document.querySelector('.main-content');
-            if (mainContentEl) {
-                mainContentEl.scrollTo({ top: 0, behavior: 'instant' });
+            // Reset scorrimento immediato
+            if (typeof window.resetPageScroll === 'function') {
+                window.resetPageScroll();
             }
-            window.scrollTo({ top: 0, behavior: 'instant' });
             
             // Se andiamo in dashboard, aggiorniamo i dati
             if(targetView === 'welcome-view') {
@@ -490,6 +500,16 @@ function initNavigation() {
                 if (typeof window.renderSpeseDettaglioView === 'function') {
                     window.renderSpeseDettaglioView();
                 }
+            }
+            
+            // Garantisce che lo scorrimento sia in cima anche dopo il rendering asincrono e dei grafici
+            if (typeof window.resetPageScroll === 'function') {
+                window.resetPageScroll();
+                requestAnimationFrame(() => {
+                    window.resetPageScroll();
+                    setTimeout(window.resetPageScroll, 30);
+                    setTimeout(window.resetPageScroll, 100);
+                });
             }
             
             // Chiudi la sidebar su mobile dopo aver cliccato una voce
