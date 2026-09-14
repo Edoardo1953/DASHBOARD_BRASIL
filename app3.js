@@ -2438,8 +2438,41 @@ window.updateAnalisiDati = function() {
     }
 
     // Aggiorna titoli
-    document.getElementById('analisi-table-title').textContent = mode === 'diarie' ? 'NR DIARIE' : (mode === 'occupazione' ? 'OCCUPAZIONE MEDIA' : 'DIARIA MEDIA');
-    document.getElementById('analisi-summary-col2').textContent = mode === 'diarie' ? 'Totale Diarie' : (mode === 'occupazione' ? 'Occupazione %' : 'Diaria Media');
+    const tableTitleEl = document.getElementById('analisi-table-title');
+    if (tableTitleEl) {
+        if (mode === 'diarie') {
+            tableTitleEl.textContent = (typeof t === 'function' ? t('analysis.numDiarie') : 'NR DIARIE').toUpperCase();
+        } else if (mode === 'occupazione') {
+            tableTitleEl.textContent = (typeof t === 'function' ? t('analysis.occupancy') : 'OCCUPAZIONE MEDIA').toUpperCase();
+        } else {
+            tableTitleEl.textContent = (typeof t === 'function' ? t('analysis.avgDiaria') : 'DIARIA MEDIA').toUpperCase();
+        }
+    }
+
+    const summaryCol2El = document.getElementById('analisi-summary-col2');
+    if (summaryCol2El) {
+        if (mode === 'diarie') {
+            summaryCol2El.textContent = typeof t === 'function' ? t('analysis.numDiarie') : 'Totale Diarie';
+        } else if (mode === 'occupazione') {
+            summaryCol2El.textContent = typeof t === 'function' ? t('analysis.occupancy') : 'Occupazione %';
+        } else {
+            summaryCol2El.textContent = typeof t === 'function' ? t('analysis.avgDiaria') : 'Diaria Media';
+        }
+    }
+
+    const chartTitleEl = document.getElementById('analisi-chart-title');
+    if (chartTitleEl) {
+        const baseTitle = typeof t === 'function' ? t('analysis.yearlyTrend') : 'Andamento Annuo';
+        let metricLabel = '';
+        if (mode === 'diarie') {
+            metricLabel = typeof t === 'function' ? t('analysis.numDiarie') : 'Nr. Diarie';
+        } else if (mode === 'occupazione') {
+            metricLabel = typeof t === 'function' ? t('analysis.occupancy') : 'Occupazione %';
+        } else {
+            metricLabel = typeof t === 'function' ? t('analysis.avgDiaria') : 'Diaria Media';
+        }
+        chartTitleEl.textContent = `${baseTitle} ${metricLabel}`;
+    }
 
     let filteredDb = db;
     if(isMultiSelect && selectedYears.size > 0) {
@@ -2618,7 +2651,14 @@ function drawAnalisiDatiChart(labels, data, mode) {
         analisiDatiChartInstance.destroy();
     }
 
-    const labelTesto = mode === 'diarie' ? 'Nr. Diarie' : (mode === 'occupazione' ? 'Occupazione %' : 'Diaria Media (R$)');
+    let labelTesto = '';
+    if (mode === 'diarie') {
+        labelTesto = typeof t === 'function' ? t('analysis.numDiarie') : 'Nr. Diarie';
+    } else if (mode === 'occupazione') {
+        labelTesto = typeof t === 'function' ? t('analysis.occupancy') : 'Occupazione %';
+    } else {
+        labelTesto = (typeof t === 'function' ? t('analysis.avgDiaria') : 'Diaria Media') + ' (R$)';
+    }
     
     analisiDatiChartInstance = new Chart(ctx, {
         type: 'bar',
