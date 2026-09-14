@@ -4934,7 +4934,7 @@ window.renderSpeseMonthlyTable = function() {
                 totRow += val;
                 bodyHtml += `<td style="text-align: right; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${formatCostiCurrency(val, 0)}</td>`;
             });
-            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1.05rem; background-color: rgba(59,130,246,0.06); color: var(--accent-blue);">${formatCostiCurrency(totRow, 0)}</td>`;
+            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1.05rem; background-color: #eef6ff; color: var(--accent-blue);">${formatCostiCurrency(totRow, 0)}</td>`;
             bodyHtml += `</tr>`;
 
         } else {
@@ -4954,7 +4954,7 @@ window.renderSpeseMonthlyTable = function() {
                 bodyHtml += `<td style="text-align: right; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${formatCostiCurrency(val, 0)}</td>`;
             });
             const displayTotOld = isYtd ? sumYtdOld : sumFullOld;
-            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; background-color: rgba(59,130,246,0.06); color: var(--accent-blue);">${formatCostiCurrency(displayTotOld, 0)}</td>`;
+            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; background-color: #eef6ff; color: var(--accent-blue);">${formatCostiCurrency(displayTotOld, 0)}</td>`;
             bodyHtml += `</tr>`;
 
             // Riga Anno 2 (Newer)
@@ -4966,7 +4966,7 @@ window.renderSpeseMonthlyTable = function() {
                 if (idx <= maxMonthIdx) sumYtdNew += val;
                 bodyHtml += `<td style="text-align: right; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${formatCostiCurrency(val, 0)}</td>`;
             });
-            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; background-color: rgba(245,158,11,0.06); color: #f59e0b;">${formatCostiCurrency(sumYtdNew, 0)}</td>`;
+            bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; background-color: #fffbeb; color: #f59e0b;">${formatCostiCurrency(sumYtdNew, 0)}</td>`;
             bodyHtml += `</tr>`;
 
             // Riga Variazione %
