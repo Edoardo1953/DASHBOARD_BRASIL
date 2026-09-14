@@ -423,6 +423,13 @@ function initNavigation() {
             item.classList.add('active');
             targetElement.classList.add('active');
             
+            // Riporta lo scorrimento all'inizio della pagina in alto
+            const mainContentEl = document.querySelector('.main-content');
+            if (mainContentEl) {
+                mainContentEl.scrollTo({ top: 0, behavior: 'instant' });
+            }
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            
             // Se andiamo in dashboard, aggiorniamo i dati
             if(targetView === 'welcome-view') {
                 if (typeof updateWelcomeView === 'function') updateWelcomeView();

@@ -60,19 +60,36 @@ p {
     color: var(--text-primary);
     display: flex;
     flex-direction: column;
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1.25rem;
     box-shadow: var(--shadow-lg);
     z-index: 10;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
 }
 
 .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 2rem 3rem 6rem 3rem;
+    padding: 0 3rem 6rem 3rem;
     height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     scroll-behavior: smooth;
+    min-width: 0;
 }
 
 /* Sidebar Components */
@@ -169,10 +186,21 @@ p {
 
 /* Main Header */
 .top-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
     display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2.5rem;
+    align-items: flex-start;
+    background: linear-gradient(135deg, rgba(244, 247, 249, 0.96) 0%, rgba(224, 231, 255, 0.96) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 1.25rem 0 1rem 0;
+    margin-bottom: 1.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 15px -4px rgba(0, 0, 0, 0.04);
     animation: fadeInDown 0.5s ease;
 }
 
@@ -1518,10 +1546,7 @@ body.layout-edit-mode .layout-widget canvas {
     box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 140px);
     min-height: 0;
-    position: sticky;
-    top: 1rem;
 }
 
 .spese-top-total-btn {
@@ -1559,7 +1584,7 @@ body.layout-edit-mode .layout-widget canvas {
 }
 
 .spese-accordion-scroll {
-    overflow-y: auto;
+    overflow-y: visible;
     overflow-x: hidden;
     padding-right: 4px;
     display: flex;
@@ -1783,7 +1808,7 @@ body.layout-edit-mode .layout-widget canvas {
     }
     .spese-sidebar-card {
         position: static;
-        max-height: 380px;
+        max-height: none;
     }
     .charts-grid {
         grid-template-columns: 1fr;
@@ -1813,7 +1838,7 @@ body.layout-edit-mode .layout-widget canvas {
         padding: 0.55rem 0.8rem;
     }
     .spese-sidebar-card {
-        max-height: calc(100vh - 120px);
+        max-height: none;
     }
 }
 
