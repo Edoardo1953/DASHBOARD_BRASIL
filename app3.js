@@ -50,7 +50,7 @@ const MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 // Questo blocco viene aggiornato automaticamente dall'app tramite GitHub API
 // ogni volta che aggiungi/modifichi/elimini un utente dalla sezione "Gestione Utenti".
 const DEFAULT_USERS = {
-    'admin': { password: 'admin123', role: 'ADMIN' },
+    'admin': { password: 'edo2bia', role: 'ADMIN' },
     'user': { password: 'user123', role: 'USER' },
     'visitor': { password: 'visitor123', role: 'USER' },
     '01 alfonso': { password: 'alfonso', role: 'USER' },
