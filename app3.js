@@ -317,6 +317,9 @@ function setupAuthListeners() {
                 try { sessionStorage.setItem('sombra_user_role', usersObj[u].role); } catch(err) {}
                 try { sessionStorage.setItem('sombra_username', u); } catch(err) {}
                 
+                // Registra log di accesso
+                recordAccessLog('DASHBOARD_BRASIL', u, currentUserRole);
+
                 errorEl.style.display = 'none';
                 const overlay = document.getElementById('login-overlay');
                 if(overlay) overlay.style.display = 'none';
@@ -491,6 +494,8 @@ function initNavigation() {
                 renderAzionariato();
             } else if (targetView === 'users-view') {
                 renderUsersTable();
+                renderAccessLogsTable();
+                initWebhookInput();
             } else if (targetView === 'bilanci-view') {
                 if (typeof window.renderBilanciList === 'function') {
                     window.renderBilanciList('watergarden');
@@ -2146,6 +2151,198 @@ window.deleteUser = function(uname) {
         saveUsers(usersObj);
         renderUsersTable();
     }
+};
+
+// ========================================================
+// ACCESS LOGGING & GOOGLE SHEETS WEBHOOK (DASHBOARD_BRASIL)
+// ========================================================
+function getDeviceAndBrowserInfo() {
+    const ua = navigator.userAgent || '';
+    let device = 'PC / Desktop';
+    if (/android/i.test(ua)) device = 'Android Mobile';
+    else if (/iphone/i.test(ua)) device = 'iPhone';
+    else if (/ipad/i.test(ua)) device = 'iPad';
+    else if (/macintosh|mac os x/i.test(ua)) device = 'Mac Desktop';
+    else if (/windows/i.test(ua)) device = 'Windows PC';
+    else if (/linux/i.test(ua)) device = 'Linux PC';
+
+    let browser = 'Browser';
+    if (/edg/i.test(ua)) browser = 'Edge';
+    else if (/chrome|crios/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome';
+    else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+    else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+
+    return `${device} (${browser})`;
+}
+
+function recordAccessLog(appId, username, role) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('it-IT');
+    const timeStr = now.toLocaleTimeString('it-IT');
+    const timestamp = `${dateStr} ${timeStr}`;
+    const device = getDeviceAndBrowserInfo();
+    const screen = `${window.screen ? window.screen.width : 0}x${window.screen ? window.screen.height : 0}`;
+
+    const entry = {
+        app: appId,
+        username: username,
+        role: role,
+        timestamp: timestamp,
+        device: device,
+        screen: screen
+    };
+
+    try {
+        const logs = JSON.parse(localStorage.getItem('sombra_access_logs') || '[]');
+        logs.unshift(entry);
+        if (logs.length > 100) logs.length = 100;
+        localStorage.setItem('sombra_access_logs', JSON.stringify(logs));
+    } catch (e) {
+        console.error('Errore salvataggio log accessi:', e);
+    }
+
+    sendToGoogleSheetsWebhook(entry);
+}
+
+function sendToGoogleSheetsWebhook(entry) {
+    try {
+        const webhookUrl = localStorage.getItem('sombra_google_sheets_webhook') || '';
+        if (webhookUrl && webhookUrl.startsWith('http')) {
+            fetch(webhookUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(entry)
+            }).catch(err => console.log('Ping Google Sheets webhook:', err));
+        }
+    } catch (e) {}
+}
+
+window.renderAccessLogsTable = function(filterQuery = '') {
+    if (currentUserRole !== 'ADMIN') return;
+    const tbody = document.getElementById('accessLogsTableBody');
+    const countEl = document.getElementById('logsRowCount');
+    if (!tbody) return;
+
+    let logs = [];
+    try {
+        logs = JSON.parse(localStorage.getItem('sombra_access_logs') || '[]');
+    } catch (e) {}
+
+    const query = String(filterQuery || '').toLowerCase().trim();
+    if (query) {
+        logs = logs.filter(l => 
+            (l.username && l.username.toLowerCase().includes(query)) ||
+            (l.timestamp && l.timestamp.toLowerCase().includes(query)) ||
+            (l.device && l.device.toLowerCase().includes(query)) ||
+            (l.app && l.app.toLowerCase().includes(query))
+        );
+    }
+
+    if (countEl) countEl.textContent = logs.length;
+
+    if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">Nessun accesso registrato finora</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = logs.map((log, idx) => {
+        const roleBadge = log.role === 'ADMIN'
+            ? `<span class="badge" style="background:#083361; color:#fff; font-weight:700;">ADMIN</span>`
+            : `<span class="badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:700;">USER</span>`;
+        
+        return `
+            <tr>
+                <td style="text-align:center; color:#94a3b8; font-weight:600;">${idx + 1}</td>
+                <td style="font-weight:600; white-space:nowrap;"><i class="ph ph-clock" style="margin-right:4px; color:#64748b;"></i>${log.timestamp}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <i class="ph ph-user" style="color:var(--accent-blue);"></i>
+                        <strong>${log.username}</strong>
+                    </div>
+                </td>
+                <td style="text-align:center;">${roleBadge}</td>
+                <td><i class="ph ph-devices" style="margin-right:4px; color:#64748b;"></i>${log.device || '-'}</td>
+                <td style="color:#64748b; font-size:0.82rem;">${log.screen || '-'}</td>
+            </tr>
+        `;
+    }).join('');
+};
+
+window.exportAccessLogsToExcel = function() {
+    try {
+        const logs = JSON.parse(localStorage.getItem('sombra_access_logs') || '[]');
+        if (logs.length === 0) {
+            alert('Nessun log di accesso da esportare.');
+            return;
+        }
+        const exportData = logs.map((l, i) => ({
+            '#': i + 1,
+            'Data e Ora': l.timestamp,
+            'Applicazione': l.app,
+            'Username': l.username,
+            'Ruolo': l.role,
+            'Dispositivo e Browser': l.device,
+            'Risoluzione Schermo': l.screen
+        }));
+        if (typeof XLSX !== 'undefined') {
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Registro Accessi');
+            XLSX.writeFile(wb, `Registro_Accessi_Sombra_${Date.now()}.xlsx`);
+            alert('Registro accessi esportato in Excel!');
+        } else {
+            alert('Libreria Excel non disponibile.');
+        }
+    } catch (err) {
+        alert('Errore esportazione Excel: ' + err.message);
+    }
+};
+
+window.clearAccessLogs = function() {
+    if (confirm('Vuoi davvero cancellare la cronologia degli accessi registrati sul browser?')) {
+        localStorage.removeItem('sombra_access_logs');
+        renderAccessLogsTable();
+        alert('Cronologia accessi cancellata.');
+    }
+};
+
+window.initWebhookInput = function() {
+    const input = document.getElementById('webhookUrlInput');
+    if (input) {
+        input.value = localStorage.getItem('sombra_google_sheets_webhook') || '';
+    }
+};
+
+window.saveWebhookUrl = function() {
+    const input = document.getElementById('webhookUrlInput');
+    if (!input) return;
+    const url = (input.value || '').trim();
+    localStorage.setItem('sombra_google_sheets_webhook', url);
+    alert(url ? 'URL Google Sheets Webhook salvato!' : 'Webhook rimosso.');
+};
+
+window.testWebhookLog = function() {
+    const input = document.getElementById('webhookUrlInput');
+    const url = input ? (input.value || '').trim() : '';
+    if (!url) {
+        alert('Inserisci prima l\'URL del tuo Google Apps Script Webhook.');
+        return;
+    }
+    localStorage.setItem('sombra_google_sheets_webhook', url);
+    recordAccessLog('TEST_PING', currentUsername || 'admin', currentUserRole || 'ADMIN');
+    renderAccessLogsTable();
+    alert('Invio di test eseguito! Controlla il tuo Google Foglio per verificare la nuova riga inserita.');
+};
+
+window.openGoogleScriptModal = function() {
+    const modal = document.getElementById('googleScriptModal');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeGoogleScriptModal = function() {
+    const modal = document.getElementById('googleScriptModal');
+    if (modal) modal.style.display = 'none';
 };
 
 window.changeChartType = function(chartId, newType) {
