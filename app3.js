@@ -4712,6 +4712,7 @@ setTimeout(() => {
 // ==========================================
 
 let speseDettaglioChartInstance = null;
+let speseComparisonChartInstance = null;
 window.speseSelectedYears = [2026];
 window.selectedSpeseMacroType = 'ALL'; // 'ALL', 'Spesa Ordinaria', 'Immobilizzato'
 window.selectedSpeseCategory = null;
@@ -5349,8 +5350,187 @@ window.renderSpeseMonthlyTable = function() {
         `;
     }
 
-    // Disegna Grafico
+    // Disegna Grafico Voci di Spesa
     window.drawSpeseDettaglioChart();
+
+    // Disegna Tabella Riepilogativa (Ricavi, Spese e Netto)
+    window.renderSpeseSummaryTable();
+
+    // Disegna Grafico Comparativo Ricavi (BRUT SALES) vs Costi (Totale Generale)
+    window.drawSpeseComparisonChart();
+};
+
+window.renderSpeseSummaryTable = function() {
+    const thead = document.getElementById('speseSummaryTableHead');
+    const tbody = document.getElementById('speseSummaryTableBody');
+    if (!thead || !tbody || !window.costiData || window.costiData.length === 0) return;
+
+    const COSTI_MONTHS_NAMES = [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+    ];
+    const SPESE_MONTH_KEYS = ['month.jan', 'month.feb', 'month.mar', 'month.apr', 'month.may', 'month.jun', 'month.jul', 'month.aug', 'month.sep', 'month.oct', 'month.nov', 'month.dec'];
+    const SPESE_MONTHS_3L = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
+    const isTwoYears = window.speseSelectedYears.length === 2;
+    let olderYear = null;
+    let newerYear = null;
+    let isYtd = false;
+    let maxMonthIdx = 11;
+
+    if (isTwoYears) {
+        olderYear = Math.min(...window.speseSelectedYears);
+        newerYear = Math.max(...window.speseSelectedYears);
+
+        let globalMaxMonth = -1;
+        window.costiData.filter(r => parseInt(r.Anno) === newerYear).forEach(r => {
+            COSTI_MONTHS_NAMES.forEach((m, idx) => {
+                if (parseFloat(r[m]) > 0 && idx > globalMaxMonth) {
+                    globalMaxMonth = idx;
+                }
+            });
+        });
+
+        if (globalMaxMonth >= 0 && globalMaxMonth < 11) {
+            isYtd = true;
+            maxMonthIdx = globalMaxMonth;
+        }
+    }
+
+    const ytdSummaryBadge = document.getElementById('spese-summary-ytd-badge');
+    if (ytdSummaryBadge) {
+        ytdSummaryBadge.style.display = (isTwoYears && isYtd) ? 'inline-flex' : 'none';
+        if (isTwoYears && isYtd) {
+            const lastMName = COSTI_MONTHS_NAMES[maxMonthIdx];
+            ytdSummaryBadge.innerHTML = `<i class="ph ph-info" style="margin-right:4px;"></i> <span>YTD: Gennaio - ${lastMName} (${newerYear})</span>`;
+        }
+    }
+
+    // Helper per formattazione pulita con divisa non a capo
+    function formatCellCurrency(val, isNet = false) {
+        if (val === null || val === undefined || isNaN(val)) return '-';
+        if (val === 0 && isNet) return 'R$ 0';
+        const isNeg = val < 0;
+        const absVal = Math.abs(val);
+        const baseFormatted = formatCostiCurrency(absVal, 0); // es. "R$ 1.506.431"
+        if (isNet) {
+            if (isNeg) return '- ' + baseFormatted;
+            if (val > 0) return '+ ' + baseFormatted;
+        }
+        return baseFormatted;
+    }
+
+    // Costruisci THEAD
+    const metricColLabel = typeof t === 'function' ? (t('speseDettaglio.metricCol') || 'Metrica') : 'Metrica';
+    let thHtml = `<th style="text-align: left; min-width: 140px; white-space: nowrap;">${metricColLabel}</th>`;
+    COSTI_MONTHS_NAMES.forEach((m, idx) => {
+        const shortM = (typeof t === 'function' ? t(SPESE_MONTH_KEYS[idx]) : SPESE_MONTHS_3L[idx]);
+        thHtml += `<th style="text-align: right; min-width: 75px; white-space: nowrap;">${shortM}</th>`;
+    });
+    const totHeader = (isTwoYears && isYtd)
+        ? ((typeof t === 'function' ? t('speseDettaglio.kpiTotal') : 'Totale') + ' YTD')
+        : ((typeof t === 'function' ? t('speseDettaglio.kpiTotal') : 'Totale') + ' ' + (typeof t === 'function' ? t('table.year') : 'Anno'));
+    thHtml += `<th style="text-align: right; min-width: 110px; font-weight: bold; white-space: nowrap;">${totHeader}</th>`;
+    thead.innerHTML = thHtml;
+
+    // Recupera Dati
+    const db = typeof getDB === 'function' ? getDB() : [];
+    const { records: totalAllRecords } = getSpeseRecords('__TOTAL_ALL__', '__TOTAL_ALL__');
+
+    const years = [...window.speseSelectedYears].sort();
+
+    let bodyHtml = '';
+
+    years.forEach((y, yIdx) => {
+        // Calcola Ricavi (BRUT SALES) per l'anno y
+        const revData = MONTHS_ORDER.map((monthName) => {
+            const item = db.find(r => parseInt(r["ANNO"]) === y && r["MESE"] === monthName);
+            if (!item) return 0;
+            const netSales = parseFloat(item["Total (Net sales)"]) || 0;
+            let taxas = parseFloat(item["Taxas (ISS, servicos)"]) || 0;
+            let brutSales = parseFloat(item["Total Bruto"]) || 0;
+            const altCol = parseFloat(item["Total (gross taxes)"]) || 0;
+
+            if (taxas === 0 && altCol > 0) {
+                if (altCol >= netSales && netSales > 0) {
+                    brutSales = brutSales || altCol;
+                    taxas = brutSales - netSales;
+                } else {
+                    taxas = altCol;
+                }
+            }
+            return brutSales || (netSales + taxas);
+        });
+
+        // Calcola Spese (Totale Generale) per l'anno y
+        const costRec = totalAllRecords.find(r => parseInt(r.Anno) === y);
+        const costData = COSTI_MONTHS_NAMES.map(m => {
+            return costRec ? (parseFloat(costRec[m]) || 0) : 0;
+        });
+
+        const isOlderInTwoYears = isTwoYears && y === olderYear;
+
+        // 1. Riga RICAVI
+        let sumRev = 0;
+        const revLabel = (typeof t === 'function' ? t('speseDettaglio.revenues') : 'Ricavi (BRUT SALES)') + (isTwoYears ? ` (${y})` : '');
+        bodyHtml += `<tr style="background: #ffffff;">`;
+        bodyHtml += `<td style="font-weight: 700; color: #0284c7; text-align: left; white-space: nowrap;">
+            <i class="ph ph-trend-up" style="margin-right:6px; color:#0284c7;"></i>${revLabel}
+        </td>`;
+        revData.forEach((val, mIdx) => {
+            if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumRev += val;
+            else if (!isOlderInTwoYears || !isYtd) sumRev += val;
+            const displayVal = val > 0 ? formatCellCurrency(val) : '-';
+            bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${displayVal}</td>`;
+        });
+        bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #e0f2fe; color: #0284c7;">${formatCellCurrency(sumRev)}</td>`;
+        bodyHtml += `</tr>`;
+
+        // 2. Riga SPESE
+        let sumCost = 0;
+        const costLabel = (typeof t === 'function' ? t('speseDettaglio.costs') : 'Costi (Totale Generale)') + (isTwoYears ? ` (${y})` : '');
+        bodyHtml += `<tr style="background: #ffffff;">`;
+        bodyHtml += `<td style="font-weight: 700; color: #dc2626; text-align: left; white-space: nowrap;">
+            <i class="ph ph-receipt" style="margin-right:6px; color:#dc2626;"></i>${costLabel}
+        </td>`;
+        costData.forEach((val, mIdx) => {
+            if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumCost += val;
+            else if (!isOlderInTwoYears || !isYtd) sumCost += val;
+            const displayVal = val > 0 ? formatCellCurrency(val) : '-';
+            bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${displayVal}</td>`;
+        });
+        bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #fee2e2; color: #dc2626;">${formatCellCurrency(sumCost)}</td>`;
+        bodyHtml += `</tr>`;
+
+        // 3. Riga NETTO
+        let sumNet = sumRev - sumCost;
+        const netLabel = (typeof t === 'function' ? t('speseDettaglio.net') : 'Netto (Ricavi - Costi)') + (isTwoYears ? ` (${y})` : '');
+        bodyHtml += `<tr style="background: #f8fafc; border-top: 1px solid #e2e8f0; font-weight: 700;">`;
+        bodyHtml += `<td style="font-weight: 800; color: #334155; text-align: left; white-space: nowrap;">
+            <i class="ph ph-scales" style="margin-right:6px; color: var(--accent-blue);"></i>${netLabel}
+        </td>`;
+        revData.forEach((revVal, mIdx) => {
+            const costVal = costData[mIdx] || 0;
+            if (revVal === 0 && costVal === 0) {
+                bodyHtml += `<td style="text-align: right; white-space: nowrap; color: #94a3b8;">-</td>`;
+            } else {
+                const netVal = revVal - costVal;
+                const color = netVal > 0 ? '#16a34a' : (netVal < 0 ? '#dc2626' : '#64748b');
+                bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${color}; font-weight: 700;">${formatCellCurrency(netVal, true)}</td>`;
+            }
+        });
+        const totNetColor = sumNet > 0 ? '#16a34a' : (sumNet < 0 ? '#dc2626' : '#64748b');
+        const totNetBg = sumNet >= 0 ? '#ecfdf5' : '#fef2f2';
+        bodyHtml += `<td style="text-align: right; font-weight: 800; font-size: 0.95rem; white-space: nowrap; background-color: ${totNetBg}; color: ${totNetColor};">${formatCellCurrency(sumNet, true)}</td>`;
+        bodyHtml += `</tr>`;
+
+        // Se ci sono 2 anni e questo è il primo anno, aggiungiamo una riga spaziatrice
+        if (isTwoYears && yIdx === 0) {
+            bodyHtml += `<tr style="height: 12px; background: transparent;"><td colspan="14" style="border:none; padding:0;"></td></tr>`;
+        }
+    });
+
+    tbody.innerHTML = bodyHtml;
 };
 
 window.drawSpeseDettaglioChart = function() {
@@ -5460,6 +5640,261 @@ window.drawSpeseDettaglioChart = function() {
 window.changeSpeseChartType = function(type) {
     if (speseDettaglioChartInstance) {
         window.drawSpeseDettaglioChart();
+    }
+};
+
+window.drawSpeseComparisonChart = function() {
+    const canvas = document.getElementById('speseComparisonChart');
+    if (!canvas) return;
+
+    const COSTI_MONTHS_NAMES = [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+    ];
+
+    if (speseComparisonChartInstance) {
+        speseComparisonChartInstance.destroy();
+        speseComparisonChartInstance = null;
+    }
+
+    if (!window.costiData || window.costiData.length === 0) return;
+
+    const db = typeof getDB === 'function' ? getDB() : [];
+    const { records: totalAllRecords } = getSpeseRecords('__TOTAL_ALL__', '__TOTAL_ALL__');
+
+    const chartTypeSelector = document.getElementById('speseComparisonChartTypeSelector');
+    const chartType = (chartTypeSelector && chartTypeSelector.value) || 'bar';
+    const SPESE_MONTH_KEYS = ['month.jan', 'month.feb', 'month.mar', 'month.apr', 'month.may', 'month.jun', 'month.jul', 'month.aug', 'month.sep', 'month.oct', 'month.nov', 'month.dec'];
+    const SPESE_MONTHS_3L = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    const labels = COSTI_MONTHS_NAMES.map((m, idx) => (typeof t === 'function' ? t(SPESE_MONTH_KEYS[idx]) : SPESE_MONTHS_3L[idx]));
+
+    const years = [...window.speseSelectedYears].sort();
+    const isSingleYear = years.length === 1;
+
+    const datasets = [];
+
+    years.forEach((y, idx) => {
+        // 1. Calcola Ricavi Mensili (BRUT SALES) per l'anno y
+        const revData = MONTHS_ORDER.map((monthName) => {
+            const item = db.find(r => parseInt(r["ANNO"]) === y && r["MESE"] === monthName);
+            if (!item) return 0;
+            const netSales = parseFloat(item["Total (Net sales)"]) || 0;
+            let taxas = parseFloat(item["Taxas (ISS, servicos)"]) || 0;
+            let brutSales = parseFloat(item["Total Bruto"]) || 0;
+            const altCol = parseFloat(item["Total (gross taxes)"]) || 0;
+
+            if (taxas === 0 && altCol > 0) {
+                if (altCol >= netSales && netSales > 0) {
+                    brutSales = brutSales || altCol;
+                    taxas = brutSales - netSales;
+                } else {
+                    taxas = altCol;
+                }
+            }
+            return brutSales || (netSales + taxas);
+        });
+
+        // 2. Calcola Costi Totale Generale per l'anno y (Tutte le Spese - Totale Generale)
+        const costRec = totalAllRecords.find(r => parseInt(r.Anno) === y);
+        const costData = COSTI_MONTHS_NAMES.map(m => {
+            return costRec ? (parseFloat(costRec[m]) || 0) : 0;
+        });
+
+        const revLabelText = typeof t === 'function' ? t('speseDettaglio.revenues') : 'Ricavi (BRUT SALES)';
+        const costLabelText = typeof t === 'function' ? t('speseDettaglio.costs') : 'Costi (Totale Generale)';
+
+        if (isSingleYear) {
+            // Singolo Anno: Verde Smeraldo per Ricavi, Corallo/Rosso per Costi
+            datasets.push({
+                type: 'bar',
+                label: `${revLabelText} ${y} (R$)`,
+                data: revData,
+                backgroundColor: chartType === 'line' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.85)',
+                borderColor: '#10b981',
+                borderWidth: chartType === 'line' ? 2.5 : 1,
+                borderRadius: chartType === 'bar' ? 4 : 0,
+                fill: chartType === 'line',
+                tension: 0.35,
+                pointBackgroundColor: '#10b981',
+                pointRadius: chartType === 'line' ? 4 : 0
+            });
+
+            datasets.push({
+                type: 'bar',
+                label: `${costLabelText} ${y} (R$)`,
+                data: costData,
+                backgroundColor: chartType === 'line' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.85)',
+                borderColor: '#ef4444',
+                borderWidth: chartType === 'line' ? 2.5 : 1,
+                borderRadius: chartType === 'bar' ? 4 : 0,
+                fill: chartType === 'line',
+                tension: 0.35,
+                pointBackgroundColor: '#ef4444',
+                pointRadius: chartType === 'line' ? 4 : 0
+            });
+
+            // Linea del NETTO (Ricavi meno Costi) attiva nel solo Grafico a Barre
+            if (chartType === 'bar') {
+                const netLabelText = typeof t === 'function' ? (t('speseDettaglio.net') || 'Netto (Ricavi - Costi)') : 'Netto (Ricavi - Costi)';
+                const netData = revData.map((rev, mIdx) => {
+                    const cost = costData[mIdx] || 0;
+                    if (rev === 0 && cost === 0) return null;
+                    return rev - cost;
+                });
+
+                datasets.push({
+                    type: 'line',
+                    label: `${netLabelText} ${y} (R$)`,
+                    data: netData,
+                    borderColor: '#6366f1',
+                    backgroundColor: '#6366f1',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2,
+                    fill: false,
+                    tension: 0.35,
+                    spanGaps: false,
+                    order: -1
+                });
+            }
+        } else {
+            // Confronto Multi-Anno
+            const colorSets = [
+                {
+                    revBg: chartType === 'line' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(14, 165, 233, 0.85)',
+                    revBorder: '#0ea5e9',
+                    costBg: chartType === 'line' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.85)',
+                    costBorder: '#f97316',
+                    netColor: '#8b5cf6'
+                },
+                {
+                    revBg: chartType === 'line' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.85)',
+                    revBorder: '#10b981',
+                    costBg: chartType === 'line' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.85)',
+                    costBorder: '#ef4444',
+                    netColor: '#0284c7'
+                }
+            ];
+            const cSet = colorSets[idx % colorSets.length];
+
+            datasets.push({
+                type: 'bar',
+                label: `${revLabelText} ${y} (R$)`,
+                data: revData,
+                backgroundColor: cSet.revBg,
+                borderColor: cSet.revBorder,
+                borderWidth: chartType === 'line' ? 2.5 : 1,
+                borderRadius: chartType === 'bar' ? 4 : 0,
+                fill: chartType === 'line',
+                tension: 0.35,
+                pointBackgroundColor: cSet.revBorder,
+                pointRadius: chartType === 'line' ? 4 : 0
+            });
+
+            datasets.push({
+                type: 'bar',
+                label: `${costLabelText} ${y} (R$)`,
+                data: costData,
+                backgroundColor: cSet.costBg,
+                borderColor: cSet.costBorder,
+                borderWidth: chartType === 'line' ? 2.5 : 1,
+                borderRadius: chartType === 'bar' ? 4 : 0,
+                fill: chartType === 'line',
+                tension: 0.35,
+                pointBackgroundColor: cSet.costBorder,
+                pointRadius: chartType === 'line' ? 4 : 0
+            });
+
+            // Linea del NETTO (Ricavi meno Costi) attiva nel solo Grafico a Barre
+            if (chartType === 'bar') {
+                const netLabelText = typeof t === 'function' ? (t('speseDettaglio.net') || 'Netto (Ricavi - Costi)') : 'Netto (Ricavi - Costi)';
+                const netData = revData.map((rev, mIdx) => {
+                    const cost = costData[mIdx] || 0;
+                    if (rev === 0 && cost === 0) return null;
+                    return rev - cost;
+                });
+
+                datasets.push({
+                    type: 'line',
+                    label: `${netLabelText} ${y} (R$)`,
+                    data: netData,
+                    borderColor: cSet.netColor,
+                    backgroundColor: cSet.netColor,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: cSet.netColor,
+                    pointBorderWidth: 2,
+                    fill: false,
+                    tension: 0.35,
+                    spanGaps: false,
+                    order: -1
+                });
+            }
+        }
+    });
+
+    speseComparisonChartInstance = new Chart(canvas.getContext('2d'), {
+        type: chartType,
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 25, bottom: 5, left: 10, right: 10 } },
+            plugins: {
+                legend: { display: true, position: 'top', align: 'end' },
+                datalabels: {
+                    display: true,
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#475569',
+                    font: { weight: 'bold', size: 9 },
+                    formatter: function(value) {
+                        if (!value || value === 0) return '';
+                        const sign = value < 0 ? '-' : '';
+                        const abs = Math.abs(value);
+                        if (abs >= 1000000) return sign + (abs / 1000000).toFixed(1) + 'M';
+                        if (abs >= 1000) return sign + (abs / 1000).toFixed(0) + 'k';
+                        return sign + abs.toFixed(0);
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (ctx.raw === null || ctx.raw === undefined) return null;
+                            return ctx.dataset.label + ': ' + formatCostiCurrency(ctx.raw, 0);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    beginAtZero: true,
+                    grace: '15%',
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: {
+                        callback: function(v) {
+                            const sign = v < 0 ? '-' : '';
+                            const abs = Math.abs(v);
+                            if (abs >= 1000000) return sign + 'R$ ' + (abs / 1000000).toFixed(1) + 'M';
+                            if (abs >= 1000) return sign + 'R$ ' + (abs / 1000).toFixed(0) + 'k';
+                            return sign + 'R$ ' + abs;
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+window.changeSpeseComparisonChartType = function(type) {
+    if (speseComparisonChartInstance) {
+        window.drawSpeseComparisonChart();
     }
 };
 

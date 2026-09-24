@@ -28,7 +28,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- i18n -->
-    <script src="translations.js?v=27"></script>
+    <script src="translations.js?v=30"></script>
     <script src="i18n.js?v=26"></script>
 
     <!-- Custom CSS -->
@@ -94,7 +94,7 @@
             </a>
             <a href="#" class="nav-item" data-view="analisi-dati-view" id="nav-analisi-dati">
                 <i class="ph ph-chart-bar"></i>
-                <span data-i18n="nav.dataAnalysis">Analisi Dati</span>
+                <span data-i18n="nav.dataAnalysis">Analisi Ricavi</span>
             </a>
             <a href="#" class="nav-item" data-view="analisi-area-view" id="nav-analisi-area">
                 <i class="ph ph-chart-pie-slice"></i>
@@ -111,7 +111,7 @@
             </a>
             <a href="#" class="nav-item" data-view="spese-dettaglio-view" id="nav-spese-dettaglio">
                 <i class="ph ph-tree-structure"></i>
-                <span data-i18n="nav.speseDettaglio">Dettaglio Voci di Spesa</span>
+                <span data-i18n="nav.speseDettaglio">Analisi Spese</span>
             </a>
             
             <!-- Sezione: Gestione & Società -->
@@ -478,7 +478,7 @@
         <!-- View: Analisi Dati -->
         <div id="analisi-dati-view" class="view-section">
             <div class="header-actions" style="margin-bottom: 2rem; display: flex; align-items: center; position: relative; min-height: 60px;">
-                <h2 style="margin: 0;" data-i18n="nav.dataAnalysis">Analisi Dati</h2>
+                <h2 style="margin: 0;" data-i18n="nav.dataAnalysis">Analisi Ricavi</h2>
                 <div class="toggle-container" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 1.5rem; background: white; padding: 0.8rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); font-size: 1.1rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: #1e293b;">
                         <input type="radio" name="analisi-toggle" value="diarie" checked onchange="updateAnalisiDati()" style="transform: scale(1.2);"> <span data-i18n="analysis.numDiarie">Nr. Diarie</span>
@@ -953,7 +953,7 @@
         <div id="spese-dettaglio-view" class="view-section" style="padding-bottom: 3rem;">
             <div class="header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <div>
-                    <h2 data-i18n="speseDettaglio.title" style="margin: 0 0 0.25rem 0;">Dettaglio Mensile Voci di Spesa</h2>
+                    <h2 data-i18n="speseDettaglio.title" style="margin: 0 0 0.25rem 0;">Analisi Spese</h2>
                     <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;" data-i18n="speseDettaglio.selectItem">Seleziona una voce dalla lista a sinistra per visualizzare i dettagli mensili</p>
                 </div>
                 <!-- Controlli Anno dedicati alla pagina -->
@@ -1044,6 +1044,47 @@
                         </div>
                         <div class="chart-body" style="height: 350px; width: 100%; position: relative;">
                             <canvas id="speseDettaglioChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tabella Comparativa Mensile: Ricavi, Spese e Netto -->
+                    <div class="table-card" style="margin: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="ph ph-table" style="color: var(--accent-blue);"></i> <span data-i18n="speseDettaglio.summaryTableTitle">Riepilogo Mensile: Ricavi, Spese e Netto (R$)</span>
+                            </h3>
+                            <div id="spese-summary-ytd-badge" style="display: none; background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; border: 1px solid #bae6fd;">
+                                <i class="ph ph-info"></i> <span data-i18n="speseDettaglio.ytdNote">Comparazione YTD a parità di periodo</span>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="premium-table" id="speseSummaryTable" style="margin: 0;">
+                                <thead>
+                                    <tr id="speseSummaryTableHead">
+                                        <!-- Popolato via JS -->
+                                    </tr>
+                                </thead>
+                                <tbody id="speseSummaryTableBody">
+                                    <!-- Popolato via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Grafico Comparativo Ricavi vs Costi -->
+                    <div class="chart-card" style="width: 100%;">
+                        <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="ph ph-chart-bar" style="color: var(--accent-blue);"></i>
+                                <span data-i18n="speseDettaglio.comparisonChartTitle">Confronto Ricavi (BRUT SALES) vs Costi (Totale Generale)</span>
+                            </h3>
+                            <select id="speseComparisonChartTypeSelector" onchange="window.changeSpeseComparisonChartType(this.value)" style="padding: 0.35rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); font-weight: 600; font-size: 0.85rem; background: white; cursor: pointer;">
+                                <option value="bar" data-i18n="selector.bar">Barre</option>
+                                <option value="line" data-i18n="selector.line">Linea</option>
+                            </select>
+                        </div>
+                        <div class="chart-body" style="height: 350px; width: 100%; position: relative;">
+                            <canvas id="speseComparisonChart"></canvas>
                         </div>
                     </div>
 
@@ -1332,7 +1373,7 @@
 
     <script src="db_preload.js?v=2"></script>
     <script src="costi_preload.js?v=2"></script>
-    <script src="app3.js?v=61"></script>
+    <script src="app3.js?v=65"></script>
     <script>
         function goToAnalisiOccupazione() {
             // Seleziona il radio button dell'occupazione
