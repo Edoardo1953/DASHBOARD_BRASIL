@@ -467,6 +467,18 @@ function initNavigation() {
                 if (typeof window.renderSpeseDettaglioView === 'function') {
                     window.renderSpeseDettaglioView();
                 }
+            } else if(targetView === 'comparatore-ricavi-costi-view') {
+                const mainFilters = document.getElementById('year-filters');
+                const costiFilters = document.getElementById('costi-year-filters');
+                const btn1 = document.getElementById('restoreYearsBtnTop');
+                const btn2 = document.getElementById('toggle-multi-select');
+                if (mainFilters) mainFilters.style.display = 'none';
+                if (costiFilters) costiFilters.style.display = 'none';
+                if (btn1) btn1.style.display = 'none';
+                if (btn2) btn2.style.display = 'none';
+                if (typeof window.renderComparatoreRicaviCostiView === 'function') {
+                    window.renderComparatoreRicaviCostiView();
+                }
             } else {
                 const mainFilters = document.getElementById('year-filters');
                 const costiFilters = document.getElementById('costi-year-filters');
@@ -504,6 +516,10 @@ function initNavigation() {
             } else if (targetView === 'spese-dettaglio-view') {
                 if (typeof window.renderSpeseDettaglioView === 'function') {
                     window.renderSpeseDettaglioView();
+                }
+            } else if (targetView === 'comparatore-ricavi-costi-view') {
+                if (typeof window.renderComparatoreRicaviCostiView === 'function') {
+                    window.renderComparatoreRicaviCostiView();
                 }
             }
             
@@ -3120,6 +3136,9 @@ document.addEventListener('languageChanged', (e) => {
     if (document.getElementById('spese-dettaglio-view') && !document.getElementById('spese-dettaglio-view').classList.contains('hidden')) {
         if(typeof window.renderSpeseDettaglioView === 'function') window.renderSpeseDettaglioView();
     }
+    if (document.getElementById('comparatore-ricavi-costi-view') && !document.getElementById('comparatore-ricavi-costi-view').classList.contains('hidden')) {
+        if(typeof window.renderComparatoreRicaviCostiView === 'function') window.renderComparatoreRicaviCostiView();
+    }
 });
 
 
@@ -5352,11 +5371,31 @@ window.renderSpeseMonthlyTable = function() {
 
     // Disegna Grafico Voci di Spesa
     window.drawSpeseDettaglioChart();
+};
 
-    // Disegna Tabella Riepilogativa (Ricavi, Spese e Netto)
+// ==========================================
+// LOGICA COMPARATORE RICAVI / COSTI
+// ==========================================
+
+window.comparatoreRicaviCostiSelectedYears = [2026];
+
+window.toggleComparatoreRicaviCostiYear = function(year) {
+    const idx = window.comparatoreRicaviCostiSelectedYears.indexOf(year);
+    if (idx > -1) {
+        if (window.comparatoreRicaviCostiSelectedYears.length > 1) {
+            window.comparatoreRicaviCostiSelectedYears.splice(idx, 1);
+            document.getElementById('btn-comp-rc-' + year)?.classList.remove('active');
+        }
+    } else {
+        window.comparatoreRicaviCostiSelectedYears.push(year);
+        window.comparatoreRicaviCostiSelectedYears.sort();
+        document.getElementById('btn-comp-rc-' + year)?.classList.add('active');
+    }
+    window.renderComparatoreRicaviCostiView();
+};
+
+window.renderComparatoreRicaviCostiView = function() {
     window.renderSpeseSummaryTable();
-
-    // Disegna Grafico Comparativo Ricavi (BRUT SALES) vs Costi (Totale Generale)
     window.drawSpeseComparisonChart();
 };
 
@@ -5372,15 +5411,16 @@ window.renderSpeseSummaryTable = function() {
     const SPESE_MONTH_KEYS = ['month.jan', 'month.feb', 'month.mar', 'month.apr', 'month.may', 'month.jun', 'month.jul', 'month.aug', 'month.sep', 'month.oct', 'month.nov', 'month.dec'];
     const SPESE_MONTHS_3L = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
-    const isTwoYears = window.speseSelectedYears.length === 2;
+    const selectedYearsList = window.comparatoreRicaviCostiSelectedYears || [2026];
+    const isTwoYears = selectedYearsList.length === 2;
     let olderYear = null;
     let newerYear = null;
     let isYtd = false;
     let maxMonthIdx = 11;
 
     if (isTwoYears) {
-        olderYear = Math.min(...window.speseSelectedYears);
-        newerYear = Math.max(...window.speseSelectedYears);
+        olderYear = Math.min(...selectedYearsList);
+        newerYear = Math.max(...selectedYearsList);
 
         let globalMaxMonth = -1;
         window.costiData.filter(r => parseInt(r.Anno) === newerYear).forEach(r => {
@@ -5437,7 +5477,7 @@ window.renderSpeseSummaryTable = function() {
     const db = typeof getDB === 'function' ? getDB() : [];
     const { records: totalAllRecords } = getSpeseRecords('__TOTAL_ALL__', '__TOTAL_ALL__');
 
-    const years = [...window.speseSelectedYears].sort();
+    const years = [...selectedYearsList].sort();
 
     let bodyHtml = '';
 
@@ -5668,7 +5708,8 @@ window.drawSpeseComparisonChart = function() {
     const SPESE_MONTHS_3L = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
     const labels = COSTI_MONTHS_NAMES.map((m, idx) => (typeof t === 'function' ? t(SPESE_MONTH_KEYS[idx]) : SPESE_MONTHS_3L[idx]));
 
-    const years = [...window.speseSelectedYears].sort();
+    const selectedYearsList = window.comparatoreRicaviCostiSelectedYears || [2026];
+    const years = [...selectedYearsList].sort();
     const isSingleYear = years.length === 1;
 
     const datasets = [];
