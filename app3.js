@@ -5293,7 +5293,14 @@ window.renderSpeseMonthlyTable = function() {
                 const val = recOld ? (parseFloat(recOld[m]) || 0) : 0;
                 sumFullOld += val;
                 if (idx <= maxMonthIdx) sumYtdOld += val;
-                bodyHtml += `<td style="text-align: right; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${formatCostiCurrency(val, 0)}</td>`;
+                const isExcludedYtd = isYtd && idx > maxMonthIdx;
+                const cellStyle = isExcludedYtd 
+                    ? 'color: #94a3b8; opacity: 0.35; font-style: italic;' 
+                    : (val > 0 ? 'color: var(--text-primary);' : 'color: #94a3b8;');
+                const cellTooltip = isExcludedYtd 
+                    ? ` title="${typeof t === 'function' ? t('speseDettaglio.ytdExcludedMonth') : 'Mese escluso dal confronto YTD'}"` 
+                    : '';
+                bodyHtml += `<td style="text-align: right; ${cellStyle}"${cellTooltip}>${formatCostiCurrency(val, 0)}</td>`;
             });
             const displayTotOld = isYtd ? sumYtdOld : sumFullOld;
             bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 1rem; background-color: #eef6ff; color: var(--accent-blue);">${formatCostiCurrency(displayTotOld, 0)}</td>`;
@@ -5538,8 +5545,15 @@ window.renderSpeseSummaryTable = function() {
         revData.forEach((val, mIdx) => {
             if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumRev += val;
             else if (!isOlderInTwoYears || !isYtd) sumRev += val;
+            const isExcluded = isOlderInTwoYears && isYtd && mIdx > maxMonthIdx;
             const displayVal = val > 0 ? formatCellCurrency(val) : '-';
-            bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${displayVal}</td>`;
+            const cellStyle = isExcluded 
+                ? 'color: #94a3b8; opacity: 0.35; font-style: italic;' 
+                : (val > 0 ? 'color: var(--text-primary);' : 'color: #94a3b8;');
+            const cellTooltip = isExcluded 
+                ? ` title="${typeof t === 'function' ? t('speseDettaglio.ytdExcludedMonth') : 'Mese escluso dal confronto YTD'}"` 
+                : '';
+            bodyHtml += `<td style="text-align: right; white-space: nowrap; ${cellStyle}"${cellTooltip}>${displayVal}</td>`;
         });
         bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #e0f2fe; color: #0284c7;">${formatCellCurrency(sumRev)}</td>`;
         bodyHtml += `</tr>`;
@@ -5554,8 +5568,15 @@ window.renderSpeseSummaryTable = function() {
         costOrdData.forEach((val, mIdx) => {
             if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumCostOrd += val;
             else if (!isOlderInTwoYears || !isYtd) sumCostOrd += val;
+            const isExcluded = isOlderInTwoYears && isYtd && mIdx > maxMonthIdx;
             const displayVal = val > 0 ? formatCellCurrency(val) : '-';
-            bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${displayVal}</td>`;
+            const cellStyle = isExcluded 
+                ? 'color: #94a3b8; opacity: 0.35; font-style: italic;' 
+                : (val > 0 ? 'color: var(--text-primary);' : 'color: #94a3b8;');
+            const cellTooltip = isExcluded 
+                ? ` title="${typeof t === 'function' ? t('speseDettaglio.ytdExcludedMonth') : 'Mese escluso dal confronto YTD'}"` 
+                : '';
+            bodyHtml += `<td style="text-align: right; white-space: nowrap; ${cellStyle}"${cellTooltip}>${displayVal}</td>`;
         });
         bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #fee2e2; color: #dc2626;">${formatCellCurrency(sumCostOrd)}</td>`;
         bodyHtml += `</tr>`;
@@ -5570,8 +5591,15 @@ window.renderSpeseSummaryTable = function() {
         costImmData.forEach((val, mIdx) => {
             if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumCostImm += val;
             else if (!isOlderInTwoYears || !isYtd) sumCostImm += val;
+            const isExcluded = isOlderInTwoYears && isYtd && mIdx > maxMonthIdx;
             const displayVal = val > 0 ? formatCellCurrency(val) : '-';
-            bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${displayVal}</td>`;
+            const cellStyle = isExcluded 
+                ? 'color: #94a3b8; opacity: 0.35; font-style: italic;' 
+                : (val > 0 ? 'color: var(--text-primary);' : 'color: #94a3b8;');
+            const cellTooltip = isExcluded 
+                ? ` title="${typeof t === 'function' ? t('speseDettaglio.ytdExcludedMonth') : 'Mese escluso dal confronto YTD'}"` 
+                : '';
+            bodyHtml += `<td style="text-align: right; white-space: nowrap; ${cellStyle}"${cellTooltip}>${displayVal}</td>`;
         });
         bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #fef3c7; color: #d97706;">${formatCellCurrency(sumCostImm)}</td>`;
         bodyHtml += `</tr>`;
@@ -5584,6 +5612,7 @@ window.renderSpeseSummaryTable = function() {
             <i class="ph ph-scales" style="margin-right:6px; color: var(--accent-blue);"></i>${netLabel}
         </td>`;
         revData.forEach((revVal, mIdx) => {
+            const isExcluded = isOlderInTwoYears && isYtd && mIdx > maxMonthIdx;
             const costOrdVal = costOrdData[mIdx] || 0;
             const costImmVal = costImmData[mIdx] || 0;
             const totCostVal = costOrdVal + costImmVal;
@@ -5591,8 +5620,12 @@ window.renderSpeseSummaryTable = function() {
                 bodyHtml += `<td style="text-align: right; white-space: nowrap; color: #94a3b8;">-</td>`;
             } else {
                 const netVal = revVal - totCostVal;
-                const color = netVal > 0 ? '#16a34a' : (netVal < 0 ? '#dc2626' : '#64748b');
-                bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${color}; font-weight: 700;">${formatCellCurrency(netVal, true)}</td>`;
+                const color = isExcluded ? '#94a3b8' : (netVal > 0 ? '#16a34a' : (netVal < 0 ? '#dc2626' : '#64748b'));
+                const cellStyle = isExcluded ? 'opacity: 0.35; font-style: italic;' : 'font-weight: 700;';
+                const cellTooltip = isExcluded 
+                    ? ` title="${typeof t === 'function' ? t('speseDettaglio.ytdExcludedMonth') : 'Mese escluso dal confronto YTD'}"` 
+                    : '';
+                bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${color}; ${cellStyle}"${cellTooltip}>${formatCellCurrency(netVal, true)}</td>`;
             }
         });
         const totNetColor = sumNet > 0 ? '#16a34a' : (sumNet < 0 ? '#dc2626' : '#64748b');
