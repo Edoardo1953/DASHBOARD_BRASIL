@@ -5475,7 +5475,8 @@ window.renderSpeseSummaryTable = function() {
 
     // Recupera Dati
     const db = typeof getDB === 'function' ? getDB() : [];
-    const { records: totalAllRecords } = getSpeseRecords('__TOTAL_ALL__', '__TOTAL_ALL__');
+    const { records: ordRecords } = getSpeseRecords('__TOTAL_ORD__', '__TOTAL_ORD__');
+    const { records: immRecords } = getSpeseRecords('__TOTAL_IMM__', '__TOTAL_IMM__');
 
     const years = [...selectedYearsList].sort();
 
@@ -5502,10 +5503,16 @@ window.renderSpeseSummaryTable = function() {
             return brutSales || (netSales + taxas);
         });
 
-        // Calcola Spese (Totale Generale) per l'anno y
-        const costRec = totalAllRecords.find(r => parseInt(r.Anno) === y);
-        const costData = COSTI_MONTHS_NAMES.map(m => {
-            return costRec ? (parseFloat(costRec[m]) || 0) : 0;
+        // Calcola Costi Generali (Spese Ordinarie) per l'anno y
+        const costOrdRec = ordRecords.find(r => parseInt(r.Anno) === y);
+        const costOrdData = COSTI_MONTHS_NAMES.map(m => {
+            return costOrdRec ? (parseFloat(costOrdRec[m]) || 0) : 0;
+        });
+
+        // Calcola Immobilizzazioni per l'anno y
+        const costImmRec = immRecords.find(r => parseInt(r.Anno) === y);
+        const costImmData = COSTI_MONTHS_NAMES.map(m => {
+            return costImmRec ? (parseFloat(costImmRec[m]) || 0) : 0;
         });
 
         const isOlderInTwoYears = isTwoYears && y === olderYear;
@@ -5526,35 +5533,53 @@ window.renderSpeseSummaryTable = function() {
         bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #e0f2fe; color: #0284c7;">${formatCellCurrency(sumRev)}</td>`;
         bodyHtml += `</tr>`;
 
-        // 2. Riga SPESE
-        let sumCost = 0;
-        const costLabel = (typeof t === 'function' ? t('speseDettaglio.costs') : 'Costi (Totale Generale)') + (isTwoYears ? ` (${y})` : '');
+        // 2. Riga COSTI GENERALI
+        let sumCostOrd = 0;
+        const costOrdLabel = (typeof t === 'function' ? (t('comparatoreRicaviCosti.costsOrd') || 'Costi Generali') : 'Costi Generali') + (isTwoYears ? ` (${y})` : '');
         bodyHtml += `<tr style="background: #ffffff;">`;
         bodyHtml += `<td style="font-weight: 700; color: #dc2626; text-align: left; white-space: nowrap;">
-            <i class="ph ph-receipt" style="margin-right:6px; color:#dc2626;"></i>${costLabel}
+            <i class="ph ph-receipt" style="margin-right:6px; color:#dc2626;"></i>${costOrdLabel}
         </td>`;
-        costData.forEach((val, mIdx) => {
-            if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumCost += val;
-            else if (!isOlderInTwoYears || !isYtd) sumCost += val;
+        costOrdData.forEach((val, mIdx) => {
+            if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumCostOrd += val;
+            else if (!isOlderInTwoYears || !isYtd) sumCostOrd += val;
             const displayVal = val > 0 ? formatCellCurrency(val) : '-';
             bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${displayVal}</td>`;
         });
-        bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #fee2e2; color: #dc2626;">${formatCellCurrency(sumCost)}</td>`;
+        bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #fee2e2; color: #dc2626;">${formatCellCurrency(sumCostOrd)}</td>`;
         bodyHtml += `</tr>`;
 
-        // 3. Riga NETTO
-        let sumNet = sumRev - sumCost;
-        const netLabel = (typeof t === 'function' ? t('speseDettaglio.net') : 'Netto (Ricavi - Costi)') + (isTwoYears ? ` (${y})` : '');
+        // 3. Riga IMMOBILIZZAZIONI
+        let sumCostImm = 0;
+        const immLabel = (typeof t === 'function' ? (t('comparatoreRicaviCosti.immob') || 'Immobilizzazioni') : 'Immobilizzazioni') + (isTwoYears ? ` (${y})` : '');
+        bodyHtml += `<tr style="background: #ffffff;">`;
+        bodyHtml += `<td style="font-weight: 700; color: #d97706; text-align: left; white-space: nowrap;">
+            <i class="ph ph-buildings" style="margin-right:6px; color:#d97706;"></i>${immLabel}
+        </td>`;
+        costImmData.forEach((val, mIdx) => {
+            if (isOlderInTwoYears && isYtd && mIdx <= maxMonthIdx) sumCostImm += val;
+            else if (!isOlderInTwoYears || !isYtd) sumCostImm += val;
+            const displayVal = val > 0 ? formatCellCurrency(val) : '-';
+            bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${val > 0 ? 'var(--text-primary)' : '#94a3b8'};">${displayVal}</td>`;
+        });
+        bodyHtml += `<td style="text-align: right; font-weight: bold; font-size: 0.95rem; white-space: nowrap; background-color: #fef3c7; color: #d97706;">${formatCellCurrency(sumCostImm)}</td>`;
+        bodyHtml += `</tr>`;
+
+        // 4. Riga NETTO
+        let sumNet = sumRev - (sumCostOrd + sumCostImm);
+        const netLabel = (typeof t === 'function' ? (t('comparatoreRicaviCosti.net') || t('speseDettaglio.net') || 'Netto (Ricavi - Costi)') : 'Netto (Ricavi - Costi)') + (isTwoYears ? ` (${y})` : '');
         bodyHtml += `<tr style="background: #f8fafc; border-top: 1px solid #e2e8f0; font-weight: 700;">`;
         bodyHtml += `<td style="font-weight: 800; color: #334155; text-align: left; white-space: nowrap;">
             <i class="ph ph-scales" style="margin-right:6px; color: var(--accent-blue);"></i>${netLabel}
         </td>`;
         revData.forEach((revVal, mIdx) => {
-            const costVal = costData[mIdx] || 0;
-            if (revVal === 0 && costVal === 0) {
+            const costOrdVal = costOrdData[mIdx] || 0;
+            const costImmVal = costImmData[mIdx] || 0;
+            const totCostVal = costOrdVal + costImmVal;
+            if (revVal === 0 && totCostVal === 0) {
                 bodyHtml += `<td style="text-align: right; white-space: nowrap; color: #94a3b8;">-</td>`;
             } else {
-                const netVal = revVal - costVal;
+                const netVal = revVal - totCostVal;
                 const color = netVal > 0 ? '#16a34a' : (netVal < 0 ? '#dc2626' : '#64748b');
                 bodyHtml += `<td style="text-align: right; white-space: nowrap; color: ${color}; font-weight: 700;">${formatCellCurrency(netVal, true)}</td>`;
             }
@@ -5700,7 +5725,8 @@ window.drawSpeseComparisonChart = function() {
     if (!window.costiData || window.costiData.length === 0) return;
 
     const db = typeof getDB === 'function' ? getDB() : [];
-    const { records: totalAllRecords } = getSpeseRecords('__TOTAL_ALL__', '__TOTAL_ALL__');
+    const { records: ordRecords } = getSpeseRecords('__TOTAL_ORD__', '__TOTAL_ORD__');
+    const { records: immRecords } = getSpeseRecords('__TOTAL_IMM__', '__TOTAL_IMM__');
 
     const chartTypeSelector = document.getElementById('speseComparisonChartTypeSelector');
     const chartType = (chartTypeSelector && chartTypeSelector.value) || 'bar';
@@ -5735,52 +5761,67 @@ window.drawSpeseComparisonChart = function() {
             return brutSales || (netSales + taxas);
         });
 
-        // 2. Calcola Costi Totale Generale per l'anno y (Tutte le Spese - Totale Generale)
-        const costRec = totalAllRecords.find(r => parseInt(r.Anno) === y);
-        const costData = COSTI_MONTHS_NAMES.map(m => {
-            return costRec ? (parseFloat(costRec[m]) || 0) : 0;
+        // 2. Calcola Costi Generali (Spese Ordinarie) per l'anno y
+        const costOrdRec = ordRecords.find(r => parseInt(r.Anno) === y);
+        const costOrdData = COSTI_MONTHS_NAMES.map(m => {
+            return costOrdRec ? (parseFloat(costOrdRec[m]) || 0) : 0;
+        });
+
+        // 3. Calcola Immobilizzazioni per l'anno y
+        const costImmRec = immRecords.find(r => parseInt(r.Anno) === y);
+        const costImmData = COSTI_MONTHS_NAMES.map(m => {
+            return costImmRec ? (parseFloat(costImmRec[m]) || 0) : 0;
         });
 
         const revLabelText = typeof t === 'function' ? t('speseDettaglio.revenues') : 'Ricavi (BRUT SALES)';
-        const costLabelText = typeof t === 'function' ? t('speseDettaglio.costs') : 'Costi (Totale Generale)';
+        const costOrdLabelText = typeof t === 'function' ? (t('comparatoreRicaviCosti.costsOrd') || 'Costi Generali') : 'Costi Generali';
+        const immobLabelText = typeof t === 'function' ? (t('comparatoreRicaviCosti.immob') || 'Immobilizzazioni') : 'Immobilizzazioni';
 
         if (isSingleYear) {
-            // Singolo Anno: Verde Smeraldo per Ricavi, Corallo/Rosso per Costi
-            datasets.push({
-                type: 'bar',
-                label: `${revLabelText} ${y} (R$)`,
-                data: revData,
-                backgroundColor: chartType === 'line' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.85)',
-                borderColor: '#10b981',
-                borderWidth: chartType === 'line' ? 2.5 : 1,
-                borderRadius: chartType === 'bar' ? 4 : 0,
-                fill: chartType === 'line',
-                tension: 0.35,
-                pointBackgroundColor: '#10b981',
-                pointRadius: chartType === 'line' ? 4 : 0
-            });
-
-            datasets.push({
-                type: 'bar',
-                label: `${costLabelText} ${y} (R$)`,
-                data: costData,
-                backgroundColor: chartType === 'line' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.85)',
-                borderColor: '#ef4444',
-                borderWidth: chartType === 'line' ? 2.5 : 1,
-                borderRadius: chartType === 'bar' ? 4 : 0,
-                fill: chartType === 'line',
-                tension: 0.35,
-                pointBackgroundColor: '#ef4444',
-                pointRadius: chartType === 'line' ? 4 : 0
-            });
-
-            // Linea del NETTO (Ricavi meno Costi) attiva nel solo Grafico a Barre
             if (chartType === 'bar') {
-                const netLabelText = typeof t === 'function' ? (t('speseDettaglio.net') || 'Netto (Ricavi - Costi)') : 'Netto (Ricavi - Costi)';
+                // Barra Ricavi
+                datasets.push({
+                    type: 'bar',
+                    label: `${revLabelText} ${y} (R$)`,
+                    data: revData,
+                    stack: `ricavi_${y}`,
+                    backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                    borderColor: '#10b981',
+                    borderWidth: 1,
+                    borderRadius: 4
+                });
+
+                // Barra Costi Generali (Base Rossa della barra costi)
+                datasets.push({
+                    type: 'bar',
+                    label: `${costOrdLabelText} ${y} (R$)`,
+                    data: costOrdData,
+                    stack: `costi_${y}`,
+                    backgroundColor: 'rgba(239, 68, 68, 0.85)',
+                    borderColor: '#ef4444',
+                    borderWidth: 1,
+                    borderRadius: 0
+                });
+
+                // Barra Immobilizzazioni (Parte Visibile della barra costi con colore differenziato)
+                datasets.push({
+                    type: 'bar',
+                    label: `${immobLabelText} ${y} (R$)`,
+                    data: costImmData,
+                    stack: `costi_${y}`,
+                    backgroundColor: 'rgba(245, 158, 11, 0.85)',
+                    borderColor: '#d97706',
+                    borderWidth: 1,
+                    borderRadius: 4
+                });
+
+                // Linea del NETTO (Ricavi - (Costi Generali + Immobilizzazioni))
+                const netLabelText = typeof t === 'function' ? (t('comparatoreRicaviCosti.net') || t('speseDettaglio.net') || 'Netto (Ricavi - Costi)') : 'Netto (Ricavi - Costi)';
                 const netData = revData.map((rev, mIdx) => {
-                    const cost = costData[mIdx] || 0;
-                    if (rev === 0 && cost === 0) return null;
-                    return rev - cost;
+                    const cOrd = costOrdData[mIdx] || 0;
+                    const cImm = costImmData[mIdx] || 0;
+                    if (rev === 0 && cOrd === 0 && cImm === 0) return null;
+                    return rev - (cOrd + cImm);
                 });
 
                 datasets.push({
@@ -5798,64 +5839,114 @@ window.drawSpeseComparisonChart = function() {
                     fill: false,
                     tension: 0.35,
                     spanGaps: false,
-                    order: -1
+                    order: -1,
+                    stacked: false
+                });
+            } else {
+                // Grafico a Linea Singolo Anno
+                datasets.push({
+                    type: 'line',
+                    label: `${revLabelText} ${y} (R$)`,
+                    data: revData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    borderColor: '#10b981',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#10b981',
+                    pointRadius: 4
+                });
+
+                datasets.push({
+                    type: 'line',
+                    label: `${costOrdLabelText} ${y} (R$)`,
+                    data: costOrdData,
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    borderColor: '#ef4444',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#ef4444',
+                    pointRadius: 4
+                });
+
+                datasets.push({
+                    type: 'line',
+                    label: `${immobLabelText} ${y} (R$)`,
+                    data: costImmData,
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    borderColor: '#f59e0b',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#f59e0b',
+                    pointRadius: 4
                 });
             }
         } else {
             // Confronto Multi-Anno
             const colorSets = [
                 {
-                    revBg: chartType === 'line' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(14, 165, 233, 0.85)',
+                    revBg: 'rgba(14, 165, 233, 0.85)',
                     revBorder: '#0ea5e9',
-                    costBg: chartType === 'line' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.85)',
-                    costBorder: '#f97316',
+                    costOrdBg: 'rgba(249, 115, 22, 0.85)',
+                    costOrdBorder: '#f97316',
+                    costImmBg: 'rgba(251, 191, 36, 0.85)',
+                    costImmBorder: '#f59e0b',
                     netColor: '#8b5cf6'
                 },
                 {
-                    revBg: chartType === 'line' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.85)',
+                    revBg: 'rgba(16, 185, 129, 0.85)',
                     revBorder: '#10b981',
-                    costBg: chartType === 'line' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.85)',
-                    costBorder: '#ef4444',
+                    costOrdBg: 'rgba(239, 68, 68, 0.85)',
+                    costOrdBorder: '#ef4444',
+                    costImmBg: 'rgba(245, 158, 11, 0.85)',
+                    costImmBorder: '#d97706',
                     netColor: '#0284c7'
                 }
             ];
             const cSet = colorSets[idx % colorSets.length];
 
-            datasets.push({
-                type: 'bar',
-                label: `${revLabelText} ${y} (R$)`,
-                data: revData,
-                backgroundColor: cSet.revBg,
-                borderColor: cSet.revBorder,
-                borderWidth: chartType === 'line' ? 2.5 : 1,
-                borderRadius: chartType === 'bar' ? 4 : 0,
-                fill: chartType === 'line',
-                tension: 0.35,
-                pointBackgroundColor: cSet.revBorder,
-                pointRadius: chartType === 'line' ? 4 : 0
-            });
-
-            datasets.push({
-                type: 'bar',
-                label: `${costLabelText} ${y} (R$)`,
-                data: costData,
-                backgroundColor: cSet.costBg,
-                borderColor: cSet.costBorder,
-                borderWidth: chartType === 'line' ? 2.5 : 1,
-                borderRadius: chartType === 'bar' ? 4 : 0,
-                fill: chartType === 'line',
-                tension: 0.35,
-                pointBackgroundColor: cSet.costBorder,
-                pointRadius: chartType === 'line' ? 4 : 0
-            });
-
-            // Linea del NETTO (Ricavi meno Costi) attiva nel solo Grafico a Barre
             if (chartType === 'bar') {
-                const netLabelText = typeof t === 'function' ? (t('speseDettaglio.net') || 'Netto (Ricavi - Costi)') : 'Netto (Ricavi - Costi)';
+                datasets.push({
+                    type: 'bar',
+                    label: `${revLabelText} ${y} (R$)`,
+                    data: revData,
+                    stack: `ricavi_${y}`,
+                    backgroundColor: cSet.revBg,
+                    borderColor: cSet.revBorder,
+                    borderWidth: 1,
+                    borderRadius: 4
+                });
+
+                datasets.push({
+                    type: 'bar',
+                    label: `${costOrdLabelText} ${y} (R$)`,
+                    data: costOrdData,
+                    stack: `costi_${y}`,
+                    backgroundColor: cSet.costOrdBg,
+                    borderColor: cSet.costOrdBorder,
+                    borderWidth: 1,
+                    borderRadius: 0
+                });
+
+                datasets.push({
+                    type: 'bar',
+                    label: `${immobLabelText} ${y} (R$)`,
+                    data: costImmData,
+                    stack: `costi_${y}`,
+                    backgroundColor: cSet.costImmBg,
+                    borderColor: cSet.costImmBorder,
+                    borderWidth: 1,
+                    borderRadius: 4
+                });
+
+                const netLabelText = typeof t === 'function' ? (t('comparatoreRicaviCosti.net') || t('speseDettaglio.net') || 'Netto (Ricavi - Costi)') : 'Netto (Ricavi - Costi)';
                 const netData = revData.map((rev, mIdx) => {
-                    const cost = costData[mIdx] || 0;
-                    if (rev === 0 && cost === 0) return null;
-                    return rev - cost;
+                    const cOrd = costOrdData[mIdx] || 0;
+                    const cImm = costImmData[mIdx] || 0;
+                    if (rev === 0 && cOrd === 0 && cImm === 0) return null;
+                    return rev - (cOrd + cImm);
                 });
 
                 datasets.push({
@@ -5873,7 +5964,47 @@ window.drawSpeseComparisonChart = function() {
                     fill: false,
                     tension: 0.35,
                     spanGaps: false,
-                    order: -1
+                    order: -1,
+                    stacked: false
+                });
+            } else {
+                datasets.push({
+                    type: 'line',
+                    label: `${revLabelText} ${y} (R$)`,
+                    data: revData,
+                    backgroundColor: cSet.revBg.replace('0.85', '0.15'),
+                    borderColor: cSet.revBorder,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: cSet.revBorder,
+                    pointRadius: 4
+                });
+
+                datasets.push({
+                    type: 'line',
+                    label: `${costOrdLabelText} ${y} (R$)`,
+                    data: costOrdData,
+                    backgroundColor: cSet.costOrdBg.replace('0.85', '0.15'),
+                    borderColor: cSet.costOrdBorder,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: cSet.costOrdBorder,
+                    pointRadius: 4
+                });
+
+                datasets.push({
+                    type: 'line',
+                    label: `${immobLabelText} ${y} (R$)`,
+                    data: costImmData,
+                    backgroundColor: cSet.costImmBg.replace('0.85', '0.15'),
+                    borderColor: cSet.costImmBorder,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: cSet.costImmBorder,
+                    pointRadius: 4
                 });
             }
         }
@@ -5889,7 +6020,10 @@ window.drawSpeseComparisonChart = function() {
             plugins: {
                 legend: { display: true, position: 'top', align: 'end' },
                 datalabels: {
-                    display: true,
+                    display: function(ctx) {
+                        const val = ctx.dataset.data[ctx.dataIndex];
+                        return val !== null && val !== undefined && val !== 0;
+                    },
                     anchor: 'end',
                     align: 'top',
                     color: '#475569',
@@ -5913,8 +6047,12 @@ window.drawSpeseComparisonChart = function() {
                 }
             },
             scales: {
-                x: { grid: { display: false } },
+                x: {
+                    stacked: chartType === 'bar',
+                    grid: { display: false }
+                },
                 y: {
+                    stacked: chartType === 'bar',
                     beginAtZero: true,
                     grace: '15%',
                     grid: { color: 'rgba(0,0,0,0.05)' },
