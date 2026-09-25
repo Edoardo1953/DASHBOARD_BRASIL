@@ -73,18 +73,27 @@ const DEFAULT_USERS = {
 const GITHUB_REPO = 'Edoardo1953/DASHBOARD_BRASIL';
 const GITHUB_FILE = 'app3.js';
 
+function initUsersSync() {
+    try {
+        const lastKnownDefaults = localStorage.getItem('sombra_spa_last_default_users');
+        const currentDefaultsStr = JSON.stringify(DEFAULT_USERS);
+        if (lastKnownDefaults !== currentDefaultsStr) {
+            // I DEFAULT_USERS nel codice sono stati aggiornati (deploy / push da GitHub)
+            // Aggiorniamo automaticamente il localStorage del browser
+            localStorage.setItem('sombra_spa_users', currentDefaultsStr);
+            localStorage.setItem('sombra_spa_last_default_users', currentDefaultsStr);
+        }
+    } catch (e) {
+        console.error("Error syncing default users", e);
+    }
+}
+initUsersSync();
+
 function getUsers() {
     try {
         const stored = localStorage.getItem('sombra_spa_users');
         if (stored) {
-            const localUsers = JSON.parse(stored);
-            const mergedUsers = { ...localUsers };
-            for(let k in DEFAULT_USERS) {
-                if(!mergedUsers.hasOwnProperty(k)) {
-                    mergedUsers[k] = DEFAULT_USERS[k];
-                }
-            }
-            return mergedUsers;
+            return JSON.parse(stored);
         }
     } catch (e) {
         console.error("Error parsing users from local storage", e);
@@ -93,7 +102,9 @@ function getUsers() {
 }
 
 function saveUsers(usersObj) {
-    localStorage.setItem('sombra_spa_users', JSON.stringify(usersObj));
+    const usersStr = JSON.stringify(usersObj);
+    localStorage.setItem('sombra_spa_users', usersStr);
+    localStorage.setItem('sombra_spa_last_default_users', usersStr);
     // Sincronizza automaticamente su GitHub
     syncToGitHub(usersObj);
 }
