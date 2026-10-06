@@ -1,9 +1,10 @@
-name: 🔄 Auto-aggiorna costi_preload.js
+name: 🔄 Auto-aggiorna Preload Dati (Costi e Ricavi)
 
 on:
   push:
     paths:
       - 'Uploads/spese.xlsx'
+      - 'DB Arcoiris Dashboard.xlsx'
 
 jobs:
   genera-preload:
@@ -21,15 +22,17 @@ jobs:
       - name: Installa dipendenze
         run: pip install openpyxl
 
-      - name: Genera costi_preload.js
-        run: python scripts/make_costi_preload.py
+      - name: Genera Preload Dati (Costi e Ricavi)
+        run: |
+          python scripts/make_costi_preload.py
+          python scripts/make_db_preload.py
 
-      - name: Commit e push costi_preload.js
+      - name: Commit e push file generati
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions Bot"
-          git add costi_preload.js
+          git add costi_preload.js db_preload.js sombra_spa_db.json
           git diff --staged --quiet && echo "Nessuna modifica" || (
-            git commit -m "auto: rigenera costi_preload.js da spese.xlsx aggiornato"
+            git commit -m "auto: rigenera preload costi e ricavi da Excel aggiornati"
             git push
           )
