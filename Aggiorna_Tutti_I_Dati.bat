@@ -36,7 +36,7 @@ if errorlevel 1 (
 
 echo.
 echo ========================================================
-echo   [3/3] FATTO! Dati di Settembre 2026 aggiornati!
+echo   [3/3] FATTO! Dati aggiornati con successo e sincronizzati!
 echo ========================================================
 echo.
 pause
