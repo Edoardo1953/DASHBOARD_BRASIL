@@ -1,6 +1,6 @@
 // AUTO-GENERATO — NON MODIFICARE MANUALMENTE
 // Fonte: DB Arcoiris Dashboard.xlsx
-// Generato il: 2026-11-08 21:27
+// Generato il: 2026-11-08 21:31
 // Record totali: 120
 (function() {
     try {
