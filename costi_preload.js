@@ -1,6 +1,6 @@
 // AUTO-GENERATO — NON MODIFICARE MANUALMENTE
 // Fonte: Uploads/spese.xlsx
-// Generato il: 2026-11-08 21:19 UTC
+// Generato il: 2026-11-08 21:27 UTC
 // Record totali: 95 (83 spese + 12 immobilizzazioni)
 (function() {
     try {
